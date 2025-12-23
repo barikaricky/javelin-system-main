@@ -182,13 +182,7 @@ app.use(errorHandler);
 
 const startServer = async () => {
   try {
-    // Initialize database
-    logger.info('🔄 Initializing database...');
-    await initializeDatabase();
-    
-    // Initialize cron jobs
-    initializeCronJobs();
-    
+    // Start server first (for Railway healthcheck)
     const startPort = config.port;
     let currentPort = startPort;
     let server: any;
@@ -231,6 +225,23 @@ const startServer = async () => {
           }
         } else {
           throw err;
+        }
+      }
+    }
+    
+    // Initialize database after server starts (async, non-blocking)
+    logger.info('🔄 Initializing database in background...');
+    initializeDatabase()
+      .then(() => {
+        logger.info('✅ Database connected successfully');
+        // Initialize cron jobs after database is ready
+        initializeCronJobs();
+        logger.info('⏰ Cron jobs initialized');
+      })
+      .catch((err) => {
+        logger.error('❌ Database connection failed:', err);
+        logger.warn('⚠️ Server running without database connection');
+      });
         }
       }
     }
