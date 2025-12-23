@@ -12,11 +12,14 @@ export const connectDB = async (): Promise<void> => {
   }
 
   try {
+    logger.info(`🔄 Connecting to database...`);
+    logger.info(`📍 Connection URI: ${MONGODB_URI.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@')}`); // Log URI with masked password
+    
     const options = {
       maxPoolSize: 10,
-      serverSelectionTimeoutMS: 3000, // Reduced from 5000ms to 3000ms for faster failure
-      socketTimeoutMS: 10000, // Reduced from 45000ms to 10000ms
-      connectTimeoutMS: 3000, // Added: timeout for initial connection
+      serverSelectionTimeoutMS: 10000, // Increased to 10 seconds for Atlas
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 10000,
     };
 
     await mongoose.connect(MONGODB_URI, options);

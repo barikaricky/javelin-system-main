@@ -1,6 +1,4 @@
-import dotenv from 'dotenv';
-
-dotenv.config();
+// Note: dotenv.config() is called in server.ts before this module is imported
 
 export const config = {
   port: parseInt(process.env.PORT || '3002', 10),

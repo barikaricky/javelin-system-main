@@ -1,7 +1,11 @@
+import dotenv from 'dotenv';
+
+// Load environment variables FIRST before any other imports
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import dotenv from 'dotenv';
 import { config } from './config';
 import { logger } from './utils/logger';
 import { initializeDatabase } from './utils/database';
@@ -36,8 +40,6 @@ import bitRoutes from './routes/bit.routes';
 import companyDocumentRoutes from './routes/companyDocument.routes';
 import idVerificationRoutes from './routes/id-verification.routes';
 import assignmentRoutes from './routes/assignment.routes';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
