@@ -1,6 +1,7 @@
 [build]
-  publish = "dist"
-  command = "pnpm install && pnpm run build"
+  base = "apps/frontend"
+  publish = "apps/frontend/dist"
+  command = "cd apps/frontend && pnpm install && pnpm run build"
 
 [build.environment]
   NODE_VERSION = "18"
@@ -9,9 +10,3 @@
   from = "/*"
   to = "/index.html"
   status = 200
-
-[context.production]
-  command = "pnpm run build"
-
-[context.deploy-preview]
-  command = "pnpm run build"
