@@ -20,6 +20,13 @@ if (isCodespaces) {
   serverBaseURL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3002';
 }
 
+console.log('🌐 API Configuration:', {
+  environment: isProduction ? 'production' : 'development',
+  baseURL,
+  serverBaseURL,
+  VITE_API_URL: import.meta.env.VITE_API_URL,
+});
+
 export const api = axios.create({
   baseURL,
   headers: {
@@ -76,6 +83,14 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    console.error('❌ API Error:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      baseURL: error.config?.baseURL,
+      status: error.response?.status,
+      message: error.message,
+    });
+
     if (error.response?.status === 401) {
       // Only redirect if we're not already on the login page and not on dev pages
       const currentPath = window.location.pathname;
