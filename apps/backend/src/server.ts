@@ -182,86 +182,47 @@ app.use(errorHandler);
 
 const startServer = async () => {
   try {
-    // Start server first (for Railway healthcheck)
-    const startPort = config.port;
-    let currentPort = startPort;
-    let server: any;
-    let maxAttempts = 10;
+    const port = config.port;
     
-    const tryPort = (port: number): Promise<void> => {
-      return new Promise((resolve, reject) => {
-        server = app.listen(port, '0.0.0.0', () => {
-          logger.info(`🚀 Server is running on port ${port}`);
-          logger.info(`📝 Environment: ${config.nodeEnv}`);
-          logger.info(`🔗 API URL: http://localhost:${port}`);
-          logger.info(`🔗 Health check: http://localhost:${port}/api/health`);
-          resolve();
+    // Start server immediately
+    const server = app.listen(port, '0.0.0.0', () => {
+      console.log(`🚀 Server running on port ${port}`);
+      console.log(`📝 Environment: ${config.nodeEnv}`);
+      console.log(`🔗 Health: http://0.0.0.0:${port}/api/health`);
+      
+      // Initialize database after server starts (async, non-blocking)
+      console.log('🔄 Connecting to database...');
+      initializeDatabase()
+        .then(() => {
+          console.log('✅ Database connected');
+          initializeCronJobs();
+          console.log('⏰ Cron jobs started');
+        })
+        .catch((err) => {
+          console.error('❌ Database failed:', err.message);
+          console.log('⚠️ Server running without database');
         });
-        
-        server.on('error', (err: NodeJS.ErrnoException) => {
-          if (err.code === 'EADDRINUSE') {
-            logger.warn(`⚠️  Port ${port} is already in use`);
-            server.close();
-            reject(err);
-          } else {
-            logger.error('❌ Server error:', err);
-            reject(err);
-          }
-        });
-      });
-    };
+    });
     
-    while (maxAttempts > 0) {
-      try {
-        await tryPort(currentPort);
-        break;
-      } catch (err: any) {
-        if (err.code === 'EADDRINUSE') {
-          logger.warn(`🔄 Trying port ${currentPort + 1}...`);
-          currentPort++;
-          maxAttempts--;
-          if (maxAttempts === 0) {
-            throw new Error(`Could not find available port after trying ${startPort} to ${currentPort}`);
-          }
-        } else {
-          throw err;
-        }
-      }
-    }
-    
-    // Initialize database after server starts (async, non-blocking)
-    logger.info('🔄 Initializing database in background...');
-    initializeDatabase()
-      .then(() => {
-        logger.info('✅ Database connected successfully');
-        // Initialize cron jobs after database is ready
-        initializeCronJobs();
-        logger.info('⏰ Cron jobs initialized');
-      })
-      .catch((err) => {
-        logger.error('❌ Database connection failed:', err);
-        logger.warn('⚠️ Server running without database connection');
-      });
-        }
-      }
-    }
+    server.on('error', (err: NodeJS.ErrnoException) => {
+      console.error('❌ Server error:', err);
+      process.exit(1);
+    });
     
     // Graceful shutdown
-    const shutdown = async (signal: string) => {
-      logger.info(`${signal} received: closing HTTP server`);
-      if (server) {
-        server.close(() => {
-          logger.info('HTTP server closed');
-          process.exit(0);
-        });
-      }
+    const shutdown = (signal: string) => {
+      console.log(`${signal} received: closing server`);
+      server.close(() => {
+        console.log('Server closed');
+        process.exit(0);
+      });
     };
     
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT', () => shutdown('SIGINT'));
     
   } catch (error) {
-    logger.error('❌ Failed to start server:', error);
+    console.error('❌ Failed to start:', error);
     process.exit(1);
   }
 };
