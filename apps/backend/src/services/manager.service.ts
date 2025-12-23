@@ -46,6 +46,12 @@ export async function registerManager(data: RegisterManagerData) {
   try {
     logger.info('Registering new manager', { email: data.email, createdBy: data.createdById });
 
+    // Check MongoDB connection
+    if (!User || !Manager) {
+      logger.error('MongoDB models not initialized');
+      throw new AppError('Database not properly initialized', 500);
+    }
+
     // Check if email already exists
     const existingUser = await User.findOne({ email: data.email.toLowerCase() });
 
@@ -128,11 +134,15 @@ export async function registerManager(data: RegisterManagerData) {
       emailSent,
     };
   } catch (error: any) {
-    logger.error('Error registering manager:', error);
+    logger.error('Error registering manager:', {
+      error: error.message,
+      stack: error.stack,
+      email: data.email,
+    });
     if (error instanceof AppError) {
       throw error;
     }
-    throw new AppError(error.message || 'Failed to register manager', 500);
+    throw new AppError(error.message || 'Failed to register manager. Check Railway logs for details.', 500);
   }
 }
 
