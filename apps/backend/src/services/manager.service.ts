@@ -113,19 +113,16 @@ export async function registerManager(data: RegisterManagerData) {
     }
 
     return {
-      success: true,
       manager: {
-        id: manager._id,
+        id: manager._id.toString(),
         managerId,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
         fullName: `${user.firstName} ${user.lastName}`,
-        phone: user.phone,
-        department: manager.department,
-        startDate: manager.startDate,
-        profilePhoto: user.profilePhoto,
-        status: user.status,
+        phone: user.phone || '',
+        department: manager.department || null,
+        profilePhoto: user.profilePhoto || null,
       },
       credentials: {
         email: user.email,
