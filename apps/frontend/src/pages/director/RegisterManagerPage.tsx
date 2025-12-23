@@ -286,8 +286,18 @@ export default function RegisterManagerPage() {
       setHasUnsavedChanges(false);
     } catch (error: any) {
       console.error('Registration error:', error);
-      const message = error.response?.data?.message || error.response?.data?.error || 'Failed to register manager';
-      setSubmitError(message);
+      
+      // Check if it's a timeout error
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        setSubmitError(
+          'The request is taking longer than expected. The manager may still be created in the background. ' +
+          'Please check the Workers page in a few moments to verify. If the manager appears there, ' +
+          'please contact support to retrieve the login credentials.'
+        );
+      } else {
+        const message = error.response?.data?.message || error.response?.data?.error || 'Failed to register manager';
+        setSubmitError(message);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -764,13 +774,23 @@ export default function RegisterManagerPage() {
             {/* Submit Error Display */}
             {submitError && (
               <div className="mx-6 mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3">
                   <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
                     <AlertCircle className="w-5 h-5 text-red-600" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-red-800 font-medium">Registration Failed</p>
-                    <p className="text-red-600 text-sm">{submitError}</p>
+                    <p className="text-red-600 text-sm mt-1">{submitError}</p>
+                    
+                    {/* Show button to check Workers page if it's a timeout */}
+                    {(submitError.includes('timeout') || submitError.includes('taking longer')) && (
+                      <button
+                        onClick={() => navigate('/director/personnel')}
+                        className="mt-3 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        Check Workers Page
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
