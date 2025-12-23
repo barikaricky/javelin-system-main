@@ -1,5 +1,9 @@
 import mongoose from 'mongoose';
+import dotenv from 'dotenv';
 import { logger } from '../utils/logger';
+
+// Load environment variables (idempotent - safe to call multiple times)
+dotenv.config();
 
 const MONGODB_URI = process.env.DATABASE_URL || 'mongodb://localhost:27017/jevelin_db';
 
@@ -13,6 +17,7 @@ export const connectDB = async (): Promise<void> => {
 
   try {
     logger.info(`🔄 Connecting to database...`);
+    logger.info(`📍 DATABASE_URL exists: ${!!process.env.DATABASE_URL}`);
     logger.info(`📍 Connection URI: ${MONGODB_URI.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@')}`); // Log URI with masked password
     
     const options = {

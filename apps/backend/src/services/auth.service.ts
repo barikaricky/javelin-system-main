@@ -10,6 +10,12 @@ export async function login(email: string, password: string, ipAddress?: string,
   try {
     logger.info('Processing login', { email });
 
+    // Check if database is connected
+    if (!User.db || User.db.readyState !== 1) {
+      logger.error('Database not connected during login attempt');
+      throw new AppError('Database connection error. Please try again in a moment.', 503);
+    }
+
     const user = await User.findOne({ email }).exec();
 
     if (!user) {

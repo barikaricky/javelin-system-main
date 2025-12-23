@@ -49,7 +49,8 @@ export default function Login() {
           navigate('/dashboard');
       }
     } catch (err: any) {
-      console.error('Login error:', err);
+      console.error('❌ Login error:', err);
+      console.error('❌ Error response:', err.response?.data);
       
       // Provide more specific error messages
       let errorMessage = 'Invalid credentials. Please try again.';
@@ -58,12 +59,18 @@ export default function Login() {
         errorMessage = 'Connection timeout. Please check if the backend server is running on port 3002.';
       } else if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
         errorMessage = 'Cannot connect to server. Please ensure the backend is running on http://localhost:3002';
+      } else if (err.response?.status === 503) {
+        errorMessage = 'Database connection error. The server is running but cannot connect to the database. Please check MongoDB connection.';
       } else if (err.response?.status === 401) {
-        errorMessage = 'Invalid email or password. Please try again.';
+        errorMessage = err.response.data?.error || err.response.data?.message || 'Invalid email or password. Please try again.';
+      } else if (err.response?.status === 400) {
+        errorMessage = err.response.data?.error || err.response.data?.message || 'Invalid request. Please check your inputs.';
       } else if (err.response?.status === 500) {
-        errorMessage = 'Server error. Please check backend logs or restart the server.';
+        errorMessage = err.response.data?.error || err.response.data?.message || 'Server error. Please check backend logs or restart the server.';
       } else if (err.response?.data?.error) {
         errorMessage = err.response.data.error;
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
       }
       
       setError(errorMessage);

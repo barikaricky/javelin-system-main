@@ -50,6 +50,16 @@ export const errorHandler = (
     });
   }
 
+  // Handle MongoDB/Mongoose errors
+  if (err.name === 'MongooseError' || err.name === 'MongoServerError') {
+    logger.error('Database error:', err);
+    return res.status(503).json({
+      status: 'error',
+      error: 'Database connection error. Please ensure MongoDB is running.',
+      message: process.env.NODE_ENV !== 'production' ? err.message : 'Service temporarily unavailable',
+    });
+  }
+
   // Log unexpected errors
   logger.error('Unexpected error:', {
     error: err,
@@ -66,7 +76,8 @@ export const errorHandler = (
 
   res.status(500).json({
     status: 'error',
-    message,
+    error: message,
+    message: message,
     ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
   });
 };

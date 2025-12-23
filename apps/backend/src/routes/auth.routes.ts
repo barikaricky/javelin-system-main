@@ -9,11 +9,21 @@ const router = Router();
 
 // Login
 router.post('/login', asyncHandler(async (req, res) => {
-  logger.info('Login attempt', { email: req.body.email });
+  const { email, password } = req.body;
+  
+  if (!email || !password) {
+    return res.status(400).json({ 
+      error: 'Email and password are required' 
+    });
+  }
+  
+  logger.info('Login attempt', { email });
   const ipAddress = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] as string;
   const userAgent = req.headers['user-agent'];
-  const result = await login(req.body.email, req.body.password, ipAddress, userAgent);
-  logger.info('Login successful', { email: req.body.email });
+  
+  const result = await login(email, password, ipAddress, userAgent);
+  logger.info('Login successful', { email });
+  
   res.json(result);
 }));
 
