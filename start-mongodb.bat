@@ -1,0 +1,9 @@
+@echo off
+echo Starting MongoDB...
+echo Creating data directory if it doesn't exist...
+if not exist "%USERPROFILE%\mongodb-data" mkdir "%USERPROFILE%\mongodb-data"
+
+echo Starting MongoDB Server on port 27017...
+"C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe" --dbpath "%USERPROFILE%\mongodb-data"
+
+pause

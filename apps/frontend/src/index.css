@@ -1,0 +1,195 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 text-base font-normal;
+    font-family: 'Inter', 'Roboto', system-ui, -apple-system, sans-serif;
+  }
+  
+  * {
+    @apply touch-manipulation;
+  }
+  
+  html {
+    @apply scroll-smooth;
+  }
+}
+
+@layer components {
+  /* Buttons - Yellow Primary, Blue Secondary, Green Success */
+  .btn-primary {
+    @apply bg-primary-500 text-gray-900 px-lg py-3 rounded-md hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-button font-medium shadow-sm;
+  }
+  
+  .btn-secondary {
+    @apply bg-blue-500 text-white px-lg py-3 rounded-md hover:bg-blue-600 transition-colors min-h-button font-medium shadow-sm;
+  }
+
+  .btn-success {
+    @apply bg-secondary-500 text-white px-lg py-3 rounded-md hover:bg-secondary-600 transition-colors min-h-button font-medium shadow-sm;
+  }
+
+  .btn-cancel {
+    @apply bg-transparent text-gray-600 px-lg py-3 rounded-md border-2 border-gray-300 hover:bg-gray-50 transition-colors min-h-button font-medium;
+  }
+  
+  /* Input Fields */
+  .input-field {
+    @apply w-full px-lg py-3 h-input border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-input bg-white;
+  }
+  
+  /* Cards */
+  .card {
+    @apply bg-white rounded-lg shadow-card p-lg border border-gray-200;
+  }
+  
+  /* Labels */
+  .label {
+    @apply block text-sm font-medium text-gray-700 mb-sm;
+  }
+
+  /* Top Bar - Blue Gradient */
+  .top-bar {
+    @apply h-top-bar bg-gradient-to-r from-blue-500 to-blue-700 text-white flex items-center px-lg shadow-md;
+  }
+
+  /* Bottom Bar - White with Yellow Active Tabs */
+  .bottom-bar {
+    @apply h-bottom-bar bg-white border-t border-gray-200 flex items-center justify-around shadow-lg;
+  }
+
+  .bottom-bar-tab {
+    @apply flex flex-col items-center justify-center min-w-touch-target min-h-touch-target text-xs transition-colors cursor-pointer;
+  }
+
+  .bottom-bar-tab-active {
+    @apply text-primary-500 font-semibold;
+  }
+
+  .bottom-bar-tab-inactive {
+    @apply text-gray-400 hover:text-gray-600;
+  }
+
+  /* Status Badges */
+  .badge {
+    @apply inline-flex items-center px-md py-xs rounded-full text-xs font-medium;
+  }
+
+  .badge-success {
+    @apply bg-secondary-100 text-secondary-700 border border-secondary-200;
+  }
+
+  .badge-warning {
+    @apply bg-orange-100 text-orange-700 border border-orange-200;
+  }
+
+  .badge-error {
+    @apply bg-red-100 text-red-700 border border-red-200;
+  }
+
+  .badge-info {
+    @apply bg-blue-100 text-blue-700 border border-blue-200;
+  }
+
+  /* Typography */
+  .text-small-label {
+    @apply text-xs;
+  }
+
+  .text-bottom-bar {
+    @apply text-sm;
+  }
+
+  .text-section-header {
+    @apply text-lg font-semibold;
+  }
+
+  .text-page-title {
+    @apply text-xl font-bold;
+  }
+
+  .text-large-number {
+    @apply text-3xl font-bold;
+  }
+
+  /* Touch Targets */
+  .touch-target {
+    @apply min-w-touch-target min-h-touch-target flex items-center justify-center;
+  }
+
+  /* Icons */
+  .icon-sm {
+    @apply w-5 h-5;
+  }
+
+  .icon-md {
+    @apply w-6 h-6;
+  }
+
+  .icon-lg {
+    @apply w-8 h-8;
+  }
+
+  .icon-xl {
+    @apply w-12 h-12;
+  }
+}
+
+@layer utilities {
+  /* Animation utilities */
+  @keyframes blob {
+    0%, 100% {
+      transform: translate(0, 0) scale(1);
+    }
+    25% {
+      transform: translate(20px, -50px) scale(1.1);
+    }
+    50% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+    75% {
+      transform: translate(50px, 50px) scale(1.05);
+    }
+  }
+
+  @keyframes shake {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+      transform: translateX(-5px);
+    }
+    20%, 40%, 60%, 80% {
+      transform: translateX(5px);
+    }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-blob {
+    animation: blob 7s infinite;
+  }
+
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+
+  .animate-shake {
+    animation: shake 0.5s ease-in-out;
+  }
+}

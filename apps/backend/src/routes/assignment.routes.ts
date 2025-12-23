@@ -1,0 +1,546 @@
+import { Router, Request, Response } from 'express';
+import { assignmentService } from '../services/assignment.service';
+import { authenticate, authorize } from '../middlewares/auth.middleware';
+import User from '../models/User.model';
+
+const router = Router();
+
+/**
+ * @route   POST /api/assignments
+ * @desc    Create a new guard assignment
+ * @access  Private (Manager, General Supervisor, Supervisor)
+ */
+router.post(
+  '/',
+  authenticate,
+  authorize('MANAGER', 'GENERAL_SUPERVISOR', 'SUPERVISOR', 'DIRECTOR', 'DEVELOPER'),
+  async (req: Request, res: Response) => {
+    try {
+      const {
+        operatorId,
+        bitId,
+        supervisorId,
+        shiftType,
+        startDate,
+        endDate,
+        assignmentType,
+        specialInstructions,
+        allowances,
+      } = req.body;
+
+      // Validate required fields
+      if (!operatorId || !bitId || !supervisorId || !shiftType || !startDate) {
+        return res.status(400).json({
+          success: false,
+          message: 'Missing required fields: operatorId, bitId, supervisorId, shiftType, startDate',
+        });
+      }
+
+      const user = (req as any).user;
+      
+      // Fetch full user details to get name
+      const userDetails = await User.findById(user.userId);
+      if (!userDetails) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found',
+        });
+      }
+
+      const assignedBy = {
+        userId: user.userId,
+        role: user.role,
+        name: `${userDetails.firstName} ${userDetails.lastName}`,
+      };
+
+      const assignment = await assignmentService.createAssignment({
+        operatorId,
+        bitId,
+        supervisorId,
+        shiftType,
+        startDate: new Date(startDate),
+        endDate: endDate ? new Date(endDate) : undefined,
+        assignmentType,
+        specialInstructions,
+        allowances,
+        assignedBy,
+      });
+
+      res.status(201).json({
+        success: true,
+        message:
+          assignment.status === 'ACTIVE'
+            ? 'Guard assigned successfully'
+            : 'Assignment created and awaiting approval',
+        assignment,
+      });
+    } catch (error: any) {
+      console.error('Error creating assignment:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to create assignment',
+      });
+    }
+  }
+);
+
+/**
+ * @route   GET /api/assignments
+ * @desc    Get all assignments with filters
+ * @access  Private (All authenticated users)
+ */
+router.get('/', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { bitId, operatorId, supervisorId, status, startDate, endDate } = req.query;
+
+    const query: any = {};
+    if (bitId) query.bitId = bitId;
+    if (operatorId) query.operatorId = operatorId;
+    if (supervisorId) query.supervisorId = supervisorId;
+    if (status) query.status = status;
+    if (startDate) query.startDate = { $gte: new Date(startDate as string) };
+    if (endDate) query.endDate = { $lte: new Date(endDate as string) };
+
+    const GuardAssignment = require('../models/GuardAssignment.model').default;
+    const assignments = await GuardAssignment.find(query)
+      .populate({
+        path: 'operatorId',
+        populate: { path: 'userId', select: 'firstName lastName email phone profilePhoto state' },
+      })
+      .populate('bitId')
+      .populate('locationId')
+      .populate({
+        path: 'supervisorId',
+        populate: { path: 'userId', select: 'firstName lastName email phone' },
+      })
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      count: assignments.length,
+      assignments,
+    });
+  } catch (error: any) {
+    console.error('Error fetching assignments:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch assignments',
+    });
+  }
+});
+
+/**
+ * @route   GET /api/assignments/pending
+ * @desc    Get pending assignments for General Supervisor approval
+ * @access  Private (General Supervisor only)
+ */
+router.get(
+  '/pending',
+  authenticate,
+  authorize('GENERAL_SUPERVISOR', 'DIRECTOR', 'DEVELOPER'),
+  async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const userRole = user.role;
+
+      let assignments;
+
+      if (userRole === 'DIRECTOR' || userRole === 'DEVELOPER') {
+        // Directors see all pending assignments
+        const GuardAssignment = require('../models/GuardAssignment.model').default;
+        assignments = await GuardAssignment.find({ status: 'PENDING' })
+          .populate({
+            path: 'operatorId',
+            populate: { path: 'userId' },
+          })
+          .populate('bitId')
+          .populate('locationId')
+          .populate({
+            path: 'supervisorId',
+            populate: { path: 'userId' },
+          })
+          .sort({ createdAt: -1 });
+      } else {
+        // General Supervisors see only their supervisors' pending assignments
+        const Supervisor = require('../models/Supervisor.model').default;
+        const gs = await Supervisor.findOne({ userId: user.id, supervisorType: 'GENERAL_SUPERVISOR' });
+
+        if (!gs) {
+          return res.status(404).json({
+            success: false,
+            message: 'General Supervisor record not found',
+          });
+        }
+
+        assignments = await assignmentService.getPendingAssignmentsForGS(gs._id.toString());
+      }
+
+      res.json({
+        success: true,
+        count: assignments.length,
+        assignments,
+      });
+    } catch (error: any) {
+      console.error('Error fetching pending assignments:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch pending assignments',
+      });
+    }
+  }
+);
+
+/**
+ * @route   GET /api/assignments/:id
+ * @desc    Get single assignment details
+ * @access  Private (All authenticated users)
+ */
+router.get('/:id', authenticate, async (req: Request, res: Response) => {
+  try {
+    const GuardAssignment = require('../models/GuardAssignment.model').default;
+    const assignment = await GuardAssignment.findById(req.params.id)
+      .populate({
+        path: 'operatorId',
+        populate: { path: 'userId' },
+      })
+      .populate('bitId')
+      .populate('locationId')
+      .populate({
+        path: 'supervisorId',
+        populate: { path: 'userId' },
+      });
+
+    if (!assignment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Assignment not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      assignment,
+    });
+  } catch (error: any) {
+    console.error('Error fetching assignment:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch assignment',
+    });
+  }
+});
+
+/**
+ * @route   PATCH /api/assignments/:id/approve
+ * @desc    Approve a pending assignment
+ * @access  Private (General Supervisor only)
+ */
+router.patch(
+  '/:id/approve',
+  authenticate,
+  authorize('GENERAL_SUPERVISOR', 'MANAGER', 'DIRECTOR', 'DEVELOPER'),
+  async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const approvedBy = {
+        userId: user.id,
+        role: user.role,
+        name: `${user.firstName} ${user.lastName}`,
+      };
+
+      const assignment = await assignmentService.approveAssignment(req.params.id, approvedBy);
+
+      res.json({
+        success: true,
+        message: 'Assignment approved successfully',
+        assignment,
+      });
+    } catch (error: any) {
+      console.error('Error approving assignment:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to approve assignment',
+      });
+    }
+  }
+);
+
+/**
+ * @route   PATCH /api/assignments/:id/reject
+ * @desc    Reject a pending assignment
+ * @access  Private (General Supervisor only)
+ */
+router.patch(
+  '/:id/reject',
+  authenticate,
+  authorize('GENERAL_SUPERVISOR', 'MANAGER', 'DIRECTOR', 'DEVELOPER'),
+  async (req: Request, res: Response) => {
+    try {
+      const { rejectionReason } = req.body;
+
+      if (!rejectionReason) {
+        return res.status(400).json({
+          success: false,
+          message: 'Rejection reason is required',
+        });
+      }
+
+      const user = (req as any).user;
+      const rejectedBy = {
+        userId: user.id,
+        role: user.role,
+        name: `${user.firstName} ${user.lastName}`,
+      };
+
+      const assignment = await assignmentService.rejectAssignment(
+        req.params.id,
+        rejectionReason,
+        rejectedBy
+      );
+
+      res.json({
+        success: true,
+        message: 'Assignment rejected',
+        assignment,
+      });
+    } catch (error: any) {
+      console.error('Error rejecting assignment:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to reject assignment',
+      });
+    }
+  }
+);
+
+/**
+ * @route   POST /api/assignments/:id/transfer
+ * @desc    Transfer operator to a new BIT
+ * @access  Private (Manager, General Supervisor)
+ */
+router.post(
+  '/:id/transfer',
+  authenticate,
+  authorize('MANAGER', 'GENERAL_SUPERVISOR', 'DIRECTOR', 'DEVELOPER'),
+  async (req: Request, res: Response) => {
+    try {
+      const { newBitId, newSupervisorId, newShiftType, transferDate, transferReason } = req.body;
+
+      if (!newBitId || !newSupervisorId || !newShiftType || !transferDate || !transferReason) {
+        return res.status(400).json({
+          success: false,
+          message: 'Missing required fields for transfer',
+        });
+      }
+
+      const GuardAssignment = require('../models/GuardAssignment.model').default;
+      const currentAssignment = await GuardAssignment.findById(req.params.id);
+
+      if (!currentAssignment) {
+        return res.status(404).json({
+          success: false,
+          message: 'Assignment not found',
+        });
+      }
+
+      const user = (req as any).user;
+      const assignedBy = {
+        userId: user.id,
+        role: user.role,
+        name: `${user.firstName} ${user.lastName}`,
+      };
+
+      const newAssignment = await assignmentService.transferOperator({
+        operatorId: currentAssignment.operatorId.toString(),
+        newBitId,
+        newSupervisorId,
+        newShiftType,
+        transferDate: new Date(transferDate),
+        transferReason,
+        assignedBy,
+      });
+
+      res.json({
+        success: true,
+        message: 'Operator transferred successfully',
+        assignment: newAssignment,
+      });
+    } catch (error: any) {
+      console.error('Error transferring operator:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to transfer operator',
+      });
+    }
+  }
+);
+
+/**
+ * @route   PATCH /api/assignments/:id/end
+ * @desc    End an active assignment
+ * @access  Private (Manager, General Supervisor)
+ */
+router.patch(
+  '/:id/end',
+  authenticate,
+  authorize('MANAGER', 'GENERAL_SUPERVISOR', 'DIRECTOR', 'DEVELOPER'),
+  async (req: Request, res: Response) => {
+    try {
+      const { endDate, endReason } = req.body;
+
+      if (!endDate || !endReason) {
+        return res.status(400).json({
+          success: false,
+          message: 'End date and reason are required',
+        });
+      }
+
+      const user = (req as any).user;
+      const endedBy = {
+        userId: user.id,
+        role: user.role,
+        name: `${user.firstName} ${user.lastName}`,
+      };
+
+      const assignment = await assignmentService.endAssignment(
+        req.params.id,
+        new Date(endDate),
+        endReason,
+        endedBy
+      );
+
+      res.json({
+        success: true,
+        message: 'Assignment ended successfully',
+        assignment,
+      });
+    } catch (error: any) {
+      console.error('Error ending assignment:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to end assignment',
+      });
+    }
+  }
+);
+
+/**
+ * @route   GET /api/bits/:bitId/assignments
+ * @desc    Get all assignments for a specific BIT
+ * @access  Private (All authenticated users)
+ */
+router.get('/bits/:bitId/assignments', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { status } = req.query;
+    const assignments = await assignmentService.getBitAssignments(
+      req.params.bitId,
+      status as string
+    );
+
+    res.json({
+      success: true,
+      count: assignments.length,
+      assignments,
+    });
+  } catch (error: any) {
+    console.error('Error fetching BIT assignments:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch BIT assignments',
+    });
+  }
+});
+
+/**
+ * @route   GET /api/operators/:operatorId/assignments
+ * @desc    Get assignment history for an operator
+ * @access  Private (All authenticated users)
+ */
+router.get(
+  '/operators/:operatorId/assignments',
+  authenticate,
+  async (req: Request, res: Response) => {
+    try {
+      const assignments = await assignmentService.getOperatorHistory(req.params.operatorId);
+
+      // Get active assignment
+      const activeAssignment = await assignmentService.getOperatorActiveAssignment(
+        req.params.operatorId
+      );
+
+      res.json({
+        success: true,
+        activeAssignment,
+        history: assignments,
+        totalAssignments: assignments.length,
+      });
+    } catch (error: any) {
+      console.error('Error fetching operator assignments:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch operator assignments',
+      });
+    }
+  }
+);
+
+/**
+ * @route   GET /api/operators/:operatorId/active-assignment
+ * @desc    Get operator's current active assignment
+ * @access  Private (All authenticated users)
+ */
+router.get(
+  '/operators/:operatorId/active-assignment',
+  authenticate,
+  async (req: Request, res: Response) => {
+    try {
+      const assignment = await assignmentService.getOperatorActiveAssignment(req.params.operatorId);
+
+      if (!assignment) {
+        return res.status(404).json({
+          success: false,
+          message: 'No active assignment found for this operator',
+        });
+      }
+
+      res.json({
+        success: true,
+        assignment,
+      });
+    } catch (error: any) {
+      console.error('Error fetching active assignment:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch active assignment',
+      });
+    }
+  }
+);
+
+/**
+ * @route   POST /api/operators/:operatorId/validate-eligibility
+ * @desc    Check if operator is eligible for assignment
+ * @access  Private (All authenticated users)
+ */
+router.post(
+  '/operators/:operatorId/validate-eligibility',
+  authenticate,
+  async (req: Request, res: Response) => {
+    try {
+      const result = await assignmentService.validateOperatorEligibility(req.params.operatorId);
+
+      res.json({
+        success: true,
+        ...result,
+      });
+    } catch (error: any) {
+      console.error('Error validating operator eligibility:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to validate operator eligibility',
+      });
+    }
+  }
+);
+
+export default router;

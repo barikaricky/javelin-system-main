@@ -1,0 +1,1591 @@
+import { AppError } from '../middlewares/error.middleware';
+import { logger } from '../utils/logger';
+import { nanoid } from 'nanoid';
+import { Meeting, Director, User, MeetingParticipant, MeetingReminder, MeetingRecording, MeetingFile, MeetingAttendance, MeetingChat } from '../models';
+import { notifyUsersOfNewMeeting, notifyUsersOfMeetingCancellation, notifyUsersOfMeetingStarted } from './notification.service';
+
+// Enum types for TypeScript
+type MeetingStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+type MeetingType = 'VIDEO_CONFERENCE' | 'AUDIO_ONLY' | 'WEBINAR' | 'HYBRID';
+type MeetingCategory = 'GENERAL' | 'TRAINING' | 'EMERGENCY' | 'REVIEW' | 'PLANNING' | 'OTHER';
+
+// ==================== HELPERS ====================
+
+// Generate a unique meeting link
+function generateMeetingLink(): string {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let link = '';
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 4; j++) {
+      link += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    if (i < 2) link += '-';
+  }
+  return link;
+}
+
+// Format meeting response
+function formatMeetingResponse(meeting: any) {
+  return {
+    id: meeting.id,
+    title: meeting.title,
+    description: meeting.description,
+    meetingLink: meeting.meetingLink,
+    joinUrl: `/meeting/${meeting.meetingLink}`,
+    scheduledTime: meeting.scheduledTime,
+    duration: meeting.duration,
+    endTime: meeting.endTime,
+    status: meeting.status,
+    meetingType: meeting.meetingType,
+    category: meeting.category,
+    agenda: meeting.agenda,
+    recordingEnabled: meeting.recordingEnabled,
+    autoStartRecording: meeting.autoStartRecording,
+    maxParticipants: meeting.maxParticipants,
+    targetRoles: meeting.targetRoles,
+    targetUserIds: meeting.targetUserIds,
+    allowGuestAccess: meeting.allowGuestAccess,
+    isRecurring: meeting.isRecurring,
+    recurringPattern: meeting.recurringPattern,
+    recurringEndDate: meeting.recurringEndDate,
+    recurringDays: meeting.recurringDays,
+    parentMeetingId: meeting.parentMeetingId,
+    timezone: meeting.timezone,
+    requirePassword: meeting.requirePassword,
+    waitingRoomEnabled: meeting.waitingRoomEnabled,
+    allowJoinBeforeHost: meeting.allowJoinBeforeHost,
+    joinBeforeHostMinutes: meeting.joinBeforeHostMinutes,
+    muteParticipantsOnEntry: meeting.muteParticipantsOnEntry,
+    disableParticipantVideo: meeting.disableParticipantVideo,
+    allowScreenSharing: meeting.allowScreenSharing,
+    allowChat: meeting.allowChat,
+    allowRaiseHand: meeting.allowRaiseHand,
+    allowReactions: meeting.allowReactions,
+    customReminderMinutes: meeting.customReminderMinutes,
+    attachments: meeting.attachments,
+    meetingNotes: meeting.meetingNotes,
+    aiSummary: meeting.aiSummary,
+    actionItems: meeting.actionItems,
+    startedAt: meeting.startedAt,
+    endedAt: meeting.endedAt,
+    actualDuration: meeting.actualDuration,
+    cancelledAt: meeting.cancelledAt,
+    cancellationReason: meeting.cancellationReason,
+    muxSpaceId: meeting.muxSpaceId,
+    muxBroadcastId: meeting.muxBroadcastId,
+    muxPlaybackId: meeting.muxPlaybackId,
+    recordingUrl: meeting.recordingUrl,
+    organizer: meeting.directors
+      ? {
+          id: meeting.directors.id,
+          userId: meeting.directors.userId,
+          name: `${meeting.directors.users?.firstName || ''} ${meeting.directors.users?.lastName || ''}`.trim(),
+          email: meeting.directors.users?.email,
+          profilePhoto: meeting.directors.users?.profilePhoto,
+        }
+      : null,
+    participants: meeting.meeting_participants || [],
+    participantCount: meeting._count?.meeting_participants || meeting.meeting_participants?.length || 0,
+    recordings: meeting.meeting_recordings || [],
+    files: meeting.meeting_files || [],
+    attendance: meeting.meeting_attendance || [],
+    hasRecording: (meeting.meeting_recordings?.length || 0) > 0 || meeting.recordingUrl !== null,
+    createdAt: meeting.createdAt,
+    updatedAt: meeting.updatedAt,
+  };
+}
+
+// ==================== CREATE MEETING ====================
+
+interface CreateMeetingData {
+  organizerId: string;
+  title: string;
+  description?: string;
+  scheduledTime: Date;
+  duration?: number;
+  meetingType?: MeetingType;
+  category?: MeetingCategory;
+  agenda?: string;
+  recordingEnabled?: boolean;
+  autoStartRecording?: boolean;
+  maxParticipants?: number;
+  targetRoles?: string[];
+  targetUserIds?: string[];
+  allowGuestAccess?: boolean;
+  isRecurring?: boolean;
+  recurringPattern?: string;
+  recurringEndDate?: Date;
+  recurringDays?: string[];
+  timezone?: string;
+  requirePassword?: boolean;
+  meetingPassword?: string;
+  waitingRoomEnabled?: boolean;
+  allowJoinBeforeHost?: boolean;
+  joinBeforeHostMinutes?: number;
+  muteParticipantsOnEntry?: boolean;
+  disableParticipantVideo?: boolean;
+  allowScreenSharing?: boolean;
+  allowChat?: boolean;
+  allowRaiseHand?: boolean;
+  allowReactions?: boolean;
+  customReminderMinutes?: number;
+  attachments?: any[];
+}
+
+export async function createMeeting(data: CreateMeetingData) {
+  try {
+    logger.info('Creating new meeting', { organizerId: data.organizerId, title: data.title });
+
+    // Verify organizer is a director
+    const director = await prisma.directors.findUnique({
+      where: { id: data.organizerId },
+      include: { users: true },
+    });
+
+    if (!director) {
+      throw new AppError('Only directors can create meetings', 403);
+    }
+
+    // Generate meeting link
+    const meetingLink = generateMeetingLink();
+
+    // Calculate end time
+    const duration = data.duration || 60;
+    const endTime = new Date(data.scheduledTime);
+    endTime.setMinutes(endTime.getMinutes() + duration);
+
+    // Create meeting in database
+    const meeting = await prisma.meetings.create({
+      data: {
+        organizerId: data.organizerId,
+        title: data.title,
+        description: data.description,
+        meetingLink,
+        scheduledTime: data.scheduledTime,
+        duration,
+        endTime,
+        meetingType: data.meetingType || 'VIDEO_CONFERENCE',
+        category: data.category || 'GENERAL',
+        agenda: data.agenda,
+        recordingEnabled: data.recordingEnabled || false,
+        autoStartRecording: data.autoStartRecording || false,
+        maxParticipants: data.maxParticipants || 100,
+        targetRoles: data.targetRoles || [],
+        targetUserIds: data.targetUserIds || [],
+        allowGuestAccess: data.allowGuestAccess || false,
+        isRecurring: data.isRecurring || false,
+        recurringPattern: data.recurringPattern,
+        recurringEndDate: data.recurringEndDate,
+        recurringDays: data.recurringDays || [],
+        timezone: data.timezone || 'Africa/Lagos',
+        requirePassword: data.requirePassword || false,
+        meetingPassword: data.meetingPassword,
+        waitingRoomEnabled: data.waitingRoomEnabled || false,
+        allowJoinBeforeHost: data.allowJoinBeforeHost || false,
+        joinBeforeHostMinutes: data.joinBeforeHostMinutes || 5,
+        muteParticipantsOnEntry: data.muteParticipantsOnEntry || false,
+        disableParticipantVideo: data.disableParticipantVideo || false,
+        allowScreenSharing: data.allowScreenSharing ?? true,
+        allowChat: data.allowChat ?? true,
+        allowRaiseHand: data.allowRaiseHand ?? true,
+        allowReactions: data.allowReactions ?? true,
+        customReminderMinutes: data.customReminderMinutes,
+        attachments: data.attachments as Prisma.InputJsonValue,
+        status: 'SCHEDULED',
+      },
+      include: {
+        directors: {
+          include: {
+            users: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                profilePhoto: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Add organizer as host participant
+    await prisma.meeting_participants.create({
+      data: {
+        meetingId: meeting.id,
+        userId: director.userId,
+        status: 'ACCEPTED',
+        role: 'HOST',
+        invitationSentAt: new Date(),
+        responseAt: new Date(),
+      },
+    });
+
+    // Add specific users as participants if provided
+    if (data.targetUserIds && data.targetUserIds.length > 0) {
+      const participantRecords = data.targetUserIds
+        .filter(userId => userId !== director.userId) // Don't duplicate host
+        .map(userId => ({
+          meetingId: meeting.id,
+          userId,
+          status: 'INVITED',
+          role: 'PARTICIPANT',
+          invitationSentAt: new Date(),
+        }));
+
+      if (participantRecords.length > 0) {
+        await prisma.meeting_participants.createMany({
+          data: participantRecords,
+        });
+      }
+    }
+
+    // Add participants based on target roles
+    if (data.targetRoles && data.targetRoles.length > 0) {
+      const users = await prisma.user.findMany({
+        where: {
+          role: { in: data.targetRoles as any[] },
+          status: 'ACTIVE',
+          id: { not: director.userId },
+        },
+        select: { id: true },
+      });
+
+      const participantRecords = users.map(user => ({
+        meetingId: meeting.id,
+        userId: user.id,
+        status: 'INVITED',
+        role: 'PARTICIPANT',
+        invitationSentAt: new Date(),
+      }));
+
+      if (participantRecords.length > 0) {
+        await prisma.meeting_participants.createMany({
+          data: participantRecords,
+          skipDuplicates: true,
+        });
+      }
+    }
+
+    // Create default reminders if meeting is in the future
+    const now = new Date();
+    if (new Date(data.scheduledTime) > now) {
+      const reminders = [];
+      
+      // 15 minutes before
+      reminders.push({
+        meetingId: meeting.id,
+        userId: director.userId,
+        reminderType: 'PUSH',
+        minutesBefore: 15,
+        status: 'PENDING',
+      });
+
+      // 1 hour before
+      reminders.push({
+        meetingId: meeting.id,
+        userId: director.userId,
+        reminderType: 'EMAIL',
+        minutesBefore: 60,
+        status: 'PENDING',
+      });
+
+      // Custom reminder if specified
+      if (data.customReminderMinutes) {
+        reminders.push({
+          meetingId: meeting.id,
+          userId: director.userId,
+          reminderType: 'PUSH',
+          minutesBefore: data.customReminderMinutes,
+          status: 'PENDING',
+        });
+      }
+
+      await prisma.meeting_reminders.createMany({
+        data: reminders,
+      });
+    }
+
+    // If recurring, create future instances
+    if (data.isRecurring && data.recurringPattern) {
+      await createRecurringInstances(meeting.id, 5); // Create next 5 instances
+    }
+
+    // Send notifications to all invited participants
+    const organizerName = `${director.users.firstName} ${director.users.lastName}`;
+    try {
+      await notifyUsersOfNewMeeting(
+        meeting.id,
+        meeting.title,
+        meetingLink,
+        data.scheduledTime,
+        director.userId,
+        organizerName,
+        data.targetRoles,
+        data.targetUserIds
+      );
+      logger.info('Meeting notifications sent', { meetingId: meeting.id });
+    } catch (notifyError) {
+      // Don't fail the meeting creation if notifications fail
+      logger.error('Failed to send meeting notifications:', notifyError);
+    }
+
+    logger.info('Meeting created successfully', { meetingId: meeting.id, meetingLink });
+
+    return {
+      success: true,
+      meeting: formatMeetingResponse(meeting),
+    };
+  } catch (error: any) {
+    logger.error('Error creating meeting:', error);
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw new AppError(error.message || 'Failed to create meeting', 500);
+  }
+}
+
+// ==================== GET MEETINGS ====================
+
+export async function getMeetingById(meetingId: string) {
+  const meeting = await prisma.meetings.findUnique({
+    where: { id: meetingId },
+    include: {
+      directors: {
+        include: {
+          users: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              profilePhoto: true,
+            },
+          },
+        },
+      },
+      meeting_participants: true,
+      meeting_recordings: {
+        where: { status: 'READY' },
+      },
+      meeting_files: true,
+      meeting_attendance: true,
+      meeting_chat: {
+        orderBy: { createdAt: 'asc' },
+        take: 100,
+      },
+      _count: {
+        select: {
+          meeting_participants: true,
+          meeting_recordings: true,
+        },
+      },
+    },
+  });
+
+  if (!meeting) {
+    throw new AppError('Meeting not found', 404);
+  }
+
+  return formatMeetingResponse(meeting);
+}
+
+export async function getMeetingByLink(meetingLink: string) {
+  const meeting = await prisma.meetings.findUnique({
+    where: { meetingLink },
+    include: {
+      directors: {
+        include: {
+          users: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              profilePhoto: true,
+            },
+          },
+        },
+      },
+      meeting_participants: true,
+      _count: {
+        select: {
+          meeting_participants: true,
+        },
+      },
+    },
+  });
+
+  if (!meeting) {
+    throw new AppError('Meeting not found', 404);
+  }
+
+  return formatMeetingResponse(meeting);
+}
+
+interface MeetingFilters {
+  organizerId?: string;
+  userId?: string;
+  status?: MeetingStatus | MeetingStatus[];
+  meetingType?: MeetingType;
+  category?: MeetingCategory;
+  startDate?: Date;
+  endDate?: Date;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+export async function getMeetings(filters: MeetingFilters) {
+  const {
+    organizerId,
+    userId,
+    status,
+    meetingType,
+    category,
+    startDate,
+    endDate,
+    search,
+    page = 1,
+    limit = 20,
+  } = filters;
+
+  const where: any = {};
+
+  // If userId provided, get meetings user is part of (as organizer or participant)
+  if (userId) {
+    const director = await prisma.directors.findFirst({
+      where: { userId },
+    });
+
+    where.OR = [
+      // User is organizer (if they're a director)
+      ...(director ? [{ organizerId: director.id }] : []),
+      // User is a participant
+      {
+        meeting_participants: {
+          some: { userId },
+        },
+      },
+    ];
+  } else if (organizerId) {
+    where.organizerId = organizerId;
+  }
+
+  if (status) {
+    where.status = Array.isArray(status) ? { in: status } : status;
+  }
+
+  if (meetingType) {
+    where.meetingType = meetingType;
+  }
+
+  if (category) {
+    where.category = category;
+  }
+
+  if (startDate || endDate) {
+    where.scheduledTime = {};
+    if (startDate) where.scheduledTime.gte = startDate;
+    if (endDate) where.scheduledTime.lte = endDate;
+  }
+
+  if (search) {
+    where.OR = [
+      ...(where.OR || []),
+      { title: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+
+  const [meetings, total] = await Promise.all([
+    prisma.meetings.findMany({
+      where,
+      include: {
+        directors: {
+          include: {
+            users: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                profilePhoto: true,
+              },
+            },
+          },
+        },
+        meeting_participants: {
+          take: 5,
+        },
+        _count: {
+          select: {
+            meeting_participants: true,
+            meeting_recordings: true,
+          },
+        },
+      },
+      orderBy: { scheduledTime: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.meetings.count({ where }),
+  ]);
+
+  return {
+    meetings: meetings.map(formatMeetingResponse),
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+}
+
+export async function getUpcomingMeetings(organizerId?: string, userId?: string, limit = 10) {
+  const now = new Date();
+  const where: any = {
+    scheduledTime: { gte: now },
+    status: { in: ['SCHEDULED', 'WAITING'] },
+  };
+
+  if (userId) {
+    const director = await prisma.directors.findFirst({
+      where: { userId },
+    });
+
+    where.OR = [
+      ...(director ? [{ organizerId: director.id }] : []),
+      { meeting_participants: { some: { userId } } },
+    ];
+  } else if (organizerId) {
+    where.organizerId = organizerId;
+  }
+
+  const meetings = await prisma.meetings.findMany({
+    where,
+    include: {
+      directors: {
+        include: {
+          users: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      },
+      _count: {
+        select: { meeting_participants: true },
+      },
+    },
+    orderBy: { scheduledTime: 'asc' },
+    take: limit,
+  });
+
+  return meetings.map(formatMeetingResponse);
+}
+
+export async function getOngoingMeetings(organizerId?: string, userId?: string) {
+  const where: any = {
+    status: 'LIVE',
+  };
+
+  if (userId) {
+    const director = await prisma.directors.findFirst({
+      where: { userId },
+    });
+
+    where.OR = [
+      ...(director ? [{ organizerId: director.id }] : []),
+      { meeting_participants: { some: { userId } } },
+    ];
+  } else if (organizerId) {
+    where.organizerId = organizerId;
+  }
+
+  const meetings = await prisma.meetings.findMany({
+    where,
+    include: {
+      directors: {
+        include: {
+          users: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      },
+      _count: {
+        select: { meeting_participants: true },
+      },
+    },
+    orderBy: { startedAt: 'desc' },
+  });
+
+  return meetings.map(formatMeetingResponse);
+}
+
+export async function getPastMeetings(organizerId?: string, userId?: string, page = 1, limit = 20) {
+  const where: any = {
+    status: 'ENDED',
+  };
+
+  if (userId) {
+    const director = await prisma.directors.findFirst({
+      where: { userId },
+    });
+
+    where.OR = [
+      ...(director ? [{ organizerId: director.id }] : []),
+      { meeting_participants: { some: { userId } } },
+    ];
+  } else if (organizerId) {
+    where.organizerId = organizerId;
+  }
+
+  const [meetings, total] = await Promise.all([
+    prisma.meetings.findMany({
+      where,
+      include: {
+        directors: {
+          include: {
+            users: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+        meeting_recordings: {
+          where: { status: 'READY' },
+        },
+        _count: {
+          select: {
+            meeting_participants: true,
+            meeting_attendance: true,
+          },
+        },
+      },
+      orderBy: { endedAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.meetings.count({ where }),
+  ]);
+
+  return {
+    meetings: meetings.map(formatMeetingResponse),
+    pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
+  };
+}
+
+export async function getCancelledMeetings(organizerId?: string, page = 1, limit = 20) {
+  const where: any = { status: 'CANCELLED' };
+  if (organizerId) where.organizerId = organizerId;
+
+  const [meetings, total] = await Promise.all([
+    prisma.meetings.findMany({
+      where,
+      include: {
+        directors: {
+          include: {
+            users: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { cancelledAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.meetings.count({ where }),
+  ]);
+
+  return {
+    meetings: meetings.map(formatMeetingResponse),
+    pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
+  };
+}
+
+// ==================== UPDATE MEETING ====================
+
+interface UpdateMeetingData {
+  title?: string;
+  description?: string;
+  scheduledTime?: Date;
+  duration?: number;
+  meetingType?: MeetingType;
+  category?: MeetingCategory;
+  agenda?: string;
+  recordingEnabled?: boolean;
+  autoStartRecording?: boolean;
+  maxParticipants?: number;
+  targetRoles?: string[];
+  targetUserIds?: string[];
+  isRecurring?: boolean;
+  recurringPattern?: string;
+  recurringEndDate?: Date;
+  recurringDays?: string[];
+  requirePassword?: boolean;
+  meetingPassword?: string;
+  waitingRoomEnabled?: boolean;
+  allowJoinBeforeHost?: boolean;
+  joinBeforeHostMinutes?: number;
+  muteParticipantsOnEntry?: boolean;
+  disableParticipantVideo?: boolean;
+  allowScreenSharing?: boolean;
+  allowChat?: boolean;
+  allowRaiseHand?: boolean;
+  allowReactions?: boolean;
+  customReminderMinutes?: number;
+  attachments?: any[];
+  meetingNotes?: string;
+  actionItems?: any[];
+  status?: MeetingStatus;
+}
+
+export async function updateMeeting(meetingId: string, data: UpdateMeetingData) {
+  const meeting = await prisma.meetings.findUnique({
+    where: { id: meetingId },
+  });
+
+  if (!meeting) {
+    throw new AppError('Meeting not found', 404);
+  }
+
+  if (meeting.status === 'ENDED') {
+    throw new AppError('Cannot update an ended meeting', 400);
+  }
+
+  const updateData: any = { ...data };
+
+  // Recalculate endTime if scheduledTime or duration changed
+  if (data.scheduledTime || data.duration) {
+    const startTime = data.scheduledTime || meeting.scheduledTime;
+    const duration = data.duration || meeting.duration;
+    const endTime = new Date(startTime);
+    endTime.setMinutes(endTime.getMinutes() + duration);
+    updateData.endTime = endTime;
+  }
+
+  const updatedMeeting = await prisma.meetings.update({
+    where: { id: meetingId },
+    data: updateData,
+    include: {
+      directors: {
+        include: {
+          users: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              profilePhoto: true,
+            },
+          },
+        },
+      },
+      meeting_participants: true,
+    },
+  });
+
+  logger.info('Meeting updated', { meetingId });
+  return formatMeetingResponse(updatedMeeting);
+}
+
+// ==================== MEETING LIFECYCLE ====================
+
+export async function startMeeting(meetingId: string, userId: string, muxSpaceId?: string) {
+  const meeting = await prisma.meetings.findUnique({
+    where: { id: meetingId },
+    include: { 
+      directors: {
+        include: {
+          users: {
+            select: { firstName: true, lastName: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!meeting) {
+    throw new AppError('Meeting not found', 404);
+  }
+
+  if (meeting.directors.userId !== userId) {
+    throw new AppError('Only the meeting organizer can start the meeting', 403);
+  }
+
+  const updatedMeeting = await prisma.meetings.update({
+    where: { id: meetingId },
+    data: {
+      status: 'LIVE',
+      startedAt: new Date(),
+      muxSpaceId,
+    },
+  });
+
+  // Update organizer's join time
+  await prisma.meeting_participants.updateMany({
+    where: { meetingId, userId },
+    data: { joinedAt: new Date(), status: 'JOINED' },
+  });
+
+  // Notify participants that meeting has started
+  const organizerName = `${meeting.directors.users.firstName} ${meeting.directors.users.lastName}`;
+  try {
+    await notifyUsersOfMeetingStarted(
+      meetingId,
+      meeting.title,
+      meeting.meetingLink,
+      organizerName
+    );
+  } catch (notifyError) {
+    logger.error('Failed to send meeting started notifications:', notifyError);
+  }
+
+  logger.info('Meeting started', { meetingId });
+  return formatMeetingResponse(updatedMeeting);
+}
+
+export async function endMeeting(meetingId: string, userId: string) {
+  const meeting = await prisma.meetings.findUnique({
+    where: { id: meetingId },
+    include: { directors: true },
+  });
+
+  if (!meeting) {
+    throw new AppError('Meeting not found', 404);
+  }
+
+  if (meeting.directors.userId !== userId) {
+    throw new AppError('Only the meeting organizer can end the meeting', 403);
+  }
+
+  const endedAt = new Date();
+  const actualDuration = meeting.startedAt
+    ? Math.round((endedAt.getTime() - meeting.startedAt.getTime()) / 60000)
+    : 0;
+
+  // Mark all participants as left
+  await prisma.meeting_participants.updateMany({
+    where: { meetingId, status: 'JOINED' },
+    data: { status: 'LEFT', leftAt: endedAt },
+  });
+
+  // Update attendance durations
+  const attendances = await prisma.meeting_attendance.findMany({
+    where: { meetingId, leftAt: null },
+  });
+
+  for (const attendance of attendances) {
+    const duration = Math.round((endedAt.getTime() - attendance.joinedAt.getTime()) / 1000);
+    await prisma.meeting_attendance.update({
+      where: { id: attendance.id },
+      data: { leftAt: endedAt, duration },
+    });
+  }
+
+  const updatedMeeting = await prisma.meetings.update({
+    where: { id: meetingId },
+    data: {
+      status: 'ENDED',
+      endedAt,
+      actualDuration,
+    },
+  });
+
+  logger.info('Meeting ended', { meetingId, actualDuration });
+  return formatMeetingResponse(updatedMeeting);
+}
+
+export async function cancelMeeting(meetingId: string, userId: string, reason?: string) {
+  const meeting = await prisma.meetings.findUnique({
+    where: { id: meetingId },
+    include: { 
+      directors: {
+        include: {
+          users: {
+            select: { firstName: true, lastName: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!meeting) {
+    throw new AppError('Meeting not found', 404);
+  }
+
+  if (meeting.directors.userId !== userId) {
+    throw new AppError('Only the meeting organizer can cancel the meeting', 403);
+  }
+
+  if (meeting.status === 'LIVE') {
+    throw new AppError('Cannot cancel a meeting that is in progress. End it instead.', 400);
+  }
+
+  const updatedMeeting = await prisma.meetings.update({
+    where: { id: meetingId },
+    data: {
+      status: 'CANCELLED',
+      cancelledAt: new Date(),
+      cancellationReason: reason,
+    },
+  });
+
+  // Notify participants that meeting has been cancelled
+  const organizerName = `${meeting.directors.users.firstName} ${meeting.directors.users.lastName}`;
+  try {
+    await notifyUsersOfMeetingCancellation(
+      meetingId,
+      meeting.title,
+      organizerName,
+      reason
+    );
+  } catch (notifyError) {
+    logger.error('Failed to send meeting cancellation notifications:', notifyError);
+  }
+
+  logger.info('Meeting cancelled', { meetingId, reason });
+  return formatMeetingResponse(updatedMeeting);
+}
+
+export async function enableWaitingRoom(meetingId: string, userId: string) {
+  const meeting = await prisma.meetings.findUnique({
+    where: { id: meetingId },
+    include: { directors: true },
+  });
+
+  if (!meeting) {
+    throw new AppError('Meeting not found', 404);
+  }
+
+  if (meeting.directors.userId !== userId) {
+    throw new AppError('Only the meeting organizer can enable waiting room', 403);
+  }
+
+  return prisma.meetings.update({
+    where: { id: meetingId },
+    data: {
+      status: 'WAITING',
+      waitingRoomEnabled: true,
+    },
+  });
+}
+
+// ==================== PARTICIPANT MANAGEMENT ====================
+
+export async function addParticipants(meetingId: string, userIds: string[]) {
+  const meeting = await prisma.meetings.findUnique({ where: { id: meetingId } });
+  if (!meeting) {
+    throw new AppError('Meeting not found', 404);
+  }
+
+  const results = await Promise.all(
+    userIds.map(async userId => {
+      try {
+        return await prisma.meeting_participants.upsert({
+          where: {
+            meetingId_userId: { meetingId, userId },
+          },
+          create: {
+            meetingId,
+            userId,
+            status: 'INVITED',
+            role: 'PARTICIPANT',
+            invitationSentAt: new Date(),
+          },
+          update: {
+            status: 'INVITED',
+            invitationSentAt: new Date(),
+          },
+        });
+      } catch (error) {
+        logger.warn('Failed to add participant', { meetingId, userId, error });
+        return null;
+      }
+    })
+  );
+
+  return results.filter(r => r !== null);
+}
+
+export async function removeParticipant(meetingId: string, participantId: string) {
+  const participant = await prisma.meeting_participants.findUnique({
+    where: { id: participantId },
+  });
+
+  if (!participant || participant.meetingId !== meetingId) {
+    throw new AppError('Participant not found', 404);
+  }
+
+  await prisma.meeting_participants.delete({ where: { id: participantId } });
+  logger.info('Participant removed', { meetingId, participantId });
+  return { success: true };
+}
+
+export async function updateParticipantStatus(meetingId: string, userId: string, status: string) {
+  return prisma.meeting_participants.update({
+    where: { meetingId_userId: { meetingId, userId } },
+    data: { status, responseAt: new Date() },
+  });
+}
+
+export async function updateParticipantRole(meetingId: string, userId: string, role: string) {
+  return prisma.meeting_participants.update({
+    where: { meetingId_userId: { meetingId, userId } },
+    data: { role },
+  });
+}
+
+export async function joinMeeting(meetingLink: string, userId: string) {
+  const meeting = await prisma.meetings.findUnique({
+    where: { meetingLink },
+    include: {
+      directors: true,
+      meeting_participants: {
+        where: { userId },
+      },
+    },
+  });
+
+  if (!meeting) {
+    throw new AppError('Meeting not found', 404);
+  }
+
+  if (meeting.status === 'ENDED' || meeting.status === 'CANCELLED') {
+    throw new AppError('This meeting has ended or was cancelled', 400);
+  }
+
+  // Check password if required
+  // This should be handled by frontend sending password in request
+
+  let participant = meeting.meeting_participants[0];
+
+  if (!participant) {
+    // Check max participants
+    const participantCount = await prisma.meeting_participants.count({
+      where: { meetingId: meeting.id },
+    });
+
+    if (participantCount >= meeting.maxParticipants) {
+      throw new AppError('Meeting has reached maximum participants', 400);
+    }
+
+    // Add as new participant
+    participant = await prisma.meeting_participants.create({
+      data: {
+        meetingId: meeting.id,
+        userId,
+        status: 'JOINED',
+        role: 'PARTICIPANT',
+        joinedAt: new Date(),
+      },
+    });
+  } else {
+    // Update existing participant
+    participant = await prisma.meeting_participants.update({
+      where: { id: participant.id },
+      data: { status: 'JOINED', joinedAt: new Date() },
+    });
+  }
+
+  // Record attendance
+  await recordAttendance(meeting.id, userId);
+
+  const isHost = meeting.directors.userId === userId;
+
+  logger.info('User joined meeting', { meetingId: meeting.id, userId });
+
+  return {
+    meeting: formatMeetingResponse(meeting),
+    participant,
+    isHost,
+    muxSpaceId: meeting.muxSpaceId,
+  };
+}
+
+export async function leaveMeeting(meetingId: string, userId: string) {
+  const participant = await prisma.meeting_participants.findFirst({
+    where: { meetingId, userId },
+  });
+
+  if (!participant) {
+    throw new AppError('You are not a participant', 400);
+  }
+
+  const leftAt = new Date();
+  const totalTime = participant.joinedAt
+    ? Math.round((leftAt.getTime() - participant.joinedAt.getTime()) / 1000)
+    : 0;
+
+  await prisma.meeting_participants.update({
+    where: { id: participant.id },
+    data: {
+      status: 'LEFT',
+      leftAt,
+      totalTimeInMeeting: (participant.totalTimeInMeeting || 0) + totalTime,
+    },
+  });
+
+  // Update attendance
+  const attendance = await prisma.meeting_attendance.findFirst({
+    where: { meetingId, userId, leftAt: null },
+    orderBy: { joinedAt: 'desc' },
+  });
+
+  if (attendance) {
+    await prisma.meeting_attendance.update({
+      where: { id: attendance.id },
+      data: {
+        leftAt,
+        duration: Math.round((leftAt.getTime() - attendance.joinedAt.getTime()) / 1000),
+      },
+    });
+  }
+
+  logger.info('User left meeting', { meetingId, userId });
+  return { success: true };
+}
+
+export async function toggleParticipantMute(meetingId: string, userId: string, isMuted: boolean) {
+  return prisma.meeting_participants.update({
+    where: { meetingId_userId: { meetingId, userId } },
+    data: { isMuted },
+  });
+}
+
+export async function toggleParticipantVideo(meetingId: string, userId: string, isVideoOn: boolean) {
+  return prisma.meeting_participants.update({
+    where: { meetingId_userId: { meetingId, userId } },
+    data: { isVideoOn },
+  });
+}
+
+export async function getParticipants(meetingId: string) {
+  const participants = await prisma.meeting_participants.findMany({
+    where: { meetingId },
+    orderBy: { joinedAt: 'asc' },
+  });
+
+  const userIds = participants.map(p => p.userId);
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      profilePhoto: true,
+      role: true,
+    },
+  });
+
+  const userMap = new Map(users.map(u => [u.id, u]));
+
+  return participants.map(p => ({
+    ...p,
+    user: userMap.get(p.userId),
+  }));
+}
+
+// ==================== CHAT ====================
+
+export async function sendChatMessage(
+  meetingId: string,
+  userId: string,
+  message: string,
+  messageType: string = 'TEXT',
+  fileUrl?: string,
+  fileName?: string,
+  isPrivate: boolean = false
+) {
+  const meeting = await prisma.meetings.findUnique({ where: { id: meetingId } });
+  
+  if (!meeting) {
+    throw new AppError('Meeting not found', 404);
+  }
+
+  if (!meeting.allowChat) {
+    throw new AppError('Chat is disabled for this meeting', 400);
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { firstName: true, lastName: true },
+  });
+
+  return prisma.meeting_chat.create({
+    data: {
+      meetingId,
+      userId,
+      userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+      message,
+      messageType,
+      fileUrl,
+      fileName,
+      isPrivate,
+    },
+  });
+}
+
+export async function getChatMessages(meetingId: string, limit = 100, before?: Date) {
+  const where: any = { meetingId };
+  if (before) {
+    where.createdAt = { lt: before };
+  }
+
+  const messages = await prisma.meeting_chat.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+  });
+
+  return messages.reverse();
+}
+
+export async function pinChatMessage(messageId: string, isPinned: boolean) {
+  return prisma.meeting_chat.update({
+    where: { id: messageId },
+    data: { isPinned },
+  });
+}
+
+// ==================== RECORDINGS ====================
+
+export async function addRecording(
+  meetingId: string,
+  muxAssetId: string,
+  muxPlaybackId: string,
+  title?: string
+) {
+  return prisma.meeting_recordings.create({
+    data: {
+      meetingId,
+      muxAssetId,
+      muxPlaybackId,
+      title,
+      status: 'PROCESSING',
+    },
+  });
+}
+
+export async function updateRecordingStatus(
+  recordingId: string,
+  status: string,
+  duration?: number,
+  fileSize?: bigint,
+  downloadUrl?: string,
+  thumbnailUrl?: string
+) {
+  return prisma.meeting_recordings.update({
+    where: { id: recordingId },
+    data: { status, duration, fileSize, downloadUrl, thumbnailUrl },
+  });
+}
+
+export async function getRecordings(meetingId: string) {
+  return prisma.meeting_recordings.findMany({
+    where: { meetingId },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+export async function incrementRecordingViews(recordingId: string) {
+  return prisma.meeting_recordings.update({
+    where: { id: recordingId },
+    data: { viewCount: { increment: 1 } },
+  });
+}
+
+// ==================== ATTENDANCE ====================
+
+async function recordAttendance(
+  meetingId: string,
+  userId: string,
+  deviceType?: string,
+  browserInfo?: string,
+  ipAddress?: string
+) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { firstName: true, lastName: true, role: true },
+  });
+
+  return prisma.meeting_attendance.create({
+    data: {
+      meetingId,
+      userId,
+      userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+      userRole: user?.role,
+      joinedAt: new Date(),
+      deviceType,
+      browserInfo,
+      ipAddress,
+    },
+  });
+}
+
+export async function getAttendanceReport(meetingId: string) {
+  return prisma.meeting_attendance.findMany({
+    where: { meetingId },
+    orderBy: { joinedAt: 'asc' },
+  });
+}
+
+// ==================== FILES ====================
+
+export async function addMeetingFile(
+  meetingId: string,
+  uploadedById: string,
+  fileName: string,
+  fileUrl: string,
+  fileType: string,
+  fileSize?: bigint,
+  description?: string,
+  isAgenda: boolean = false
+) {
+  return prisma.meeting_files.create({
+    data: {
+      meetingId,
+      uploadedById,
+      fileName,
+      fileUrl,
+      fileType,
+      fileSize,
+      description,
+      isAgenda,
+    },
+  });
+}
+
+export async function getMeetingFiles(meetingId: string) {
+  return prisma.meeting_files.findMany({
+    where: { meetingId },
+    orderBy: { uploadedAt: 'desc' },
+  });
+}
+
+export async function deleteMeetingFile(fileId: string) {
+  return prisma.meeting_files.delete({ where: { id: fileId } });
+}
+
+// ==================== REMINDERS ====================
+
+export async function createReminder(
+  meetingId: string,
+  userId: string,
+  reminderType: string,
+  minutesBefore: number
+) {
+  return prisma.meeting_reminders.create({
+    data: {
+      meetingId,
+      userId,
+      reminderType,
+      minutesBefore,
+      status: 'PENDING',
+    },
+  });
+}
+
+export async function markReminderSent(reminderId: string) {
+  return prisma.meeting_reminders.update({
+    where: { id: reminderId },
+    data: { status: 'SENT', sentAt: new Date() },
+  });
+}
+
+export async function getPendingReminders() {
+  return prisma.meeting_reminders.findMany({
+    where: { status: 'PENDING' },
+    include: { meetings: true },
+  });
+}
+
+// ==================== STATISTICS ====================
+
+export async function getMeetingStats(organizerId?: string, userId?: string, startDate?: Date, endDate?: Date) {
+  const where: any = {};
+
+  if (userId) {
+    const director = await prisma.directors.findFirst({ where: { userId } });
+    if (director) {
+      where.organizerId = director.id;
+    }
+  } else if (organizerId) {
+    where.organizerId = organizerId;
+  }
+
+  if (startDate || endDate) {
+    where.scheduledTime = {};
+    if (startDate) where.scheduledTime.gte = startDate;
+    if (endDate) where.scheduledTime.lte = endDate;
+  }
+
+  const [total, scheduled, live, ended, cancelled, withRecordings] = await Promise.all([
+    prisma.meetings.count({ where }),
+    prisma.meetings.count({ where: { ...where, status: 'SCHEDULED' } }),
+    prisma.meetings.count({ where: { ...where, status: 'LIVE' } }),
+    prisma.meetings.count({ where: { ...where, status: 'ENDED' } }),
+    prisma.meetings.count({ where: { ...where, status: 'CANCELLED' } }),
+    prisma.meetings.count({
+      where: { ...where, meeting_recordings: { some: { status: 'READY' } } },
+    }),
+  ]);
+
+  // Average duration
+  const endedMeetings = await prisma.meetings.findMany({
+    where: { ...where, status: 'ENDED', actualDuration: { not: null } },
+    select: { actualDuration: true },
+  });
+
+  const avgDuration = endedMeetings.length > 0
+    ? Math.round(endedMeetings.reduce((sum, m) => sum + (m.actualDuration || 0), 0) / endedMeetings.length)
+    : 0;
+
+  // Upcoming meetings
+  const upcoming = await prisma.meetings.count({
+    where: { ...where, status: 'SCHEDULED', scheduledTime: { gte: new Date() } },
+  });
+
+  // Total participants
+  const totalParticipants = await prisma.meeting_participants.count({
+    where: { meetings: where },
+  });
+
+  return {
+    total,
+    scheduled,
+    live,
+    ended,
+    cancelled,
+    upcoming,
+    withRecordings,
+    averageDuration: avgDuration,
+    totalParticipants,
+  };
+}
+
+// ==================== RECURRING MEETINGS ====================
+
+async function createRecurringInstances(parentMeetingId: string, count: number = 5) {
+  const parent = await prisma.meetings.findUnique({ where: { id: parentMeetingId } });
+  if (!parent || !parent.isRecurring || !parent.recurringPattern) {
+    return [];
+  }
+
+  const instances = [];
+  let currentDate = new Date(parent.scheduledTime);
+
+  for (let i = 0; i < count; i++) {
+    switch (parent.recurringPattern) {
+      case 'DAILY':
+        currentDate.setDate(currentDate.getDate() + 1);
+        break;
+      case 'WEEKLY':
+        currentDate.setDate(currentDate.getDate() + 7);
+        break;
+      case 'BI_WEEKLY':
+        currentDate.setDate(currentDate.getDate() + 14);
+        break;
+      case 'MONTHLY':
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        break;
+      default:
+        currentDate.setDate(currentDate.getDate() + 7);
+    }
+
+    if (parent.recurringEndDate && currentDate > parent.recurringEndDate) {
+      break;
+    }
+
+    const endTime = new Date(currentDate);
+    endTime.setMinutes(endTime.getMinutes() + parent.duration);
+
+    try {
+      const instance = await prisma.meetings.create({
+        data: {
+          organizerId: parent.organizerId,
+          title: parent.title,
+          description: parent.description,
+          meetingLink: generateMeetingLink(),
+          scheduledTime: new Date(currentDate),
+          duration: parent.duration,
+          endTime,
+          meetingType: parent.meetingType,
+          category: parent.category,
+          agenda: parent.agenda,
+          recordingEnabled: parent.recordingEnabled,
+          maxParticipants: parent.maxParticipants,
+          targetRoles: parent.targetRoles,
+          targetUserIds: parent.targetUserIds,
+          isRecurring: false,
+          parentMeetingId: parent.id,
+          timezone: parent.timezone,
+          requirePassword: parent.requirePassword,
+          meetingPassword: parent.meetingPassword,
+          waitingRoomEnabled: parent.waitingRoomEnabled,
+          allowJoinBeforeHost: parent.allowJoinBeforeHost,
+          muteParticipantsOnEntry: parent.muteParticipantsOnEntry,
+          disableParticipantVideo: parent.disableParticipantVideo,
+          allowScreenSharing: parent.allowScreenSharing,
+          allowChat: parent.allowChat,
+          allowRaiseHand: parent.allowRaiseHand,
+          allowReactions: parent.allowReactions,
+          status: 'SCHEDULED',
+        },
+      });
+
+      instances.push(instance);
+    } catch (error) {
+      logger.warn('Failed to create recurring instance', { parentMeetingId, error });
+    }
+  }
+
+  return instances;
+}
+
+export async function getRecurringInstances(parentMeetingId: string) {
+  return prisma.meetings.findMany({
+    where: { parentMeetingId },
+    orderBy: { scheduledTime: 'asc' },
+  });
+}
+
+// ==================== DELETE ====================
+
+export async function deleteMeeting(meetingId: string, userId: string) {
+  const meeting = await prisma.meetings.findUnique({
+    where: { id: meetingId },
+    include: { directors: true },
+  });
+
+  if (!meeting) {
+    throw new AppError('Meeting not found', 404);
+  }
+
+  if (meeting.directors.userId !== userId) {
+    throw new AppError('Only the meeting organizer can delete the meeting', 403);
+  }
+
+  // Hard delete
+  await prisma.meetings.delete({ where: { id: meetingId } });
+
+  logger.info('Meeting deleted', { meetingId });
+  return { success: true };
+}

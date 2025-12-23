@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jevelin - Developer Onboarding</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .result h3 {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .credentials {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            border: 2px solid #28a745;
+        }
+        .cred-item {
+            margin: 8px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .cred-label {
+            font-weight: bold;
+            color: #333;
+        }
+        .cred-value {
+            color: #d63384;
+            word-break: break-all;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 12px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 5px;
+        }
+        .info-box p {
+            margin: 5px 0;
+            font-size: 13px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Developer Onboarding</h1>
+        <p class="subtitle">Create the Managing Director Account</p>
+
+        <div class="info-box">
+            <p><strong>ℹ️ Important:</strong></p>
+            <p>• Only ONE director can be created</p>
+            <p>• Save the generated password immediately</p>
+            <p>• Backend must be running on port 3002</p>
+        </div>
+
+        <form id="directorForm">
+            <div class="form-group">
+                <label for="token">Developer Token *</label>
+                <input 
+                    type="text" 
+                    id="token" 
+                    value="DEV-JEVELIN-2025-SECURE-TOKEN"
+                    required
+                    placeholder="From .env file"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="firstName">First Name *</label>
+                <input 
+                    type="text" 
+                    id="firstName" 
+                    required
+                    placeholder="John"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="lastName">Last Name *</label>
+                <input 
+                    type="text" 
+                    id="lastName" 
+                    required
+                    placeholder="Doe"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email *</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    required
+                    placeholder="director@jevelin.com"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input 
+                    type="tel" 
+                    id="phone" 
+                    placeholder="+234-123-456-7890"
+                >
+            </div>
+
+            <button type="submit" id="submitBtn">
+                Create Director Account
+            </button>
+        </form>
+
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('directorForm');
+        const resultDiv = document.getElementById('result');
+        const submitBtn = document.getElementById('submitBtn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Disable button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating Account...';
+            
+            // Hide previous result
+            resultDiv.style.display = 'none';
+
+            // Get form data
+            const data = {
+                developerToken: document.getElementById('token').value,
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value || undefined
+            };
+
+            try {
+                const response = await fetch('http://localhost:3002/api/onboarding/director', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Success
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ Director Account Created Successfully!</h3>
+                        <div class="credentials">
+                            <div class="cred-item">
+                                <span class="cred-label">Employee ID:</span>
+                                <span class="cred-value">${result.data.user.employeeId}</span>
+                            </div>
+                            <div class="cred-item">
+                                <span class="cred-label">Email:</span>
+                                <span class="cred-value">${result.data.user.email}</span>
+                            </div>
+                            <div class="cred-item">
+                                <span class="cred-label">Password:</span>
+                                <span class="cred-value">${result.data.temporaryPassword}</span>
+                            </div>
+                        </div>
+                        <div class="warning">
+                            ⚠️ <strong>SAVE THIS PASSWORD NOW!</strong><br>
+                            This is the only time you'll see it. Give it to the Managing Director.
+                        </div>
+                    `;
+                    resultDiv.style.display = 'block';
+                    
+                    // Disable form
+                    form.reset();
+                } else {
+                    // Error
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <h3>❌ Error Creating Account</h3>
+                        <p>${result.message || result.error || 'Unknown error occurred'}</p>
+                    `;
+                    resultDiv.style.display = 'block';
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <h3>❌ Connection Error</h3>
+                    <p>Could not connect to the backend server.</p>
+                    <p style="margin-top: 10px; font-size: 12px;">
+                        Make sure the backend is running on <strong>http://localhost:3002</strong>
+                    </p>
+                    <p style="margin-top: 5px; font-size: 12px; color: #999;">
+                        Error: ${error.message}
+                    </p>
+                `;
+                resultDiv.style.display = 'block';
+            } finally {
+                // Re-enable button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Director Account';
+            }
+        });
+    </script>
+</body>
+</html>

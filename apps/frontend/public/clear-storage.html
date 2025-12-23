@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Storage</title>
+</head>
+<body>
+    <h1>Clearing Browser Storage...</h1>
+    <p id="status">Please wait...</p>
+    <script>
+        try {
+            localStorage.clear();
+            sessionStorage.clear();
+            document.getElementById('status').innerHTML = '✅ Storage cleared! <br><a href="/">Go to Login</a>';
+        } catch (e) {
+            document.getElementById('status').innerHTML = '❌ Error: ' + e.message;
+        }
+    </script>
+</body>
+</html>
