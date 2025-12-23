@@ -23,7 +23,7 @@ JWT_SECRET=jevelin-prod-secret-2025-CHANGE-THIS-NOW
 JWT_REFRESH_SECRET=jevelin-refresh-prod-2025-CHANGE-THIS-NOW
 ENCRYPTION_KEY=jevelin-prod-encryption-32chars
 
-DEVELOPER_ONBOARDING_TOKEN=DEV-JEVELIN-2025-SECURE-TOKEN
+DEVELOPER_ONBOARDING_TOKEN=JVL-2025-PROD-SECURE-d8f7a9b2c4e6f1h3
 
 FRONTEND_URL=https://javelinadmin.netlify.app
 CORS_ORIGIN=https://javelinadmin.netlify.app
