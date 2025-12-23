@@ -48,6 +48,16 @@ app.use(cors({
     // Allow requests with no origin (mobile apps, curl, etc)
     if (!origin) return callback(null, true);
     
+    // Allow Netlify production frontend
+    if (origin && origin.includes('netlify.app')) {
+      return callback(null, true);
+    }
+    
+    // Allow Railway production backend
+    if (origin && origin.includes('railway.app')) {
+      return callback(null, true);
+    }
+    
     // Allow all GitHub Codespaces origins and localhost
     if (origin.includes('github.dev') || 
         origin.includes('localhost') || 

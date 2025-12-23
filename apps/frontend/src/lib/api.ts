@@ -11,9 +11,9 @@ if (isCodespaces) {
   serverBaseURL = window.location.origin.replace('-3000.', '-3002.');
   baseURL = serverBaseURL + '/api';
 } else if (isProduction && import.meta.env.VITE_API_URL) {
-  // Production: use environment variable for backend URL
-  serverBaseURL = import.meta.env.VITE_API_URL;
-  baseURL = serverBaseURL + '/api';
+  // Production: use environment variable for backend URL (should already include /api)
+  baseURL = import.meta.env.VITE_API_URL;
+  serverBaseURL = import.meta.env.VITE_API_URL.replace('/api', '');
 } else {
   // Development: use local proxy or localhost
   baseURL = import.meta.env.VITE_API_URL || '/api';
