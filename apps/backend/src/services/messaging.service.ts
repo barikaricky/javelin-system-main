@@ -723,17 +723,23 @@ export async function getContacts(userId: string, role?: string, search?: string
 function getMessageableRoles(userRole: string): string[] {
   switch (userRole) {
     case 'DIRECTOR':
-      return ['DIRECTOR', 'MANAGER', 'GENERAL_SUPERVISOR', 'SUPERVISOR', 'OPERATOR', 'SECRETARY'];
+      // MD can message anyone in the system
+      return ['DIRECTOR', 'MANAGER', 'GENERAL_SUPERVISOR', 'SUPERVISOR', 'SECRETARY'];
     case 'MANAGER':
-      return ['DIRECTOR', 'MANAGER', 'GENERAL_SUPERVISOR', 'SUPERVISOR', 'OPERATOR'];
+      // Manager can message GS, can reply to GS (not Director directly, not Operators)
+      return ['MANAGER', 'GENERAL_SUPERVISOR'];
     case 'GENERAL_SUPERVISOR':
-      return ['DIRECTOR', 'MANAGER', 'GENERAL_SUPERVISOR', 'SUPERVISOR'];
+      // GS can message Supervisors and Manager
+      return ['MANAGER', 'GENERAL_SUPERVISOR', 'SUPERVISOR'];
     case 'SUPERVISOR':
-      return ['MANAGER', 'GENERAL_SUPERVISOR', 'SUPERVISOR', 'OPERATOR'];
-    case 'OPERATOR':
-      return ['SUPERVISOR', 'GENERAL_SUPERVISOR'];
+      // Supervisor can message only GS (chain of command - no Manager/Director)
+      return ['GENERAL_SUPERVISOR'];
     case 'SECRETARY':
+      // Secretary limited to Director and Manager
       return ['DIRECTOR', 'MANAGER'];
+    case 'OPERATOR':
+      // Operators do NOT have dashboards and do NOT send messages
+      return [];
     default:
       return [];
   }

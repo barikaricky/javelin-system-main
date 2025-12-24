@@ -11,6 +11,8 @@ export interface IBroadcastMessage extends Document {
   targetRoles: string[];
   targetUserIds: string[];
   targetRegions: string[];
+  targetGroup?: 'ALL_GS' | 'ALL_SUPERVISORS' | 'BIT_SUPERVISORS' | 'CUSTOM';
+  bitId?: mongoose.Types.ObjectId;
   isEmergency: boolean;
   isActive: boolean;
   expiresAt?: Date;
@@ -53,6 +55,14 @@ const BroadcastMessageSchema = new Schema<IBroadcastMessage>(
     targetRegions: {
       type: [String],
       default: [],
+    },
+    targetGroup: {
+      type: String,
+      enum: ['ALL_GS', 'ALL_SUPERVISORS', 'BIT_SUPERVISORS', 'CUSTOM'],
+    },
+    bitId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Bit',
     },
     isEmergency: {
       type: Boolean,

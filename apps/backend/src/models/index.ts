@@ -32,3 +32,4 @@ export * from './Bit.model';
 export * from './CompanyDocument.model';
 export * from './MoneyOut.model';
 export * from './Salary.model';
+export * from './EmergencyAlert.model';

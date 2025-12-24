@@ -28,6 +28,7 @@ import MeetingRoomPage from './pages/meeting/MeetingRoomPage';
 
 // Director Messaging Pages
 import MessagingPage from './pages/director/messaging/MessagingPage';
+import DirectorCommunicationPage from './pages/director/communication/CommunicationPage';
 
 // Manager Dashboard imports
 import ManagerLayout from './pages/manager/ManagerLayout';
@@ -39,6 +40,7 @@ import ManagerOperatorsListPage from './pages/manager/OperatorsListPage';
 import NotificationsPage from './pages/manager/NotificationsPage';
 import ManagerSettingsPage from './pages/manager/SettingsPage';
 import ManagerMessagingPage from './pages/manager/messaging/MessagingPage';
+import ManagerCommunicationPage from './pages/manager/communication/CommunicationPage';
 import ManagerPendingApprovalsPage from './pages/manager/PendingApprovalsPage';
 import OperatorApprovalsPage from './pages/manager/OperatorApprovalsPage';
 import RegisterSecretaryPage from './pages/manager/secretary/RegisterSecretaryPage';
@@ -79,6 +81,7 @@ import {
 // GS Supervisor Registration Page
 import GSRegisterSupervisorPage from './pages/general-supervisor/supervisors/RegisterSupervisorPage';
 import GSOperatorApprovalPage from './pages/general-supervisor/operators/OperatorApprovalPage';
+import GSEnhancedCommunicationPage from './pages/general-supervisor/communication/EnhancedCommunicationPage';
 
 // Secretary imports
 import SecretaryLayout from './pages/secretary/SecretaryLayout';
@@ -240,6 +243,7 @@ function App() {
         <Route path="bits" element={<ManagerBitsListPage />} />
         <Route path="bits/:id/edit" element={<ManagerEditBitPage />} />
         <Route path="messages" element={<ManagerMessagingPage />} />
+        <Route path="communication" element={<ManagerCommunicationPage />} />
         <Route path="settings" element={<ManagerSettingsPage />} />
         <Route path="id-cards" element={<ManagerIDCardGenerator />} />
         <Route path="secretary/register" element={<RegisterSecretaryPage />} />
@@ -276,6 +280,7 @@ function App() {
         <Route path="incidents" element={<GSIncidentsPage />} />
         <Route path="activity-logs" element={<GSActivityLogsPage />} />
         <Route path="communication" element={<GSCommunicationPage />} />
+        <Route path="communication/enhanced" element={<GSEnhancedCommunicationPage />} />
         <Route path="reports" element={<GSReportsPage />} />
         <Route path="id-card" element={<GSIDCardPage />} />
         <Route path="id-cards" element={<GSIDCardGenerator />} />
@@ -293,6 +298,7 @@ function App() {
       <Route path="/director/personnel/pending-approvals" element={<DirectorLayout><PendingApprovalsPage /></DirectorLayout>} />
       <Route path="/director/personnel/all" element={<DirectorLayout><WorkersPage /></DirectorLayout>} />
       <Route path="/director/communications/messages" element={<DirectorLayout><MessagingPage /></DirectorLayout>} />
+      <Route path="/director/communications/center" element={<DirectorLayout><DirectorCommunicationPage /></DirectorLayout>} />
       <Route path="/director/meetings/instant" element={<DirectorLayout><InstantMeetingPage /></DirectorLayout>} />
       <Route path="/director/meetings/create" element={<DirectorLayout><CreateMeetingPage /></DirectorLayout>} />
       <Route path="/director/meetings/list" element={<DirectorLayout><MyMeetingsPage /></DirectorLayout>} />
