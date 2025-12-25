@@ -502,4 +502,146 @@ function getPriorityFromType(type: string): 'low' | 'medium' | 'high' | 'urgent'
   return priorityMap[type] || 'medium';
 }
 
+// Helper function to generate employee ID
+function generateEmployeeId(prefix: string): string {
+  const timestamp = Date.now().toString().slice(-8);
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `${prefix}-${timestamp}-${random}`;
+}
+
+// Director Register Operator (Director can register directly without approval)
+router.post('/operators/register', async (req: Request & { user?: any }, res, next) => {
+  try {
+    const bcrypt = require('bcryptjs');
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      gender,
+      dateOfBirth,
+      address,
+      state,
+      lga,
+      locationId,
+      shiftType,
+      guarantor1Name,
+      guarantor1Phone,
+      guarantor1Address,
+      guarantor1Photo,
+      guarantor2Name,
+      guarantor2Phone,
+      guarantor2Address,
+      guarantor2Photo,
+      previousExperience,
+      medicalFitness,
+      applicantPhoto,
+      ninNumber,
+      ninDocument,
+    } = req.body;
+
+    const directorUserId = req.user?.userId;
+
+    console.log('🔷 Director registering operator:', {
+      email,
+      directorId: directorUserId,
+    });
+
+    // Check if email already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      res.status(400).json({ error: 'A user with this email already exists' });
+      return;
+    }
+
+    // Check if phone already exists
+    if (phone) {
+      const existingPhone = await User.findOne({ phone });
+      if (existingPhone) {
+        res.status(400).json({ error: 'A user with this phone number already exists' });
+        return;
+      }
+    }
+
+    // Generate employee ID
+    const employeeId = generateEmployeeId('OPR');
+
+    // Generate temporary password
+    const temporaryPassword = `Opr${Math.random().toString(36).substring(2, 10)}!`;
+    const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+
+    // Create user with ACTIVE status (Director approval not needed)
+    const newUser = new User({
+      email: email.toLowerCase(),
+      phone: phone || undefined,
+      passwordHash: hashedPassword,
+      role: 'OPERATOR',
+      status: 'ACTIVE', // Director can directly activate
+      firstName,
+      lastName,
+      gender: gender || undefined,
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+      address: address || undefined,
+      state: state || undefined,
+      lga: lga || undefined,
+      employeeId,
+      passportPhoto: applicantPhoto || undefined,
+      accountName: `${firstName} ${lastName}`,
+      createdById: directorUserId,
+    });
+
+    await newUser.save();
+
+    // Create operator record
+    const newOperator = new Operator({
+      userId: newUser._id,
+      employeeId,
+      locationId: locationId || undefined,
+      shiftType: shiftType || 'DAY',
+      passportPhoto: applicantPhoto || undefined,
+      nationalId: ninNumber || undefined,
+      documents: ninDocument ? [ninDocument] : [],
+      guarantors: [
+        {
+          name: guarantor1Name,
+          phone: guarantor1Phone,
+          address: guarantor1Address,
+          photo: guarantor1Photo,
+        },
+        {
+          name: guarantor2Name,
+          phone: guarantor2Phone,
+          address: guarantor2Address,
+          photo: guarantor2Photo,
+        },
+      ],
+      previousExperience: previousExperience || undefined,
+      medicalFitness: medicalFitness || false,
+      approvalStatus: 'APPROVED', // Director registration is auto-approved
+      salary: 0, // Can be set later
+      startDate: new Date(),
+    });
+
+    await newOperator.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Operator registered and activated successfully.',
+      operator: {
+        id: newOperator._id,
+        userId: newUser._id,
+        fullName: `${firstName} ${lastName}`,
+        email: newUser.email,
+        employeeId,
+        approvalStatus: 'APPROVED',
+        status: 'ACTIVE',
+        temporaryPassword, // Include for reference
+      },
+    });
+  } catch (error) {
+    console.error('Error registering operator:', error);
+    next(error);
+  }
+});
+
 export default router;

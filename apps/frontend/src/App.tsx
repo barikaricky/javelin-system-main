@@ -60,6 +60,9 @@ import SupervisorIDCardPage from './pages/supervisor/IDCardPage';
 import SupervisorIDCardGenerator from './pages/supervisor/IDCardGenerator';
 import SupervisorEnhancedSettingsPage from './pages/supervisor/EnhancedSettingsPage';
 
+// Director Operator Registration
+import DirectorRegisterOperatorPage from './pages/director/operators/RegisterOperatorPage';
+
 // General Supervisor imports
 import {
   GSLayout,
@@ -299,6 +302,7 @@ function App() {
       <Route path="/director/personnel/register-manager" element={<DirectorLayout><RegisterManagerPage /></DirectorLayout>} />
       <Route path="/director/personnel/pending-approvals" element={<DirectorLayout><PendingApprovalsPage /></DirectorLayout>} />
       <Route path="/director/personnel/all" element={<DirectorLayout><WorkersPage /></DirectorLayout>} />
+      <Route path="/director/operators/register" element={<DirectorLayout><DirectorRegisterOperatorPage /></DirectorLayout>} />
       <Route path="/director/messaging" element={<DirectorLayout><MessagingPage /></DirectorLayout>} />
       <Route path="/director/communications/messages" element={<DirectorLayout><MessagingPage /></DirectorLayout>} />
       <Route path="/director/communications/center" element={<DirectorLayout><DirectorCommunicationPage /></DirectorLayout>} />

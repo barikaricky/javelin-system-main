@@ -60,6 +60,7 @@ const menuItems: MenuItem[] = [
     icon: Users,
     children: [
       { name: 'Register Manager', icon: UserPlus, path: '/director/personnel/register-manager' },
+      { name: 'Register Operator', icon: UserPlus, path: '/director/operators/register' },
       { name: 'Pending Approvals', icon: AlertCircle, path: '/director/personnel/pending-approvals', badge: 5 },
       { name: 'All Personnel', icon: UsersRound, path: '/director/personnel/all' },
     ]
