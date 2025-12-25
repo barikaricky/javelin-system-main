@@ -738,10 +738,10 @@ export default function MessagingPage() {
         )}
 
         <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1.5 sm:mb-2 group px-1`}>
-          {!isOwn && showAvatar && (
+          {!isOwn && showAvatar && message.sender && (
             <img
-              src={getImageUrl(message.sender.profilePhoto) || '/default-avatar.png'}
-              alt={message.sender.firstName}
+              src={getImageUrl(message.sender?.profilePhoto) || '/default-avatar.png'}
+              alt={message.sender?.firstName || 'User'}
               className="w-7 h-7 sm:w-8 sm:h-8 rounded-full mr-1.5 sm:mr-2 flex-shrink-0"
             />
           )}
@@ -772,9 +772,9 @@ export default function MessagingPage() {
                 message.isEmergency ? 'bg-red-600 text-white' : ''
               }`}
             >
-              {!isOwn && showAvatar && (
+              {!isOwn && showAvatar && message.sender && (
                 <p className="text-xs font-medium text-blue-600 mb-1 truncate">
-                  {message.sender.firstName} {message.sender.lastName}
+                  {message.sender?.firstName} {message.sender?.lastName}
                 </p>
               )}
 
