@@ -101,22 +101,29 @@ export async function registerSecretary(data: SecretaryRegistrationData, manager
       regionAssigned: data.regionAssigned,
     });
 
-    // Log the activity
-    await logActivity(
-      managerId,
-      'SECRETARY_REGISTERED',
-      'secretary',
-      secretary._id.toString(),
-      {
-        secretaryName: secretary.fullName,
-        email: data.email,
-      }
-    );
+    // Log the activity (non-blocking - don't fail registration if this fails)
+    try {
+      await logActivity(
+        managerId,
+        'SECRETARY_REGISTERED',
+        'secretary',
+        secretary._id.toString(),
+        {
+          secretaryName: secretary.fullName,
+          email: data.email,
+        }
+      );
+      logger.info('Activity logged successfully');
+    } catch (activityError) {
+      logger.error('Failed to log activity (non-critical):', activityError);
+      // Don't throw - activity logging failure shouldn't fail the registration
+    }
 
     logger.info('Secretary registered successfully', {
       userId: user._id,
       secretaryId: secretary._id,
       employeeId: employeeId,
+      temporaryPassword: temporaryPassword, // Log for debugging
     });
 
     return {

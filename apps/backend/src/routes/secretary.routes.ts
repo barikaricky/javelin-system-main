@@ -26,25 +26,53 @@ router.post(
       body: req.body,
     });
     
-    // Validate required fields
-    const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'gender', 'dateOfBirth', 'address', 'state', 'regionAssigned', 'startDate', 'salary', 'salaryCategory', 'bankName', 'bankAccountNumber'];
-    const missingFields = requiredFields.filter(field => !req.body[field]);
+    // Validate required fields - check for undefined/null, not empty strings or 0
+    const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'gender', 'dateOfBirth', 'address', 'state', 'regionAssigned', 'startDate', 'bankName', 'bankAccountNumber'];
+    const missingFields = requiredFields.filter(field => {
+      const value = req.body[field];
+      return value === undefined || value === null || value === '';
+    });
+    
+    // For salary and salaryCategory, check specifically
+    if (req.body.salary === undefined || req.body.salary === null) {
+      missingFields.push('salary');
+    }
+    if (!req.body.salaryCategory || req.body.salaryCategory === '') {
+      missingFields.push('salaryCategory');
+    }
     
     if (missingFields.length > 0) {
-      logger.error('Missing required fields', { missingFields });
+      logger.error('Missing required fields', { missingFields, receivedData: req.body });
       return res.status(400).json({
         error: `Missing required fields: ${missingFields.join(', ')}`,
         missingFields,
       });
     }
     
-    const result = await registerSecretary(req.body, req.user.userId);
+    logger.info('All required fields present, proceeding with registration...');
     
-    res.status(201).json({
-      message: 'Secretary registered successfully',
-      secretary: result.secretary,
-      credentials: result.credentials,
-    });
+    try {
+      const result = await registerSecretary(req.body, req.user.userId);
+      
+      logger.info('Secretary service returned successfully', {
+        secretaryId: result.secretary._id,
+        credentials: result.credentials,
+      });
+      
+      res.status(201).json({
+        message: 'Secretary registered successfully',
+        secretary: result.secretary,
+        credentials: result.credentials,
+      });
+      
+      logger.info('Response sent to client successfully');
+    } catch (error: any) {
+      logger.error('Error in secretary registration route:', {
+        error: error.message,
+        stack: error.stack,
+      });
+      throw error; // Let asyncHandler deal with it
+    }
   })
 );
 

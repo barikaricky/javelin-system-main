@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User,
@@ -170,6 +170,7 @@ export default function RegisterSecretaryPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [credentials, setCredentials] = useState<any>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const isSubmittingRef = useRef(false); // Track submission to prevent double-submit
 
   const steps = [
     { number: 1, title: 'Personal Info', icon: User },
@@ -241,12 +242,26 @@ export default function RegisterSecretaryPage() {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e?: React.MouseEvent) => {
+    // Stop event propagation to prevent any bubbling
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    // Prevent double submission with ref check (more reliable than state)
+    if (isSubmittingRef.current || isSubmitting) {
+      console.log('⚠️ Submission already in progress, ignoring duplicate call');
+      return;
+    }
+
     if (!validateStep(3)) {
       toast.error('Please fill in all required fields');
       return;
     }
 
+    console.log('🔒 Locking submission...');
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       // Convert passport photo to base64 if present
@@ -281,23 +296,30 @@ export default function RegisterSecretaryPage() {
         passportPhoto: passportPhotoBase64 || undefined,
       };
 
-      console.log('Submitting secretary registration:', submitData);
+      console.log('✅ Submitting secretary registration:', submitData);
       const response = await api.post('/secretaries/register', submitData);
       
+      console.log('✅ Secretary registered successfully:', response.data);
       setCredentials(response.data.credentials);
       setShowSuccess(true);
       toast.success('Secretary registered successfully!');
     } catch (error: any) {
-      console.error('Registration error:', error);
-      console.error('Error response:', error.response?.data);
-      const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to register secretary';
-      toast.error(errorMessage);
+      console.error('❌ Registration error:', error);
+      console.error('❌ Error response:', error.response?.data);
       
-      // Show missing fields if provided
-      if (error.response?.data?.missingFields) {
-        console.error('Missing fields:', error.response.data.missingFields);
+      // Only show error if we haven't already succeeded
+      if (!showSuccess) {
+        const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to register secretary';
+        toast.error(errorMessage);
+        
+        // Show missing fields if provided
+        if (error.response?.data?.missingFields) {
+          console.error('❌ Missing fields:', error.response.data.missingFields);
+        }
       }
     } finally {
+      console.log('🔓 Unlocking submission...');
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -761,9 +783,15 @@ export default function RegisterSecretaryPage() {
             </button>
           ) : (
             <button
-              onClick={handleSubmit}
-              disabled={isSubmitting}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleSubmit(e);
+              }}
+              disabled={isSubmitting || isSubmittingRef.current}
               className="flex items-center gap-1 sm:gap-2 px-4 sm:px-8 py-2.5 sm:py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm sm:text-base"
+              style={{ pointerEvents: (isSubmitting || isSubmittingRef.current) ? 'none' : 'auto' }}
             >
               {isSubmitting ? (
                 <>
