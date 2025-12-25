@@ -108,6 +108,7 @@ import MonthlyLogs from './pages/secretary/MonthlyLogs';
 import ClientsListPage from './pages/secretary/clients/ClientsListPage';
 import AddClientPage from './pages/secretary/clients/AddClientPage';
 import ClientDetailPage from './pages/secretary/clients/ClientDetailPage';
+import SecretaryMessagingPage from './pages/secretary/messaging/MessagingPage';
 
 // Director imports
 import MoneyInReports from './pages/director/financial/MoneyInReports';
@@ -223,7 +224,7 @@ function App() {
         <Route path="money-out/edit/:id" element={<RecordMoneyOut />} />
         <Route path="salary" element={<SalaryPanel />} />
         <Route path="id-cards" element={<SecretaryIDCardGenerator />} />
-        <Route path="messages" element={<SecretaryDashboard />} />
+        <Route path="messages" element={<SecretaryMessagingPage />} />
         <Route path="settings" element={<SecretarySettingsPage />} />
       </Route>
       
