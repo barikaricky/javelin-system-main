@@ -15,7 +15,7 @@ export default function BottomBar({ onMenuClick }: BottomBarProps) {
   ];
 
   return (
-    <nav className="bottom-bar lg:hidden fixed bottom-0 left-0 right-0">
+    <nav className="bottom-bar lg:hidden fixed bottom-0 left-0 right-0 h-14 sm:h-16">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = location.pathname === tab.path;
@@ -27,8 +27,8 @@ export default function BottomBar({ onMenuClick }: BottomBarProps) {
               onClick={tab.onClick}
               className="bottom-bar-tab bottom-bar-tab-inactive"
             >
-              <Icon className="icon-md" />
-              <span className="text-bottom-bar">{tab.name}</span>
+              <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="text-[10px] sm:text-xs">{tab.name}</span>
             </button>
           );
         }
@@ -42,14 +42,14 @@ export default function BottomBar({ onMenuClick }: BottomBarProps) {
             }`}
           >
             <div className="relative">
-              <Icon className="icon-md" />
+              <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
               {tab.badge && (
-                <span className="absolute -top-2 -right-2 bg-error text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                <span className="absolute -top-2 -right-2 bg-error text-white text-[10px] sm:text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center font-bold">
                   {tab.badge}
                 </span>
               )}
             </div>
-            <span className="text-bottom-bar">{tab.name}</span>
+            <span className="text-[10px] sm:text-xs">{tab.name}</span>
           </Link>
         );
       })}

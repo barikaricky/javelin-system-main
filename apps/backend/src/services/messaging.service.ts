@@ -531,9 +531,9 @@ export async function getMessages(
             content: replyToObj.content,
             senderId: replyToObj.senderId?._id?.toString() || replyToObj.senderId?.toString(),
             sender: replyToObj.senderId?._id ? {
-              id: replyToObj.senderId._id.toString(),
-              firstName: replyToObj.senderId.firstName,
-              lastName: replyToObj.senderId.lastName,
+              id: replyToObj.senderId?._id?.toString() || replyToObj.senderId?.toString(),
+              firstName: replyToObj.senderId?.firstName,
+              lastName: replyToObj.senderId?.lastName,
             } : null,
           } : null,
         };

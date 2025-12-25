@@ -49,6 +49,8 @@ export default function ManagerMessagingPage() {
   const { user } = useAuthStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const shouldAutoScrollRef = useRef(true);
 
   // State
   const [activeTab, setActiveTab] = useState<SidebarTab>('chats');
@@ -111,15 +113,27 @@ export default function ManagerMessagingPage() {
   // Load messages when conversation changes
   useEffect(() => {
     if (selectedConversation) {
+      shouldAutoScrollRef.current = true; // Enable auto-scroll for new conversation
       loadMessages(selectedConversation.id);
       messagingService.markMessagesAsRead(selectedConversation.id);
     }
   }, [selectedConversation?.id]);
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom when messages change (only if user is near bottom)
   useEffect(() => {
-    scrollToBottom();
+    if (shouldAutoScrollRef.current) {
+      scrollToBottom();
+    }
   }, [messages]);
+
+  // Check if user is near bottom of messages
+  const handleScroll = () => {
+    if (!messagesContainerRef.current) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+    shouldAutoScrollRef.current = isNearBottom;
+  };
 
   const loadData = async () => {
     setIsLoading(true);
@@ -187,6 +201,7 @@ export default function ManagerMessagingPage() {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    shouldAutoScrollRef.current = true;
   };
 
   const handleSendMessage = async () => {
@@ -456,9 +471,9 @@ export default function ManagerMessagingPage() {
                 <Pin className="w-3 h-3 absolute -top-1 -right-1 text-yellow-500" />
               )}
 
-              <p className="whitespace-pre-wrap break-words">{message.content}</p>
+              <p className="whitespace-pre-wrap break-words text-sm sm:text-base">{message.content}</p>
 
-              <div className={`flex items-center justify-end gap-1 mt-1 text-xs ${
+              <div className={`flex items-center justify-end gap-1 mt-1 text-[10px] sm:text-xs ${
                 isOwn ? 'text-emerald-200' : 'text-gray-500'
               }`}>
                 <span>{new Date(message.createdAt).toLocaleTimeString('en-US', { 
@@ -467,9 +482,9 @@ export default function ManagerMessagingPage() {
                 })}</span>
                 {isOwn && (
                   message.status === 'READ' ? (
-                    <CheckCheck className="w-4 h-4 text-emerald-300" />
+                    <CheckCheck className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-300" />
                   ) : (
-                    <Check className="w-4 h-4" />
+                    <Check className="w-3 h-3 sm:w-4 sm:h-4" />
                   )
                 )}
               </div>
@@ -482,7 +497,7 @@ export default function ManagerMessagingPage() {
                   <button
                     key={emoji}
                     onClick={() => handleReaction(message.id, emoji)}
-                    className={`text-sm px-2 py-0.5 rounded-full ${
+                    className={`text-xs sm:text-sm px-1.5 sm:px-2 py-0.5 rounded-full ${
                       userIds.includes(user?.id || '')
                         ? 'bg-emerald-100 border border-emerald-300'
                         : 'bg-gray-100'
@@ -495,7 +510,7 @@ export default function ManagerMessagingPage() {
             )}
 
             {/* Message Actions */}
-            <div className={`absolute top-0 ${isOwn ? 'left-0 -translate-x-full' : 'right-0 translate-x-full'} 
+            <div className={`hidden md:block absolute top-0 ${isOwn ? 'left-0 -translate-x-full' : 'right-0 translate-x-full'} 
               opacity-0 group-hover:opacity-100 transition-opacity px-2`}>
               <div className="flex items-center gap-1 bg-white rounded-lg shadow-lg border p-1">
                 {EMOJI_REACTIONS.map(emoji => (
@@ -537,17 +552,17 @@ export default function ManagerMessagingPage() {
   };
 
   return (
-    <div className="h-screen md:h-[calc(100vh-8rem)] flex bg-gray-100 rounded-xl overflow-hidden">
+    <div className="h-[calc(100vh-12rem)] sm:h-[calc(100vh-10rem)] md:h-[calc(100vh-8rem)] flex bg-gray-100 rounded-lg md:rounded-xl overflow-hidden">
       {/* Sidebar */}
-      <div className={`w-full md:w-80 lg:w-96 bg-white border-r flex flex-col shrink-0 ${
+      <div className={`w-full sm:w-80 md:w-80 lg:w-96 bg-white border-r flex flex-col shrink-0 ${
         showMobileChat ? 'hidden md:flex' : 'flex'
       }`}>
         {/* Header */}
-        <div className="p-3 sm:p-4 border-b bg-gradient-to-r from-emerald-600 to-teal-600">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <h1 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6" />
-              Messages
+        <div className="p-2 sm:p-3 md:p-4 border-b bg-gradient-to-r from-emerald-600 to-teal-600">
+          <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
+            <h1 className="text-base sm:text-lg md:text-xl font-bold text-white flex items-center gap-1.5 sm:gap-2">
+              <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
+              <span className="hidden xs:inline">Messages</span>
             </h1>
             <div className="flex items-center gap-1 sm:gap-2">
               <button
@@ -562,13 +577,13 @@ export default function ManagerMessagingPage() {
 
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search messages..."
-              className="w-full pl-10 pr-4 py-2.5 sm:py-2 bg-white/10 backdrop-blur border border-white/20 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-transparent text-white placeholder-white/60"
+              className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 text-sm sm:text-base bg-white/10 backdrop-blur border border-white/20 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-transparent text-white placeholder-white/60"
             />
           </div>
         </div>
@@ -787,15 +802,15 @@ export default function ManagerMessagingPage() {
       }`}>
         {selectedConversation ? (
           <>
-            {/* Chat Header */}
-            <div className="h-16 border-b flex items-center justify-between px-4">
-              <div className="flex items-center gap-3">
+            {/* Chat Header - FIXED */}
+            <div className="h-14 sm:h-16 border-b flex items-center justify-between px-3 sm:px-4 flex-shrink-0">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                 <button
                   onClick={() => {
                     setShowMobileChat(false);
                     setSelectedConversation(null);
                   }}
-                  className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
+                  className="md:hidden p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg flex-shrink-0"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
@@ -851,8 +866,12 @@ export default function ManagerMessagingPage() {
               </div>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+            {/* Messages - SCROLLABLE AREA */}
+            <div 
+              ref={messagesContainerRef}
+              onScroll={handleScroll}
+              className="flex-1 overflow-y-auto p-4 bg-gray-50"
+            >
               {messages.map((message, index) => (
                 <MessageBubble
                   key={message.id}
@@ -865,7 +884,7 @@ export default function ManagerMessagingPage() {
 
             {/* Reply Preview */}
             {replyingTo && (
-              <div className="px-4 py-2 bg-gray-100 border-t flex items-center justify-between">
+              <div className="px-4 py-2 bg-gray-100 border-t flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center gap-2">
                   <Reply className="w-4 h-4 text-gray-500" />
                   <div>
@@ -883,13 +902,13 @@ export default function ManagerMessagingPage() {
               </div>
             )}
 
-            {/* Message Input */}
-            <div className="p-4 border-t bg-white">
-              <div className="flex items-end gap-2">
-                <button className="p-2 hover:bg-gray-100 rounded-lg flex-shrink-0">
-                  <Paperclip className="w-5 h-5 text-gray-600" />
+            {/* Message Input - FIXED */}
+            <div className="p-2 sm:p-3 md:p-4 border-t bg-white flex-shrink-0">
+              <div className="flex items-end gap-1 sm:gap-2">
+                <button className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg flex-shrink-0 hidden sm:block">
+                  <Paperclip className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                 </button>
-                <div className="flex-1 relative">
+                <div className="flex-1 relative min-w-0">
                   <textarea
                     ref={messageInputRef}
                     value={messageInput}
@@ -897,19 +916,19 @@ export default function ManagerMessagingPage() {
                     onKeyPress={handleKeyPress}
                     placeholder="Type a message..."
                     rows={1}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-xl resize-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-xl resize-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     style={{ maxHeight: '120px' }}
                   />
                 </div>
-                <button className="p-2 hover:bg-gray-100 rounded-lg flex-shrink-0">
-                  <Smile className="w-5 h-5 text-gray-600" />
+                <button className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg flex-shrink-0 hidden sm:block">
+                  <Smile className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                 </button>
                 <button
                   onClick={handleSendMessage}
                   disabled={!messageInput.trim() || isSending}
-                  className="p-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                  className="p-1.5 sm:p-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                 >
-                  <Send className="w-5 h-5" />
+                  <Send className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               </div>
             </div>

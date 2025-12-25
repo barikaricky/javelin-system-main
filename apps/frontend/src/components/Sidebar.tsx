@@ -167,25 +167,25 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full w-72 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
+        className={`fixed top-0 left-0 h-full w-64 sm:w-72 lg:w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0 lg:static lg:z-auto`}
       >
         {/* Profile Header Section */}
-        <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 p-5 relative">
+        <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 p-3 sm:p-4 md:p-5 relative">
           {/* Close Button - Mobile Only */}
           <button
             onClick={onClose}
-            className="lg:hidden absolute top-3 right-3 w-11 h-11 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 rounded-full transition-colors"
+            className="lg:hidden absolute top-2 sm:top-3 right-2 sm:right-3 w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 rounded-full transition-colors"
             aria-label="Close sidebar"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
 
           {/* Profile Section - Display Only */}
-          <div className="flex items-center gap-4 mt-2 lg:mt-0">
+          <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mt-2 lg:mt-0">
             {/* Profile Photo */}
-            <div className="w-14 h-14 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center overflow-hidden flex-shrink-0">
+            <div className="w-12 h-12 sm:w-13 sm:h-13 md:w-14 md:h-14 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center overflow-hidden flex-shrink-0">
               {user?.profilePhoto ? (
                 <img 
                   src={getImageUrl(user.profilePhoto)} 
@@ -193,11 +193,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = 'none';
-                    (e.target as HTMLImageElement).parentElement!.innerHTML = `<span class="text-white text-xl font-bold">${user?.firstName?.charAt(0)}${user?.lastName?.charAt(0)}</span>`;
+                    (e.target as HTMLImageElement).parentElement!.innerHTML = `<span class="text-white text-lg sm:text-xl font-bold">${user?.firstName?.charAt(0)}${user?.lastName?.charAt(0)}</span>`;
                   }}
                 />
               ) : (
-                <span className="text-white text-xl font-bold">
+                <span className="text-white text-lg sm:text-xl font-bold">
                   {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
                 </span>
               )}
@@ -205,13 +205,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             
             {/* Name and Email */}
             <div className="flex-1 min-w-0">
-              <h3 className="text-white font-semibold text-base truncate">
+              <h3 className="text-white font-semibold text-sm sm:text-base truncate">
                 {user?.firstName} {user?.lastName}
               </h3>
-              <p className="text-blue-100 text-sm truncate">
+              <p className="text-blue-100 text-xs sm:text-sm truncate">
                 {user?.email}
               </p>
-              <span className="inline-block mt-1 px-2 py-0.5 bg-yellow-400 text-yellow-900 text-xs font-semibold rounded-full">
+              <span className="inline-block mt-0.5 sm:mt-1 px-1.5 sm:px-2 py-0.5 bg-yellow-400 text-yellow-900 text-[10px] sm:text-xs font-semibold rounded-full">
                 Director
               </span>
             </div>
@@ -219,7 +219,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* Main Menu Items */}
-        <nav className="flex-1 overflow-y-auto py-4 px-3">
+        <nav className="flex-1 overflow-y-auto py-3 sm:py-4 px-2 sm:px-3">
           <ul className="space-y-1">
             {menuItems.map((item) => (
               <li key={item.name}>
@@ -228,43 +228,43 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   <div>
                     <button
                       onClick={() => toggleMenu(item.name)}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 ${
+                      className={`w-full flex items-center justify-between px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl transition-all duration-200 ${
                         isParentActive(item)
                           ? 'bg-blue-50 text-blue-700'
                           : 'text-slate-700 hover:bg-gray-100'
                       }`}
                     >
-                      <div className="flex items-center gap-3">
-                        <item.icon className={`w-5 h-5 ${isParentActive(item) ? 'text-blue-600' : 'text-slate-500'}`} />
-                        <span className="font-medium text-sm">{item.name}</span>
+                      <div className="flex items-center gap-2 sm:gap-2.5 md:gap-3">
+                        <item.icon className={`w-4 h-4 sm:w-5 sm:h-5 ${isParentActive(item) ? 'text-blue-600' : 'text-slate-500'}`} />
+                        <span className="font-medium text-xs sm:text-sm">{item.name}</span>
                       </div>
                       {expandedMenus.includes(item.name) ? (
-                        <ChevronDown className="w-4 h-4 text-slate-400" />
+                        <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400" />
                       ) : (
-                        <ChevronRight className="w-4 h-4 text-slate-400" />
+                        <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400" />
                       )}
                     </button>
                     
                     {/* Submenu */}
                     {expandedMenus.includes(item.name) && (
-                      <ul className="mt-1 ml-4 pl-4 border-l-2 border-gray-200 space-y-1">
+                      <ul className="mt-1 ml-3 sm:ml-4 pl-3 sm:pl-4 border-l-2 border-gray-200 space-y-1">
                         {item.children.map((child) => (
                           <li key={child.name}>
                             <Link
                               to={child.path!}
                               onClick={onClose}
-                              className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                              className={`flex items-center justify-between px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 rounded-lg transition-all duration-200 ${
                                 isActiveRoute(child.path)
                                   ? 'bg-yellow-50 text-yellow-700 border-l-2 border-yellow-400 -ml-[2px]'
                                   : 'text-slate-600 hover:bg-gray-50 hover:text-slate-900'
                               }`}
                             >
-                              <div className="flex items-center gap-3">
-                                <child.icon className={`w-4 h-4 ${isActiveRoute(child.path) ? 'text-yellow-600' : 'text-slate-400'}`} />
-                                <span className="text-sm">{child.name}</span>
+                              <div className="flex items-center gap-2 sm:gap-2.5 md:gap-3">
+                                <child.icon className={`w-3 h-3 sm:w-4 sm:h-4 ${isActiveRoute(child.path) ? 'text-yellow-600' : 'text-slate-400'}`} />
+                                <span className="text-xs sm:text-sm">{child.name}</span>
                               </div>
                               {child.badge && (
-                                <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
+                                <span className="bg-red-500 text-white text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-full min-w-[18px] sm:min-w-[20px] text-center">
                                   {child.badge}
                                 </span>
                               )}
@@ -279,14 +279,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   <Link
                     to={item.path!}
                     onClick={onClose}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                    className={`flex items-center gap-2 sm:gap-2.5 md:gap-3 px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl transition-all duration-200 ${
                       isActiveRoute(item.path)
                         ? 'bg-yellow-400 text-yellow-900 shadow-md shadow-yellow-200'
                         : 'text-slate-700 hover:bg-gray-100'
                     }`}
                   >
-                    <item.icon className={`w-5 h-5 ${isActiveRoute(item.path) ? 'text-yellow-800' : 'text-slate-500'}`} />
-                    <span className="font-medium text-sm">{item.name}</span>
+                    <item.icon className={`w-4 h-4 sm:w-5 sm:h-5 ${isActiveRoute(item.path) ? 'text-yellow-800' : 'text-slate-500'}`} />
+                    <span className="font-medium text-xs sm:text-sm">{item.name}</span>
                   </Link>
                 )}
               </li>
@@ -295,30 +295,30 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </nav>
 
         {/* Footer Section */}
-        <div className="border-t border-gray-200 p-3 space-y-1">
+        <div className="border-t border-gray-200 p-2 sm:p-3 space-y-1">
           {footerItems.map((item) => (
             <Link
               key={item.name}
               to={item.path!}
               onClick={onClose}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+              className={`flex items-center gap-2 sm:gap-2.5 md:gap-3 px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl transition-all duration-200 ${
                 isActiveRoute(item.path)
                   ? 'bg-blue-50 text-blue-700'
                   : 'text-slate-600 hover:bg-gray-100'
               }`}
             >
-              <item.icon className={`w-5 h-5 ${isActiveRoute(item.path) ? 'text-blue-600' : 'text-slate-400'}`} />
-              <span className="text-sm font-medium">{item.name}</span>
+              <item.icon className={`w-4 h-4 sm:w-5 sm:h-5 ${isActiveRoute(item.path) ? 'text-blue-600' : 'text-slate-400'}`} />
+              <span className="text-xs sm:text-sm font-medium">{item.name}</span>
             </Link>
           ))}
           
           {/* Logout Button */}
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-all duration-200"
+            className="w-full flex items-center gap-2 sm:gap-2.5 md:gap-3 px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl text-red-600 hover:bg-red-50 transition-all duration-200"
           >
-            <LogOut className="w-5 h-5" />
-            <span className="text-sm font-medium">Logout</span>
+            <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="text-xs sm:text-sm font-medium">Logout</span>
           </button>
         </div>
       </aside>

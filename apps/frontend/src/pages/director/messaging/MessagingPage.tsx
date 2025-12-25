@@ -62,6 +62,8 @@ export default function MessagingPage() {
   const { user } = useAuthStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const shouldAutoScrollRef = useRef(true);
 
   // State
   const [activeTab, setActiveTab] = useState<SidebarTab>('chats');
@@ -162,15 +164,27 @@ export default function MessagingPage() {
   // Load messages when conversation changes
   useEffect(() => {
     if (selectedConversation) {
+      shouldAutoScrollRef.current = true; // Enable auto-scroll for new conversation
       loadMessages(selectedConversation.id);
       messagingService.markMessagesAsRead(selectedConversation.id);
     }
   }, [selectedConversation?.id]);
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom when messages change (only if user is near bottom)
   useEffect(() => {
-    scrollToBottom();
+    if (shouldAutoScrollRef.current) {
+      scrollToBottom();
+    }
   }, [messages]);
+
+  // Check if user is near bottom of messages
+  const handleScroll = () => {
+    if (!messagesContainerRef.current) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+    shouldAutoScrollRef.current = isNearBottom;
+  };
 
   const loadData = async () => {
     setIsLoading(true);
@@ -238,6 +252,7 @@ export default function MessagingPage() {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    shouldAutoScrollRef.current = true;
   };
 
   const handleSendMessage = async () => {
@@ -876,45 +891,45 @@ export default function MessagingPage() {
   };
 
   return (
-    <div className="h-screen md:h-[calc(100vh-4rem)] flex bg-gray-100 overflow-hidden">
+    <div className="h-[calc(100vh-12rem)] sm:h-[calc(100vh-10rem)] md:h-[calc(100vh-8rem)] flex bg-gray-100 overflow-hidden">
       {/* Sidebar */}
-      <div className={`w-full md:w-80 lg:w-96 bg-white border-r flex flex-col shrink-0 ${
-        showMobileChat ? 'hidden md:flex' : 'flex'
+      <div className={`w-full sm:w-80 md:w-80 lg:w-96 bg-white border-r flex flex-col shrink-0 ${
+        showMobileChat ? 'hidden sm:flex' : 'flex'
       }`}>
         {/* Header */}
-        <div className="p-3 sm:p-4 border-b bg-gradient-to-r from-blue-600 to-indigo-600">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <h1 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6" />
+        <div className="p-2 sm:p-3 md:p-4 border-b bg-gradient-to-r from-blue-600 to-indigo-600">
+          <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
+            <h1 className="text-base sm:text-lg md:text-xl font-bold text-white flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
               Messages
             </h1>
             <div className="flex items-center gap-1 sm:gap-2">
               <button
                 onClick={() => setShowNewChat(true)}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg transition-colors"
                 title="New Message"
               >
-                <Plus className="w-5 h-5 text-white" />
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </button>
               <button
                 onClick={() => navigate('/director/settings')}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg transition-colors"
                 title="Settings"
               >
-                <Settings className="w-5 h-5 text-white" />
+                <Settings className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </button>
             </div>
           </div>
 
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search messages..."
-              className="w-full pl-10 pr-4 py-2.5 sm:py-2 bg-white/10 backdrop-blur border border-white/20 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-transparent text-white placeholder-white/60"
+              className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 text-sm sm:text-base bg-white/10 backdrop-blur border border-white/20 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-transparent text-white placeholder-white/60"
             />
           </div>
         </div>
@@ -1131,19 +1146,19 @@ export default function MessagingPage() {
 
       {/* Chat Area */}
       <div className={`flex-1 flex flex-col bg-white min-w-0 ${
-        !showMobileChat ? 'hidden md:flex' : 'flex'
+        !showMobileChat ? 'hidden sm:flex' : 'flex'
       }`}>
         {selectedConversation ? (
           <>
-            {/* Chat Header */}
-            <div className="border-b flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 bg-white shrink-0">
+            {/* Chat Header - FIXED */}
+            <div className="h-14 sm:h-16 border-b flex items-center justify-between px-2 sm:px-3 md:px-4 py-2 sm:py-3 bg-white flex-shrink-0">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                 <button
                   onClick={() => {
                     setShowMobileChat(false);
                     setSelectedConversation(null);
                   }}
-                  className="md:hidden p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="sm:hidden p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
@@ -1152,16 +1167,16 @@ export default function MessagingPage() {
                     <img
                       src={getImageUrl(getConversationAvatar(selectedConversation, user?.id || '')!)}
                       alt=""
-                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover"
+                      className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full object-cover"
                     />
                   ) : (
-                    <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ${
+                    <div className={`w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center ${
                       selectedConversation.type === 'GROUP' ? 'bg-purple-100' : 'bg-blue-100'
                     }`}>
                       {selectedConversation.type === 'GROUP' ? (
-                        <Users className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
+                        <Users className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 text-purple-600" />
                       ) : (
-                        <span className="text-sm sm:text-base font-semibold text-blue-600">
+                        <span className="text-xs sm:text-sm md:text-base font-semibold text-blue-600">
                           {getConversationName(selectedConversation, user?.id || '').charAt(0)}
                         </span>
                       )}
@@ -1170,31 +1185,31 @@ export default function MessagingPage() {
                   {selectedConversation.type === 'DIRECT' && (() => {
                     const otherUser = getOtherParticipantUser(selectedConversation, user?.id || '');
                     return otherUser && isUserOnline(otherUser.lastLogin) ? (
-                      <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white" />
+                      <div className="absolute bottom-0 right-0 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-green-500 rounded-full border-2 border-white" />
                     ) : null;
                   })()}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h2 className="font-semibold text-sm sm:text-base text-gray-900 truncate">
+                  <h2 className="font-semibold text-xs sm:text-sm md:text-base text-gray-900 truncate">
                     {getConversationName(selectedConversation, user?.id || '')}
                   </h2>
                   {selectedConversation.type === 'GROUP' ? (
-                    <p className="text-xs text-gray-500">
+                    <p className="text-[10px] sm:text-xs text-gray-500">
                       {selectedConversation.participants.length} members
                     </p>
                   ) : (() => {
                     const otherUser = getOtherParticipantUser(selectedConversation, user?.id || '');
-                    if (!otherUser) return <p className="text-xs text-gray-500">Loading...</p>;
+                    if (!otherUser) return <p className="text-[10px] sm:text-xs text-gray-500">Loading...</p>;
                     
                     return (
                       <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2">
-                        <p className="text-xs text-gray-500 truncate">
+                        <p className="text-[10px] sm:text-xs text-gray-500 truncate">
                           {ROLE_LABELS[otherUser.role] || otherUser.role}
                         </p>
                         {isUserOnline(otherUser.lastLogin) ? (
-                          <span className="text-xs text-green-600 font-medium">● Online</span>
+                          <span className="text-[10px] sm:text-xs text-green-600 font-medium">● Online</span>
                         ) : otherUser.lastLogin ? (
-                          <span className="text-xs text-gray-400 hidden sm:inline">
+                          <span className="text-[10px] sm:text-xs text-gray-400 hidden sm:inline">
                             Last seen {formatMessageTime(otherUser.lastLogin)}
                           </span>
                         ) : null}
@@ -1203,29 +1218,29 @@ export default function MessagingPage() {
                   })()}
                 </div>
               </div>
-              <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+              <div className="flex items-center gap-0.5 sm:gap-1 md:gap-2 flex-shrink-0">
                 <button
                   onClick={handleStartVoiceCall}
-                  className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-1 sm:p-1.5 md:p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   title="Start voice call"
                 >
-                  <Phone className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+                  <Phone className="w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-600" />
                 </button>
                 <button
                   onClick={handleStartVideoCall}
-                  className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-1 sm:p-1.5 md:p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   title="Start video call"
                 >
-                  <Video className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+                  <Video className="w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-600" />
                 </button>
                 <button
                   onClick={() => setShowUserInfo(!showUserInfo)}
-                  className={`p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors ${
+                  className={`p-1 sm:p-1.5 md:p-2 hover:bg-gray-100 rounded-lg transition-colors ${
                     showUserInfo ? 'bg-blue-100' : ''
                   }`}
                   title="User info"
                 >
-                  <Info className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+                  <Info className="w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-600" />
                 </button>
               </div>
             </div>
@@ -1300,8 +1315,12 @@ export default function MessagingPage() {
               );
             })()}
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-3 sm:p-4 bg-gray-50">
+            {/* Messages - SCROLLABLE AREA */}
+            <div 
+              ref={messagesContainerRef}
+              onScroll={handleScroll}
+              className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-4 bg-gray-50"
+            >
               {messages.map((message, index) => (
                 <MessageBubble
                   key={message.id}
@@ -1314,41 +1333,41 @@ export default function MessagingPage() {
 
             {/* Reply Preview */}
             {replyingTo && (
-              <div className="px-4 py-2 bg-gray-100 border-t flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Reply className="w-4 h-4 text-gray-500" />
-                  <div>
-                    <p className="text-xs font-medium text-gray-600">
+              <div className="px-3 sm:px-4 py-2 bg-gray-100 border-t flex items-center justify-between flex-shrink-0">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <Reply className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] sm:text-xs font-medium text-gray-600">
                       Replying to {replyingTo.sender.firstName}
                     </p>
-                    <p className="text-sm text-gray-500 truncate max-w-xs">
+                    <p className="text-xs sm:text-sm text-gray-500 truncate">
                       {replyingTo.content}
                     </p>
                   </div>
                 </div>
-                <button onClick={() => setReplyingTo(null)} className="p-1 hover:bg-gray-200 rounded">
-                  <X className="w-4 h-4 text-gray-500" />
+                <button onClick={() => setReplyingTo(null)} className="p-1 hover:bg-gray-200 rounded flex-shrink-0">
+                  <X className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
                 </button>
               </div>
             )}
 
-            {/* Message Input */}
-            <div className="p-2 sm:p-3 md:p-4 border-t bg-white">
+            {/* Message Input - FIXED */}
+            <div className="p-2 sm:p-3 md:p-4 border-t bg-white flex-shrink-0">
               {uploadingFile && (
                 <div className="mb-2 bg-blue-50 rounded-lg p-2 flex items-center gap-2">
-                  <Upload className="w-4 h-4 text-blue-600 animate-pulse" />
-                  <div className="flex-1">
-                    <div className="text-xs text-blue-600 mb-1">Uploading... {uploadProgress}%</div>
-                    <div className="w-full bg-blue-200 rounded-full h-1.5">
+                  <Upload className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 animate-pulse flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[10px] sm:text-xs text-blue-600 mb-1">Uploading... {uploadProgress}%</div>
+                    <div className="w-full bg-blue-200 rounded-full h-1 sm:h-1.5">
                       <div
-                        className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                        className="bg-blue-600 h-1 sm:h-1.5 rounded-full transition-all duration-300"
                         style={{ width: `${uploadProgress}%` }}
                       />
                     </div>
                   </div>
                 </div>
               )}
-              <div className="flex items-end gap-1.5 sm:gap-2">
+              <div className="flex items-end gap-1 sm:gap-1.5 md:gap-2">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -1360,10 +1379,10 @@ export default function MessagingPage() {
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingFile}
-                  className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg flex-shrink-0 transition-colors disabled:opacity-50"
+                  className="p-1 sm:p-1.5 md:p-2 hover:bg-gray-100 rounded-lg flex-shrink-0 transition-colors disabled:opacity-50"
                   title="Attach file"
                 >
-                  <Paperclip className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+                  <Paperclip className="w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-600" />
                 </button>
                 <div className="flex-1 relative">
                   <textarea
@@ -1373,16 +1392,16 @@ export default function MessagingPage() {
                     onKeyPress={handleKeyPress}
                     placeholder="Type a message..."
                     rows={1}
-                    className="w-full px-3 py-2 sm:px-4 text-sm sm:text-base border border-gray-200 rounded-xl resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 text-xs sm:text-sm md:text-base border border-gray-200 rounded-lg sm:rounded-xl resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     style={{ maxHeight: '100px' }}
                     disabled={uploadingFile}
                   />
                 </div>
                 <button
-                  className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg flex-shrink-0 transition-colors hidden sm:block"
+                  className="p-1 sm:p-1.5 md:p-2 hover:bg-gray-100 rounded-lg flex-shrink-0 transition-colors hidden sm:block"
                   title="Emoji"
                 >
-                  <Smile className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+                  <Smile className="w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-600" />
                 </button>
                 <button
                   onClick={handleSendMessage}
