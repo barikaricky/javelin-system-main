@@ -297,13 +297,24 @@ export const getConversationName = (conversation: Conversation, currentUserId: s
   
   // For direct messages, show the other participant's name
   if (conversation.type === 'DIRECT') {
-    const otherParticipant = conversation.participants.find(p => p.userId !== currentUserId);
-    if (otherParticipant?.user) {
-      return `${otherParticipant.user.firstName} ${otherParticipant.user.lastName}`;
+    const otherParticipant = conversation.participants?.find(p => {
+      // Handle both string userId and nested user object
+      const participantUserId = typeof p.userId === 'string' ? p.userId : (p.userId as any)?._id || (p.userId as any)?.id;
+      return participantUserId !== currentUserId;
+    });
+    
+    if (otherParticipant) {
+      // Try to get user data from different possible structures
+      const userData = otherParticipant.user || (otherParticipant as any).userId;
+      if (userData && typeof userData === 'object' && userData.firstName) {
+        return `${userData.firstName} ${userData.lastName}`;
+      }
+      
+      console.warn('Missing user data in participant:', otherParticipant);
     }
   }
   
-  return 'Unknown';
+  return 'Unknown User';
 };
 
 export const getConversationAvatar = (conversation: Conversation, currentUserId: string): string | null => {
@@ -313,8 +324,35 @@ export const getConversationAvatar = (conversation: Conversation, currentUserId:
   
   // For direct messages, show the other participant's photo
   if (conversation.type === 'DIRECT') {
-    const otherParticipant = conversation.participants.find(p => p.userId !== currentUserId);
-    return otherParticipant?.user?.profilePhoto || null;
+    const otherParticipant = conversation.participants?.find(p => {
+      const participantUserId = typeof p.userId === 'string' ? p.userId : (p.userId as any)?._id || (p.userId as any)?.id;
+      return participantUserId !== currentUserId;
+    });
+    
+    if (otherParticipant) {
+      const userData = otherParticipant.user || (otherParticipant as any).userId;
+      if (userData && typeof userData === 'object') {
+        return userData.profilePhoto || null;
+      }
+    }
+  }
+  
+  return null;
+};
+
+export const getOtherParticipantUser = (conversation: Conversation, currentUserId: string): MessageUser | null => {
+  if (conversation.type !== 'DIRECT') return null;
+  
+  const otherParticipant = conversation.participants?.find(p => {
+    const participantUserId = typeof p.userId === 'string' ? p.userId : (p.userId as any)?._id || (p.userId as any)?.id;
+    return participantUserId !== currentUserId;
+  });
+  
+  if (otherParticipant) {
+    const userData = otherParticipant.user || (otherParticipant as any).userId;
+    if (userData && typeof userData === 'object' && userData.firstName) {
+      return userData as MessageUser;
+    }
   }
   
   return null;

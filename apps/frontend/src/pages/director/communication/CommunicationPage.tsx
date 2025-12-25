@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   MessageSquare, 
   Bell, 
@@ -105,6 +106,7 @@ interface Broadcast {
 type TabType = 'messages' | 'broadcasts' | 'alerts' | 'logs';
 
 export default function DirectorCommunicationPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('alerts');
   const [messages, setMessages] = useState<Message[]>([]);
   const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
@@ -112,6 +114,7 @@ export default function DirectorCommunicationPage() {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [conversationCount, setConversationCount] = useState(0);
   
   const { user } = useAuthStore();
 
@@ -162,7 +165,9 @@ export default function DirectorCommunicationPage() {
   const loadMessages = async () => {
     try {
       const response = await api.get('/messaging/conversations');
-      // Extract all messages from conversations
+      // Count total conversations for stats
+      setConversationCount(response.data.conversations?.length || 0);
+      // Extract recent messages for display
       const allMessages: Message[] = [];
       if (response.data.conversations) {
         response.data.conversations.forEach((conv: any) => {
@@ -263,8 +268,8 @@ export default function DirectorCommunicationPage() {
           <div className="bg-white p-3 sm:p-4 rounded-lg shadow hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs sm:text-sm text-gray-600">Messages</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{messages.length}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Conversations</p>
+                <p className="text-xl sm:text-2xl font-bold text-gray-900">{conversationCount}</p>
               </div>
               <MessageSquare className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" />
             </div>
@@ -498,21 +503,45 @@ export default function DirectorCommunicationPage() {
 
               {/* Messages Tab */}
               {activeTab === 'messages' && (
-                <div className="space-y-3 sm:space-y-4">
+                <div className="space-y-4">
+                  {/* Open Full Messaging Button */}
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4 sm:p-6 text-center">
+                    <MessageSquare className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 text-green-500" />
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Full Messaging Center</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 mb-4">
+                      Start conversations, send messages, and manage all your communications
+                    </p>
+                    <button
+                      onClick={() => navigate('/director/messaging')}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 transform hover:scale-105 active:scale-95 text-sm sm:text-base font-medium"
+                    >
+                      <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
+                      Open Messaging Center
+                    </button>
+                  </div>
+
+                  {/* Recent Message Activity */}
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">Recent Activity ({messages.length} conversations)</h4>
+                  </div>
+
+                  <div className="space-y-3 sm:space-y-4">
                   {messages.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500 animate-fadeIn">
+                    <div className="text-center py-8 text-gray-500 animate-fadeIn">
                       <MessageSquare className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 text-gray-400" />
-                      <p className="text-sm sm:text-base">No messages found</p>
+                      <p className="text-sm sm:text-base">No recent messages</p>
+                      <p className="text-xs sm:text-sm text-gray-400 mt-1">Click above to start a conversation</p>
                     </div>
                   ) : (
-                    messages.map((message) => (
+                    messages.slice(0, 10).map((message) => (
                       <div
                         key={message._id}
-                        className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 animate-slideIn"
+                        className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 animate-slideIn cursor-pointer"
+                        onClick={() => navigate('/director/messaging')}
                       >
                         <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-2 gap-2">
                           <div className="flex items-center gap-2">
-                            <MessageSquare className="w-4 h-4 text-green-500" />
+                            <MessageSquare className="w-4 h-4 text-green-500 flex-shrink-0" />
                             <span className="font-medium text-sm sm:text-base text-gray-900">
                               {message.senderId.firstName} {message.senderId.lastName} ({message.senderId.role})
                             </span>
@@ -521,10 +550,14 @@ export default function DirectorCommunicationPage() {
                             {new Date(message.createdAt).toLocaleString()}
                           </span>
                         </div>
-                        <p className="text-sm sm:text-base text-gray-700">{message.content}</p>
+                        <p className="text-sm sm:text-base text-gray-700 line-clamp-2">{message.content}</p>
+                        <div className="mt-2 flex items-center gap-2 text-xs text-blue-600">
+                          <span>Click to view conversation →</span>
+                        </div>
                       </div>
                     ))
                   )}
+                  </div>
                 </div>
               )}
 

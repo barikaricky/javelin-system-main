@@ -16,17 +16,65 @@ interface CreateConversationData {
 export async function createConversation(data: CreateConversationData) {
   try {
     if (data.type === 'DIRECT' && data.participantIds.length === 1) {
-      const existingConversation = await Conversation.findOne({
-        type: 'DIRECT',
-      }).populate({
-        path: 'participants',
-        match: {
-          userId: { $in: [data.createdById, data.participantIds[0]] },
-        },
+      // Find existing direct conversation with these two users
+      const allUserIds = [data.createdById, data.participantIds[0]];
+      const existingParticipants = await ConversationParticipant.find({
+        userId: { $in: allUserIds },
+        leftAt: null,
       });
 
-      if (existingConversation && existingConversation.participants?.length === 2) {
-        return existingConversation;
+      // Group by conversationId and check if any conversation has exactly these 2 users
+      const conversationCounts = new Map<string, number>();
+      existingParticipants.forEach(p => {
+        const convId = p.conversationId.toString();
+        conversationCounts.set(convId, (conversationCounts.get(convId) || 0) + 1);
+      });
+
+      // Find a conversation with exactly 2 participants (both users)
+      for (const [convId, count] of conversationCounts) {
+        if (count === 2) {
+          // Verify it's a DIRECT type conversation
+          const existingConversation = await Conversation.findById(convId);
+          if (existingConversation && existingConversation.type === 'DIRECT') {
+            // Return the existing conversation with participants
+            const participants = await ConversationParticipant.find({
+              conversationId: convId,
+              leftAt: null,
+            }).populate({
+              path: 'userId',
+              select: 'firstName lastName email profilePhoto role status',
+            });
+            
+            const convObj = existingConversation.toJSON();
+            return {
+              ...convObj,
+              id: existingConversation._id.toString(),
+              participants: participants.map(p => {
+                const userObj = p.userId as any;
+                return {
+                  id: p._id.toString(),
+                  conversationId: p.conversationId.toString(),
+                  userId: userObj?._id?.toString() || p.userId?.toString(),
+                  role: p.role,
+                  joinedAt: p.joinedAt,
+                  isMuted: p.isMuted,
+                  isPinned: p.isPinned,
+                  isBlocked: p.isBlocked,
+                  unreadCount: p.unreadCount,
+                  user: userObj?._id ? {
+                    id: userObj._id.toString(),
+                    firstName: userObj.firstName,
+                    lastName: userObj.lastName,
+                    email: userObj.email,
+                    profilePhoto: userObj.profilePhoto,
+                    role: userObj.role,
+                    status: userObj.status,
+                  } : null,
+                };
+              }),
+            };
+          }
+        }
       }
     }
 
@@ -47,16 +95,45 @@ export async function createConversation(data: CreateConversationData) {
       })),
     ]);
 
-    const populated = await Conversation.findById(conversation._id).populate({
-      path: 'participants',
-      populate: {
-        path: 'userId',
-        select: 'firstName lastName email profilePhoto role status',
-      },
+    // Manually fetch participants instead of populating
+    const participants = await ConversationParticipant.find({
+      conversationId: conversation._id,
+      leftAt: null,
+    }).populate({
+      path: 'userId',
+      select: 'firstName lastName email profilePhoto role status',
     });
 
     logger.info('Conversation created', { conversationId: conversation._id, type: data.type });
-    return populated;
+    
+    const convObj = conversation.toJSON();
+    return {
+      ...convObj,
+      id: conversation._id.toString(),
+      participants: participants.map(p => {
+        const userObj = p.userId as any;
+        return {
+          id: p._id.toString(),
+          conversationId: p.conversationId.toString(),
+          userId: userObj?._id?.toString() || p.userId?.toString(),
+          role: p.role,
+          joinedAt: p.joinedAt,
+          isMuted: p.isMuted,
+          isPinned: p.isPinned,
+          isBlocked: p.isBlocked,
+          unreadCount: p.unreadCount,
+          user: userObj?._id ? {
+            id: userObj._id.toString(),
+            firstName: userObj.firstName,
+            lastName: userObj.lastName,
+            email: userObj.email,
+            profilePhoto: userObj.profilePhoto,
+            role: userObj.role,
+            status: userObj.status,
+          } : null,
+        };
+      }),
+    };
   } catch (error) {
     logger.error('Create conversation error:', error);
     throw error;
@@ -122,10 +199,36 @@ export async function getConversationsForUser(
           userId,
         });
 
+        // Ensure we return id field along with _id
+        const convObj = conv.toJSON();
         return {
-          ...conv.toObject(),
-          participants,
-          lastMessage,
+          ...convObj,
+          id: conv._id.toString(), // Add id field for frontend compatibility
+          participants: participants.map(p => {
+            const pObj = p.toJSON();
+            // When populated, userId is the full user object, not just the ID
+            const userObj = p.userId as any;
+            return {
+              ...pObj,
+              id: p._id.toString(),
+              conversationId: p.conversationId.toString(),
+              userId: userObj?._id?.toString() || p.userId?.toString(),
+              user: userObj?._id ? {
+                id: userObj._id.toString(),
+                firstName: userObj.firstName,
+                lastName: userObj.lastName,
+                email: userObj.email,
+                profilePhoto: userObj.profilePhoto,
+                role: userObj.role,
+                status: userObj.status,
+                lastLogin: userObj.lastLogin,
+              } : null,
+            };
+          }),
+          lastMessage: lastMessage ? {
+            ...lastMessage.toJSON(),
+            id: lastMessage._id.toString(),
+          } : null,
           unreadCount: participant?.unreadCount || 0,
           isPinned: participant?.isPinned || false,
           isMuted: participant?.isMuted || false,
@@ -174,9 +277,34 @@ export async function getConversationById(conversationId: string, userId: string
       select: 'firstName lastName email profilePhoto role status lastLogin',
     });
 
+    const convObj = conversation.toJSON();
     return {
-      ...conversation.toObject(),
-      participants,
+      ...convObj,
+      id: conversation._id.toString(),
+      participants: participants.map(p => {
+        const userObj = p.userId as any;
+        return {
+          id: p._id.toString(),
+          conversationId: p.conversationId.toString(),
+          userId: userObj?._id?.toString() || p.userId?.toString(),
+          role: p.role,
+          joinedAt: p.joinedAt,
+          isMuted: p.isMuted,
+          isPinned: p.isPinned,
+          isBlocked: p.isBlocked,
+          unreadCount: p.unreadCount,
+          user: userObj?._id ? {
+            id: userObj._id.toString(),
+            firstName: userObj.firstName,
+            lastName: userObj.lastName,
+            email: userObj.email,
+            profilePhoto: userObj.profilePhoto,
+            role: userObj.role,
+            status: userObj.status,
+            lastLogin: userObj.lastLogin,
+          } : null,
+        };
+      }),
     };
   } catch (error) {
     logger.error('Get conversation error:', error);
@@ -257,7 +385,55 @@ export async function sendMessage(data: SendMessageData) {
       });
 
     logger.info('Message sent', { messageId: message._id, conversationId: data.conversationId });
-    return populated;
+    
+    // Properly serialize the message with id fields
+    if (!populated) {
+      throw new Error('Failed to retrieve sent message');
+    }
+    
+    // Safely handle populated fields
+    const senderObj = populated.senderId as any;
+    const replyToObj = populated.replyToId as any;
+    
+    return {
+      id: populated._id.toString(),
+      conversationId: populated.conversationId.toString(),
+      content: populated.content,
+      messageType: populated.messageType,
+      status: populated.status,
+      attachmentUrl: populated.attachmentUrl,
+      attachmentName: populated.attachmentName,
+      attachmentSize: populated.attachmentSize,
+      attachmentType: populated.attachmentType,
+      thumbnailUrl: populated.thumbnailUrl,
+      isPinned: populated.isPinned,
+      isEdited: populated.isEdited,
+      isDeleted: populated.isDeleted,
+      isHighPriority: populated.isHighPriority,
+      isEmergency: populated.isEmergency,
+      reactions: populated.reactions,
+      createdAt: populated.createdAt,
+      updatedAt: populated.updatedAt,
+      senderId: senderObj?._id?.toString() || populated.senderId?.toString(),
+      sender: senderObj?._id ? {
+        id: senderObj._id.toString(),
+        firstName: senderObj.firstName,
+        lastName: senderObj.lastName,
+        profilePhoto: senderObj.profilePhoto,
+        role: senderObj.role,
+      } : null,
+      replyToId: replyToObj?._id?.toString() || populated.replyToId?.toString() || null,
+      replyTo: replyToObj?._id ? {
+        id: replyToObj._id.toString(),
+        content: replyToObj.content,
+        senderId: replyToObj.senderId?._id?.toString() || replyToObj.senderId?.toString(),
+        sender: replyToObj.senderId?._id ? {
+          id: replyToObj.senderId._id.toString(),
+          firstName: replyToObj.senderId.firstName,
+          lastName: replyToObj.senderId.lastName,
+        } : null,
+      } : null,
+    };
   } catch (error) {
     logger.error('Send message error:', error);
     throw error;
@@ -272,6 +448,11 @@ export async function getMessages(
   before?: Date
 ) {
   try {
+    // Validate conversationId
+    if (!conversationId || conversationId === 'undefined') {
+      throw new Error('Invalid conversation ID');
+    }
+
     const participant = await ConversationParticipant.findOne({
       conversationId,
       userId,
@@ -312,7 +493,51 @@ export async function getMessages(
     ]);
 
     return {
-      messages: messages.reverse(),
+      messages: messages.reverse().map(m => {
+        // Safely handle populated senderId field
+        const senderObj = m.senderId as any;
+        const replyToObj = m.replyToId as any;
+        
+        return {
+          id: m._id.toString(),
+          conversationId: m.conversationId.toString(),
+          content: m.content,
+          messageType: m.messageType,
+          status: m.status,
+          attachmentUrl: m.attachmentUrl,
+          attachmentName: m.attachmentName,
+          attachmentSize: m.attachmentSize,
+          attachmentType: m.attachmentType,
+          thumbnailUrl: m.thumbnailUrl,
+          isPinned: m.isPinned,
+          isEdited: m.isEdited,
+          isDeleted: m.isDeleted,
+          isHighPriority: m.isHighPriority,
+          isEmergency: m.isEmergency,
+          reactions: m.reactions,
+          createdAt: m.createdAt,
+          updatedAt: m.updatedAt,
+          senderId: senderObj?._id?.toString() || m.senderId?.toString(),
+          sender: senderObj?._id ? {
+            id: senderObj._id.toString(),
+            firstName: senderObj.firstName,
+            lastName: senderObj.lastName,
+            profilePhoto: senderObj.profilePhoto,
+            role: senderObj.role,
+          } : null,
+          replyToId: replyToObj?._id?.toString() || m.replyToId?.toString() || null,
+          replyTo: replyToObj?._id ? {
+            id: replyToObj._id.toString(),
+            content: replyToObj.content,
+            senderId: replyToObj.senderId?._id?.toString() || replyToObj.senderId?.toString(),
+            sender: replyToObj.senderId?._id ? {
+              id: replyToObj.senderId._id.toString(),
+              firstName: replyToObj.senderId.firstName,
+              lastName: replyToObj.senderId.lastName,
+            } : null,
+          } : null,
+        };
+      }),
       pagination: {
         total,
         page,
@@ -355,38 +580,29 @@ export async function deleteMessage(
   forAll = false
 ) {
   try {
-    const message = await Message.findFirst({
-      where: { id: messageId },
-      include: { conversation: true },
-    });
+    const message = await Message.findById(messageId).populate('conversation');
 
     if (!message) {
       throw new Error('Message not found');
     }
 
-    // Check if user can delete for all
     if (forAll) {
-      const isAdmin = await prisma.conversation_participants.findFirst({
-        where: {
-          conversationId: message.conversationId,
-          userId,
-          role: { in: ['ADMIN', 'MODERATOR'] },
-        },
+      const isAdmin = await ConversationParticipant.findOne({
+        conversationId: message.conversationId,
+        userId,
+        role: { $in: ['ADMIN', 'MODERATOR'] },
       });
 
-      if (!isAdmin && message.senderId !== userId) {
+      if (!isAdmin && message.senderId.toString() !== userId) {
         throw new Error('You cannot delete this message for everyone');
       }
     }
 
-    await prisma.messages.update({
-      where: { id: messageId },
-      data: {
-        isDeleted: true,
-        deletedAt: new Date(),
-        deletedForAll: forAll,
-        content: forAll ? 'This message was deleted' : message.content,
-      },
+    await Message.findByIdAndUpdate(messageId, {
+      isDeleted: true,
+      deletedAt: new Date(),
+      deletedForAll: forAll,
+      content: forAll ? 'This message was deleted' : message.content,
     });
 
     return { success: true };
@@ -402,19 +618,16 @@ export async function reactToMessage(
   emoji: string
 ) {
   try {
-    const message = await prisma.messages.findFirst({
-      where: { id: messageId },
-    });
+    const message = await Message.findById(messageId);
 
     if (!message) {
       throw new Error('Message not found');
     }
 
-    const reactions = (message.reactions as Record<string, string[]>) || {};
+    const reactions = (message.reactions as any) || {};
     
-    // Toggle reaction
     if (reactions[emoji]?.includes(userId)) {
-      reactions[emoji] = reactions[emoji].filter((id) => id !== userId);
+      reactions[emoji] = reactions[emoji].filter((id: string) => id !== userId);
       if (reactions[emoji].length === 0) {
         delete reactions[emoji];
       }
@@ -425,10 +638,7 @@ export async function reactToMessage(
       reactions[emoji].push(userId);
     }
 
-    await prisma.messages.update({
-      where: { id: messageId },
-      data: { reactions },
-    });
+    await Message.findByIdAndUpdate(messageId, { reactions });
 
     return { success: true, reactions };
   } catch (error) {
@@ -439,31 +649,23 @@ export async function reactToMessage(
 
 export async function pinMessage(messageId: string, userId: string, isPinned: boolean) {
   try {
-    const message = await prisma.messages.findFirst({
-      where: { id: messageId },
-    });
+    const message = await Message.findById(messageId);
 
     if (!message) {
       throw new Error('Message not found');
     }
 
-    // Check if user has permission
-    const participant = await prisma.conversation_participants.findFirst({
-      where: {
-        conversationId: message.conversationId,
-        userId,
-        role: { in: ['ADMIN', 'MODERATOR'] },
-      },
+    const participant = await ConversationParticipant.findOne({
+      conversationId: message.conversationId,
+      userId,
+      role: { $in: ['ADMIN', 'MODERATOR'] },
     });
 
     if (!participant) {
       throw new Error('You do not have permission to pin messages');
     }
 
-    await prisma.messages.update({
-      where: { id: messageId },
-      data: { isPinned },
-    });
+    await Message.findByIdAndUpdate(messageId, { isPinned });
 
     return { success: true };
   } catch (error) {
@@ -547,7 +749,34 @@ export async function sendBroadcast(data: SendBroadcastData) {
       isEmergency: data.isEmergency,
     });
 
-    return populated;
+    if (!populated) {
+      throw new Error('Failed to retrieve broadcast');
+    }
+
+    const senderObj = populated.senderId as any;
+    return {
+      id: populated._id.toString(),
+      title: populated.title,
+      content: populated.content,
+      messageType: populated.messageType,
+      attachmentUrl: populated.attachmentUrl,
+      attachmentName: populated.attachmentName,
+      targetRoles: populated.targetRoles,
+      isEmergency: populated.isEmergency,
+      expiresAt: populated.expiresAt,
+      sentCount: populated.sentCount,
+      readCount: populated.readCount,
+      createdAt: populated.createdAt,
+      updatedAt: populated.updatedAt,
+      senderId: senderObj?._id?.toString() || populated.senderId?.toString(),
+      sender: senderObj?._id ? {
+        id: senderObj._id.toString(),
+        firstName: senderObj.firstName,
+        lastName: senderObj.lastName,
+        profilePhoto: senderObj.profilePhoto,
+        role: senderObj.role,
+      } : null,
+    };
   } catch (error) {
     logger.error('Send broadcast error:', error);
     throw error;
@@ -556,59 +785,62 @@ export async function sendBroadcast(data: SendBroadcastData) {
 
 export async function getBroadcastsForUser(userId: string, page = 1, limit = 20) {
   try {
+    const receipts = await BroadcastReceipt.find({ userId }).select('broadcastId isRead readAt');
+    const broadcastIds = receipts.map(r => r.broadcastId);
+
+    const where: any = {
+      _id: { $in: broadcastIds },
+      isActive: true,
+      $or: [
+        { expiresAt: null },
+        { expiresAt: { $gt: new Date() } },
+      ],
+    };
+
     const [broadcasts, total] = await Promise.all([
-      prisma.broadcast_messages.findMany({
-        where: {
-          isActive: true,
-          receipts: {
-            some: { userId },
-          },
-          OR: [
-            { expiresAt: null },
-            { expiresAt: { gt: new Date() } },
-          ],
-        },
-        include: {
-          sender: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              profilePhoto: true,
-              role: true,
-            },
-          },
-          receipts: {
-            where: { userId },
-            select: {
-              isRead: true,
-              readAt: true,
-            },
-          },
-        },
-        orderBy: [
-          { isEmergency: 'desc' },
-          { createdAt: 'desc' },
-        ],
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.broadcast_messages.count({
-        where: {
-          isActive: true,
-          receipts: {
-            some: { userId },
-          },
-        },
-      }),
+      BroadcastMessage.find(where)
+        .populate({
+          path: 'senderId',
+          select: 'firstName lastName profilePhoto role',
+        })
+        .sort({ isEmergency: -1, createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit),
+      BroadcastMessage.countDocuments(where),
     ]);
 
+    const broadcastsWithReceipts = broadcasts.map((broadcast) => {
+      const receipt = receipts.find(r => r.broadcastId.toString() === broadcast._id.toString());
+      const senderObj = broadcast.senderId as any;
+      return {
+        id: broadcast._id.toString(),
+        title: broadcast.title,
+        content: broadcast.content,
+        messageType: broadcast.messageType,
+        attachmentUrl: broadcast.attachmentUrl,
+        attachmentName: broadcast.attachmentName,
+        targetRoles: broadcast.targetRoles,
+        isEmergency: broadcast.isEmergency,
+        expiresAt: broadcast.expiresAt,
+        sentCount: broadcast.sentCount,
+        readCount: broadcast.readCount,
+        createdAt: broadcast.createdAt,
+        updatedAt: broadcast.updatedAt,
+        senderId: senderObj?._id?.toString() || broadcast.senderId?.toString(),
+        sender: senderObj?._id ? {
+          id: senderObj._id.toString(),
+          firstName: senderObj.firstName,
+          lastName: senderObj.lastName,
+          profilePhoto: senderObj.profilePhoto,
+          role: senderObj.role,
+        } : null,
+        isRead: receipt?.isRead || false,
+        readAt: receipt?.readAt,
+      };
+    });
+
     return {
-      broadcasts: broadcasts.map((b) => ({
-        ...b,
-        isRead: b.receipts[0]?.isRead || false,
-        readAt: b.receipts[0]?.readAt,
-      })),
+      broadcasts: broadcastsWithReceipts,
       pagination: {
         total,
         page,
@@ -624,23 +856,13 @@ export async function getBroadcastsForUser(userId: string, page = 1, limit = 20)
 
 export async function markBroadcastAsRead(broadcastId: string, userId: string) {
   try {
-    await prisma.broadcast_receipts.updateMany({
-      where: {
-        broadcastId,
-        userId,
-      },
-      data: {
-        isRead: true,
-        readAt: new Date(),
-      },
-    });
+    await BroadcastReceipt.updateMany(
+      { broadcastId, userId },
+      { isRead: true, readAt: new Date() }
+    );
 
-    // Increment read count
-    await prisma.broadcast_messages.update({
-      where: { id: broadcastId },
-      data: {
-        readCount: { increment: 1 },
-      },
+    await BroadcastMessage.findByIdAndUpdate(broadcastId, {
+      $inc: { readCount: 1 },
     });
 
     return { success: true };
@@ -654,22 +876,18 @@ export async function markBroadcastAsRead(broadcastId: string, userId: string) {
 
 export async function getContacts(userId: string, role?: string, search?: string) {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { role: true },
-    });
+    const user = await User.findById(userId).select('role');
 
     if (!user) {
       throw new Error('User not found');
     }
 
-    // Define who can message whom based on role hierarchy
     const allowedRoles = getMessageableRoles(user.role);
 
     const where: any = {
-      id: { not: userId },
+      _id: { $ne: userId },
       status: 'ACTIVE',
-      role: { in: allowedRoles },
+      role: { $in: allowedRoles },
     };
 
     if (role) {
@@ -677,42 +895,38 @@ export async function getContacts(userId: string, role?: string, search?: string
     }
 
     if (search) {
-      where.OR = [
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { lastName: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
+      where.$or = [
+        { firstName: new RegExp(search, 'i') },
+        { lastName: new RegExp(search, 'i') },
+        { email: new RegExp(search, 'i') },
       ];
     }
 
-    const contacts = await prisma.user.findMany({
-      where,
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        phone: true,
-        profilePhoto: true,
-        role: true,
-        status: true,
-        lastLogin: true,
-      },
-      orderBy: [{ role: 'asc' }, { firstName: 'asc' }],
+    const contacts = await User.find(where)
+      .select('firstName lastName email phone profilePhoto role status lastLogin')
+      .sort({ role: 1, firstName: 1 });
+
+    // Serialize contacts with id field
+    const serializedContacts = contacts.map(c => {
+      const cObj = c.toJSON();
+      return {
+        ...cObj,
+        id: c._id.toString(),
+      };
     });
 
-    // Group by role
-    const groupedContacts = contacts.reduce((acc, contact) => {
+    const groupedContacts = serializedContacts.reduce((acc, contact) => {
       if (!acc[contact.role]) {
         acc[contact.role] = [];
       }
       acc[contact.role].push(contact);
       return acc;
-    }, {} as Record<string, typeof contacts>);
+    }, {} as Record<string, typeof serializedContacts>);
 
     return {
-      contacts,
+      contacts: serializedContacts,
       groupedContacts,
-      totalCount: contacts.length,
+      totalCount: serializedContacts.length,
     };
   } catch (error) {
     logger.error('Get contacts error:', error);
@@ -723,22 +937,16 @@ export async function getContacts(userId: string, role?: string, search?: string
 function getMessageableRoles(userRole: string): string[] {
   switch (userRole) {
     case 'DIRECTOR':
-      // MD can message anyone in the system
       return ['DIRECTOR', 'MANAGER', 'GENERAL_SUPERVISOR', 'SUPERVISOR', 'SECRETARY'];
     case 'MANAGER':
-      // Manager can message GS, can reply to GS (not Director directly, not Operators)
       return ['MANAGER', 'GENERAL_SUPERVISOR'];
     case 'GENERAL_SUPERVISOR':
-      // GS can message Supervisors and Manager
       return ['MANAGER', 'GENERAL_SUPERVISOR', 'SUPERVISOR'];
     case 'SUPERVISOR':
-      // Supervisor can message only GS (chain of command - no Manager/Director)
       return ['GENERAL_SUPERVISOR'];
     case 'SECRETARY':
-      // Secretary limited to Director and Manager
       return ['DIRECTOR', 'MANAGER'];
     case 'OPERATOR':
-      // Operators do NOT have dashboards and do NOT send messages
       return [];
     default:
       return [];
@@ -770,53 +978,39 @@ export async function addParticipantToGroup(
   userId: string
 ) {
   try {
-    // Verify admin permissions
-    const admin = await prisma.conversation_participants.findFirst({
-      where: {
-        conversationId,
-        userId: adminUserId,
-        role: { in: ['ADMIN', 'MODERATOR'] },
-        leftAt: null,
-      },
+    const admin = await ConversationParticipant.findOne({
+      conversationId,
+      userId: adminUserId,
+      role: { $in: ['ADMIN', 'MODERATOR'] },
+      leftAt: null,
     });
 
     if (!admin) {
       throw new Error('You do not have permission to add participants');
     }
 
-    // Check if user is already a participant
-    const existing = await prisma.conversation_participants.findFirst({
-      where: {
-        conversationId,
-        userId,
-        leftAt: null,
-      },
+    const existing = await ConversationParticipant.findOne({
+      conversationId,
+      userId,
+      leftAt: null,
     });
 
     if (existing) {
       throw new Error('User is already a participant');
     }
 
-    const participant = await prisma.conversation_participants.create({
-      data: {
-        conversationId,
-        userId,
-        role: 'MEMBER',
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            profilePhoto: true,
-            role: true,
-          },
-        },
-      },
+    const participant = await ConversationParticipant.create({
+      conversationId,
+      userId,
+      role: 'MEMBER',
     });
 
-    return participant;
+    const populatedParticipant = await ConversationParticipant.findById(participant._id).populate({
+      path: 'userId',
+      select: 'firstName lastName profilePhoto role',
+    });
+
+    return populatedParticipant;
   } catch (error) {
     logger.error('Add participant error:', error);
     throw error;
@@ -829,29 +1023,21 @@ export async function removeParticipantFromGroup(
   userId: string
 ) {
   try {
-    // Verify admin permissions
-    const admin = await prisma.conversation_participants.findFirst({
-      where: {
-        conversationId,
-        userId: adminUserId,
-        role: 'ADMIN',
-        leftAt: null,
-      },
+    const admin = await ConversationParticipant.findOne({
+      conversationId,
+      userId: adminUserId,
+      role: 'ADMIN',
+      leftAt: null,
     });
 
     if (!admin) {
       throw new Error('You do not have permission to remove participants');
     }
 
-    await prisma.conversation_participants.updateMany({
-      where: {
-        conversationId,
-        userId,
-      },
-      data: {
-        leftAt: new Date(),
-      },
-    });
+    await ConversationParticipant.updateMany(
+      { conversationId, userId },
+      { leftAt: new Date() }
+    );
 
     return { success: true };
   } catch (error) {
@@ -862,15 +1048,10 @@ export async function removeParticipantFromGroup(
 
 export async function leaveGroup(conversationId: string, userId: string) {
   try {
-    await prisma.conversation_participants.updateMany({
-      where: {
-        conversationId,
-        userId,
-      },
-      data: {
-        leftAt: new Date(),
-      },
-    });
+    await ConversationParticipant.updateMany(
+      { conversationId, userId },
+      { leftAt: new Date() }
+    );
 
     return { success: true };
   } catch (error) {
@@ -884,27 +1065,32 @@ export async function leaveGroup(conversationId: string, userId: string) {
 export async function getUnreadCounts(userId: string) {
   try {
     const [conversationUnread, broadcastUnread] = await Promise.all([
-      prisma.conversation_participants.aggregate({
-        where: {
-          userId,
-          leftAt: null,
+      ConversationParticipant.aggregate([
+        {
+          $match: {
+            userId: new mongoose.Types.ObjectId(userId),
+            leftAt: null,
+          },
         },
-        _sum: {
-          unreadCount: true,
+        {
+          $group: {
+            _id: null,
+            totalUnread: { $sum: '$unreadCount' },
+          },
         },
-      }),
-      prisma.broadcast_receipts.count({
-        where: {
-          userId,
-          isRead: false,
-        },
+      ]),
+      BroadcastReceipt.countDocuments({
+        userId: new mongoose.Types.ObjectId(userId),
+        isRead: false,
       }),
     ]);
 
+    const conversationTotal = conversationUnread[0]?.totalUnread || 0;
+
     return {
-      conversations: conversationUnread._sum.unreadCount || 0,
+      conversations: conversationTotal,
       broadcasts: broadcastUnread,
-      total: (conversationUnread._sum.unreadCount || 0) + broadcastUnread,
+      total: conversationTotal + broadcastUnread,
     };
   } catch (error) {
     logger.error('Get unread counts error:', error);
@@ -922,17 +1108,17 @@ export async function searchMessages(
   limit = 20
 ) {
   try {
+    const participantConversations = await ConversationParticipant.find({
+      userId,
+      leftAt: null,
+    }).select('conversationId');
+
+    const conversationIds = participantConversations.map(p => p.conversationId);
+
     const where: any = {
       isDeleted: false,
-      content: { contains: query, mode: 'insensitive' },
-      conversation: {
-        participants: {
-          some: {
-            userId,
-            leftAt: null,
-          },
-        },
-      },
+      content: new RegExp(query, 'i'),
+      conversationId: { $in: conversationIds },
     };
 
     if (conversationId) {
@@ -940,30 +1126,19 @@ export async function searchMessages(
     }
 
     const [messages, total] = await Promise.all([
-      prisma.messages.findMany({
-        where,
-        include: {
-          sender: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              profilePhoto: true,
-            },
-          },
-          conversation: {
-            select: {
-              id: true,
-              name: true,
-              type: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.messages.count({ where }),
+      Message.find(where)
+        .populate({
+          path: 'senderId',
+          select: 'firstName lastName profilePhoto',
+        })
+        .populate({
+          path: 'conversationId',
+          select: 'name type',
+        })
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit),
+      Message.countDocuments(where),
     ]);
 
     return {
@@ -980,3 +1155,8 @@ export async function searchMessages(
     throw error;
   }
 }
+
+// ==================== TYPES ====================
+
+type ConversationType = 'DIRECT' | 'GROUP' | 'CHANNEL';
+type MessageType = 'TEXT' | 'IMAGE' | 'FILE' | 'AUDIO' | 'VIDEO' | 'LOCATION' | 'CONTACT' | 'STICKER';

@@ -40,7 +40,7 @@ import bitRoutes from './routes/bit.routes';
 import companyDocumentRoutes from './routes/companyDocument.routes';
 import idVerificationRoutes from './routes/id-verification.routes';
 import assignmentRoutes from './routes/assignment.routes';
-import emergencyAlertRoutes from './routes/emergencyAlert.routes';
+// import emergencyAlertRoutes from './routes/emergencyAlert.routes';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -172,7 +172,7 @@ app.use('/api/bits', bitRoutes);
 app.use('/api/documents', companyDocumentRoutes);
 app.use('/api/verify-id', idVerificationRoutes);
 app.use('/api/assignments', assignmentRoutes);
-app.use('/api/emergency-alerts', emergencyAlertRoutes);
+// app.use('/api/emergency-alerts', emergencyAlertRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -3,8 +3,46 @@ import { authenticate, AuthRequest, requireRole } from '../middlewares/auth.midd
 import { asyncHandler } from '../middlewares/error.middleware';
 import * as messagingService from '../services/messaging.service';
 import { logger } from '../utils/logger';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 const router = Router();
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(process.cwd(), 'uploads', 'messages');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `msg-${uniqueSuffix}${path.extname(file.originalname)}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [
+      '.jpg', '.jpeg', '.png', '.gif', '.webp', // Images
+      '.pdf', '.doc', '.docx', '.txt', '.xls', '.xlsx', // Documents
+      '.mp4', '.mov', '.avi', '.mkv', // Videos
+      '.mp3', '.wav', '.ogg', // Audio
+      '.zip', '.rar' // Archives
+    ];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedTypes.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Allowed: images, documents, videos, audio, and archives'));
+    }
+  }
+});
 
 // All routes require authentication
 router.use(authenticate);
@@ -112,6 +150,101 @@ router.post(
     );
 
     res.status(201).json({ participant });
+  })
+);
+
+// ==================== FILE UPLOAD ====================
+
+// Upload file for messaging
+router.post(
+  '/upload',
+  upload.single('file'),
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const fileUrl = `/uploads/messages/${req.file.filename}`;
+    
+    logger.info('File uploaded for messaging', {
+      userId: req.user!.userId,
+      filename: req.file.filename,
+      originalName: req.file.originalname,
+      size: req.file.size,
+      mimetype: req.file.mimetype
+    });
+
+    res.json({
+      success: true,
+      url: fileUrl,
+      filename: req.file.originalname,
+      size: req.file.size,
+      mimetype: req.file.mimetype
+    });
+  })
+);
+
+// ==================== CALL SIGNALING ====================
+
+interface CallSignal {
+  type: 'call-initiated' | 'call-ringing' | 'call-accepted' | 'call-rejected' | 'call-ended' | 'call-cancelled';
+  callId: string;
+  fromUserId: string;
+  toUserId: string;
+  conversationId: string;
+  callType: 'voice' | 'video';
+  roomUrl?: string;
+  timestamp: number;
+}
+
+// In-memory storage for call signals (in production, use Redis or database)
+const callSignals: CallSignal[] = [];
+
+// Send call signal
+router.post(
+  '/call-signal',
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const signal: CallSignal = req.body;
+    
+    // Add timestamp if not provided
+    if (!signal.timestamp) {
+      signal.timestamp = Date.now();
+    }
+    
+    // Store signal
+    callSignals.push(signal);
+    
+    // Clean up old signals (older than 5 minutes)
+    const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+    const validSignals = callSignals.filter(s => s.timestamp > fiveMinutesAgo);
+    callSignals.length = 0;
+    callSignals.push(...validSignals);
+    
+    logger.info('Call signal received', {
+      type: signal.type,
+      callId: signal.callId,
+      from: signal.fromUserId,
+      to: signal.toUserId,
+      callType: signal.callType
+    });
+    
+    res.json({ success: true });
+  })
+);
+
+// Get call signals for user
+router.get(
+  '/call-signals',
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const userId = req.user!.userId;
+    const since = req.query.since ? parseInt(req.query.since as string) : Date.now() - 10000;
+    
+    // Get signals for this user that are newer than 'since'
+    const userSignals = callSignals.filter(
+      signal => signal.toUserId === userId && signal.timestamp > since
+    );
+    
+    res.json({ signals: userSignals });
   })
 );
 

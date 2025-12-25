@@ -26,30 +26,31 @@ router.post(
       }
 
       const alert = await emergencyAlertService.createEmergencyAlert(
-      {
-        title,
-        content,
-        alertType,
-        triggeredById: req.user.userId,
-        bitId,
-        locationId,
-        targetRoles,
-        targetUserIds,
-      },
-      req.user.role
-    );
+        {
+          title,
+          content,
+          alertType,
+          triggeredById: req.user.userId,
+          bitId,
+          locationId,
+          targetRoles,
+          targetUserIds,
+        },
+        req.user.role
+      );
 
-    res.status(201).json({ 
-      alert,
-      message: req.user.role === 'SUPERVISOR' 
-        ? 'Emergency alert submitted for approval' 
-        : 'Emergency alert sent'
-    });
-  } catch (error: any) {
-    console.error('Error creating emergency alert:', error);
-    res.status(500).json({ error: error.message || 'Failed to create emergency alert' });
+      res.status(201).json({ 
+        alert,
+        message: req.user.role === 'SUPERVISOR' 
+          ? 'Emergency alert submitted for approval' 
+          : 'Emergency alert sent'
+      });
+    } catch (error: any) {
+      console.error('Error creating emergency alert:', error);
+      res.status(500).json({ error: error.message || 'Failed to create emergency alert' });
+    }
   }
-});
+);
 
 /**
  * @route   GET /api/emergency-alerts

@@ -264,6 +264,7 @@ function App() {
         <Route path="id-cards" element={<SupervisorIDCardGenerator />} />
         <Route path="settings" element={<SupervisorEnhancedSettingsPage />} />
         <Route path="assignments/request" element={<RequestAssignmentPage />} />
+        <Route path="messaging" element={<ManagerMessagingPage />} />
       </Route>
       
       {/* General Supervisor Routes */}
@@ -287,6 +288,7 @@ function App() {
         <Route path="settings" element={<GSEnhancedSettingsPage />} />
         <Route path="assignments/assign" element={<AssignOperatorPage />} />
         <Route path="assignments/approvals" element={<AssignmentApprovalsPage />} />
+        <Route path="messaging" element={<ManagerMessagingPage />} />
       </Route>
       
       {/* Director Routes */}
@@ -297,6 +299,7 @@ function App() {
       <Route path="/director/personnel/register-manager" element={<DirectorLayout><RegisterManagerPage /></DirectorLayout>} />
       <Route path="/director/personnel/pending-approvals" element={<DirectorLayout><PendingApprovalsPage /></DirectorLayout>} />
       <Route path="/director/personnel/all" element={<DirectorLayout><WorkersPage /></DirectorLayout>} />
+      <Route path="/director/messaging" element={<DirectorLayout><MessagingPage /></DirectorLayout>} />
       <Route path="/director/communications/messages" element={<DirectorLayout><MessagingPage /></DirectorLayout>} />
       <Route path="/director/communications/center" element={<DirectorLayout><DirectorCommunicationPage /></DirectorLayout>} />
       <Route path="/director/meetings/instant" element={<DirectorLayout><InstantMeetingPage /></DirectorLayout>} />

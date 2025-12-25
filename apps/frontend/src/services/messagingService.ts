@@ -32,6 +32,7 @@ export const getConversations = async (
   params.limit = limit.toString();
 
   const response = await api.get<ConversationsResponse>(`${MESSAGING_API}/conversations`, { params });
+  
   return response.data;
 };
 
