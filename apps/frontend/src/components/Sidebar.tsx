@@ -83,8 +83,6 @@ const menuItems: MenuItem[] = [
     icon: MessageSquare,
     children: [
       { name: 'Messages', icon: MessagesSquare, path: '/director/communications/messages' },
-      { name: 'Broadcast', icon: Radio, path: '/director/communications/send-message' },
-      { name: 'Emergency Alerts', icon: AlertOctagon, path: '/director/communications/history' },
     ]
   },
   { 
