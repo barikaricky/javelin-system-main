@@ -182,6 +182,12 @@ export default function ManagerMessagingPage() {
     if (showLoading) setIsLoading(true);
     try {
       const result = await messagingService.getMessages(conversationId);
+      console.log('📩 Loaded messages:', result.messages.map(m => ({
+        id: m.id,
+        senderId: m.senderId,
+        senderName: `${m.sender?.firstName} ${m.sender?.lastName}`,
+        profilePhoto: m.sender?.profilePhoto
+      })));
       setMessages(result.messages);
     } catch (error) {
       console.error('Load messages error:', error);
@@ -415,6 +421,17 @@ export default function ManagerMessagingPage() {
     const showDate = !prevMessage || 
       formatMessageDate(message.createdAt) !== formatMessageDate(prevMessage.createdAt);
     const showAvatar = !isOwn && (!prevMessage || prevMessage.senderId !== message.senderId);
+
+    // Debug log for profile photo
+    if (!isOwn && showAvatar && message.sender) {
+      console.log('🖼️ Rendering avatar for message:', {
+        messageId: message.id,
+        senderId: message.senderId,
+        senderName: `${message.sender.firstName} ${message.sender.lastName}`,
+        profilePhoto: message.sender.profilePhoto,
+        imageUrl: getImageUrl(message.sender.profilePhoto)
+      });
+    }
 
     return (
       <>
@@ -786,6 +803,9 @@ export default function ManagerMessagingPage() {
                           {contact.firstName} {contact.lastName}
                         </h4>
                         <p className="text-xs text-gray-500">{contact.email}</p>
+                        {contact.phone && (
+                          <p className="text-xs text-gray-500">📱 {contact.phone}</p>
+                        )}
                       </div>
                     </button>
                   ))}

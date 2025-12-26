@@ -937,17 +937,18 @@ export async function getContacts(userId: string, role?: string, search?: string
 function getMessageableRoles(userRole: string): string[] {
   switch (userRole) {
     case 'DIRECTOR':
-      return ['DIRECTOR', 'MANAGER', 'GENERAL_SUPERVISOR', 'SUPERVISOR', 'SECRETARY'];
+      // Director can message everyone in the company
+      return ['DIRECTOR', 'MANAGER', 'GENERAL_SUPERVISOR', 'SUPERVISOR', 'OPERATOR', 'SECRETARY'];
     case 'MANAGER':
-      return ['MANAGER', 'GENERAL_SUPERVISOR'];
+      return ['DIRECTOR', 'MANAGER', 'GENERAL_SUPERVISOR', 'SUPERVISOR', 'OPERATOR', 'SECRETARY'];
     case 'GENERAL_SUPERVISOR':
-      return ['MANAGER', 'GENERAL_SUPERVISOR', 'SUPERVISOR'];
+      return ['DIRECTOR', 'MANAGER', 'GENERAL_SUPERVISOR', 'SUPERVISOR', 'OPERATOR'];
     case 'SUPERVISOR':
-      return ['GENERAL_SUPERVISOR'];
+      return ['DIRECTOR', 'MANAGER', 'GENERAL_SUPERVISOR', 'SUPERVISOR', 'OPERATOR'];
     case 'SECRETARY':
-      return ['DIRECTOR', 'MANAGER'];
+      return ['DIRECTOR', 'MANAGER', 'SECRETARY'];
     case 'OPERATOR':
-      return [];
+      return ['SUPERVISOR', 'GENERAL_SUPERVISOR', 'MANAGER'];
     default:
       return [];
   }

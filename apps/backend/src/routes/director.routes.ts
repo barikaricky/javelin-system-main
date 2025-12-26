@@ -5,6 +5,7 @@ import { body } from 'express-validator';
 import { registerManager, getManagers } from '../controllers/director.controller';
 import { validateRequest } from '../middleware/validation.middleware';
 import multer from 'multer';
+import mongoose from 'mongoose';
 import * as bitService from '../services/bit.service';
 import { 
   User, 
@@ -24,6 +25,7 @@ import {
   Transaction
 } from '../models';
 import MoneyOut from '../models/MoneyOut.model';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -511,8 +513,14 @@ function generateEmployeeId(prefix: string): string {
 
 // Director Register Operator (Director can register directly without approval)
 router.post('/operators/register', async (req: Request & { user?: any }, res, next) => {
+  // Start a session for transaction
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const bcrypt = require('bcryptjs');
+    const { sendOperatorWelcomeEmail } = require('../services/email.service');
+    const { Location } = require('../models/Location.model');
     const {
       firstName,
       lastName,
@@ -546,6 +554,44 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
       email,
       directorId: directorUserId,
     });
+
+    // Validate guarantor photos if provided
+    const validateBase64Image = (base64: string): boolean => {
+      if (!base64) return true; // Optional field
+      // Check if it's a valid data URL
+      const base64Regex = /^data:image\/(jpeg|jpg|png|gif|webp);base64,/;
+      if (!base64Regex.test(base64)) return false;
+      // Check size (max 3MB after base64 encoding - more lenient)
+      const sizeInBytes = (base64.length * 3) / 4;
+      const maxSize = 3 * 1024 * 1024; // 3MB
+      return sizeInBytes <= maxSize;
+    };
+
+    // Validate all photo fields - only if they are provided
+    if (applicantPhoto && !validateBase64Image(applicantPhoto)) {
+      console.log('❌ Invalid applicant photo:', {
+        length: applicantPhoto?.length,
+        prefix: applicantPhoto?.substring(0, 50)
+      });
+      res.status(400).json({ error: 'Applicant photo is invalid or too large (max 3MB)' });
+      return;
+    }
+    if (guarantor1Photo && !validateBase64Image(guarantor1Photo)) {
+      console.log('❌ Invalid guarantor1 photo:', {
+        length: guarantor1Photo?.length,
+        prefix: guarantor1Photo?.substring(0, 50)
+      });
+      res.status(400).json({ error: 'Guarantor 1 photo is invalid or too large (max 3MB)' });
+      return;
+    }
+    if (guarantor2Photo && !validateBase64Image(guarantor2Photo)) {
+      console.log('❌ Invalid guarantor2 photo:', {
+        length: guarantor2Photo?.length,
+        prefix: guarantor2Photo?.substring(0, 50)
+      });
+      res.status(400).json({ error: 'Guarantor 2 photo is invalid or too large (max 3MB)' });
+      return;
+    }
 
     // Check if email already exists
     const existingUser = await User.findOne({ email: email.toLowerCase() });
@@ -590,7 +636,7 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
       createdById: directorUserId,
     });
 
-    await newUser.save();
+    await newUser.save({ session });
 
     // Create operator record
     const newOperator = new Operator({
@@ -622,7 +668,42 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
       startDate: new Date(),
     });
 
-    await newOperator.save();
+    await newOperator.save({ session });
+
+    // Commit the transaction
+    await session.commitTransaction();
+    session.endSession();
+
+    // Get location details for SMS
+    let locationName = 'Unassigned';
+    if (locationId) {
+      try {
+        const location = await Location.findById(locationId);
+        if (location) {
+          locationName = location.locationName || location.name || 'Assigned Location';
+        }
+      } catch (error) {
+        logger.warn('Could not fetch location details:', error);
+      }
+    }
+
+    // Send welcome email (non-blocking)
+    if (email) {
+      logger.info('📧 Attempting to send welcome email to:', email);
+      sendOperatorWelcomeEmail({
+        email: email,
+        firstName,
+        lastName,
+        employeeId,
+        locationName,
+        temporaryPassword,
+      }).then(() => {
+        logger.info('✅ Welcome email sent successfully to:', email);
+      }).catch((error: any) => {
+        logger.error('❌ Failed to send welcome email:', error);
+        // Don't fail the request if email fails
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -632,13 +713,20 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
         userId: newUser._id,
         fullName: `${firstName} ${lastName}`,
         email: newUser.email,
+        phone: phone,
         employeeId,
+        locationName,
         approvalStatus: 'APPROVED',
         status: 'ACTIVE',
         temporaryPassword, // Include for reference
+        emailSent: true, // Email notification enabled
       },
     });
   } catch (error) {
+    // Rollback transaction on error
+    await session.abortTransaction();
+    session.endSession();
+    
     console.error('Error registering operator:', error);
     next(error);
   }

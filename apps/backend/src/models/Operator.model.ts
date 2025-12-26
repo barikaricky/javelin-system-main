@@ -1,14 +1,27 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export interface IGuarantor {
+  name: string;
+  phone: string;
+  address: string;
+  photo?: string;
+}
+
 export interface IOperator extends Document {
   userId: mongoose.Types.ObjectId;
-  supervisorId: mongoose.Types.ObjectId;
+  supervisorId?: mongoose.Types.ObjectId;
   employeeId: string;
   locationId?: mongoose.Types.ObjectId;
+  shiftType?: string;
   passportPhoto?: string;
   bankName?: string;
   bankAccount?: string;
   nationalId?: string;
+  documents?: string[];
+  guarantors?: IGuarantor[];
+  previousExperience?: string;
+  medicalFitness?: boolean;
+  approvalStatus?: string;
   salary: number;
   startDate: Date;
   createdAt: Date;
@@ -26,7 +39,7 @@ const OperatorSchema = new Schema<IOperator>(
     supervisorId: {
       type: Schema.Types.ObjectId,
       ref: 'Supervisor',
-      required: true,
+      required: false,
     },
     employeeId: {
       type: String,
@@ -37,13 +50,47 @@ const OperatorSchema = new Schema<IOperator>(
       type: Schema.Types.ObjectId,
       ref: 'Location',
     },
+    shiftType: {
+      type: String,
+      enum: ['DAY', 'NIGHT', 'ROTATING'],
+      default: 'DAY',
+    },
     passportPhoto: String,
     bankName: String,
     bankAccount: String,
     nationalId: String,
+    documents: [String],
+    guarantors: [
+      {
+        name: {
+          type: String,
+          required: true,
+        },
+        phone: {
+          type: String,
+          required: true,
+        },
+        address: {
+          type: String,
+          required: true,
+        },
+        photo: String,
+      },
+    ],
+    previousExperience: String,
+    medicalFitness: {
+      type: Boolean,
+      default: false,
+    },
+    approvalStatus: {
+      type: String,
+      enum: ['PENDING', 'APPROVED', 'REJECTED'],
+      default: 'PENDING',
+    },
     salary: {
       type: Number,
       required: true,
+      default: 0,
     },
     startDate: {
       type: Date,

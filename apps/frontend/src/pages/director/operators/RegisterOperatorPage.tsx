@@ -22,6 +22,47 @@ import toast from 'react-hot-toast';
 import { api } from '../../../lib/api';
 import { useNavigate } from 'react-router-dom';
 
+// Image compression utility
+const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.7): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxWidth) {
+            width = (width * maxWidth) / height;
+            height = maxWidth;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        } else {
+          reject(new Error('Failed to get canvas context'));
+        }
+      };
+      img.onerror = reject;
+    };
+    reader.onerror = reject;
+  });
+};
+
 interface Location {
   id: string;
   name: string;
@@ -124,34 +165,43 @@ export default function RegisterOperatorPage() {
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
-    const file = e.target.files?.[0];
+  const handleNINDocumentUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (!file) return;
 
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
-      toast.error('File size must be less than 5MB');
+    // Check file type
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+      toast.error('Please select an image or PDF file');
       return;
     }
 
-    const formDataUpload = new FormData();
-    formDataUpload.append('file', file);
+    // Check file size (max 5MB before compression)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File is too large. Please select a file under 5MB');
+      return;
+    }
 
     try {
-      const response = await api.post('/upload', formDataUpload, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      setFormData({
-        ...formData,
-        [fieldName]: response.data.url || response.data.path,
-      });
-      toast.success('File uploaded successfully');
+      // If it's an image, compress it
+      if (file.type.startsWith('image/')) {
+        const compressedImage = await compressImage(file, 800, 0.7);
+        setFormData({ ...formData, ninDocument: compressedImage });
+        toast.success('NIN document uploaded and compressed successfully');
+      } else {
+        // For PDF, convert to base64
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+          setFormData({ ...formData, ninDocument: reader.result as string });
+          toast.success('NIN document uploaded successfully');
+        };
+        reader.onerror = () => {
+          toast.error('Failed to read file');
+        };
+      }
     } catch (error) {
-      console.error('Upload error:', error);
-      toast.error('Failed to upload file');
+      console.error('Error uploading NIN document:', error);
+      toast.error('Failed to process file');
     }
   };
 
@@ -223,6 +273,45 @@ export default function RegisterOperatorPage() {
     }
     setIsCameraActive(false);
     setCaptureType(null);
+  };
+
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'applicant' | 'guarantor1' | 'guarantor2') => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Check file size (max 5MB before compression)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image file is too large. Please select an image under 5MB');
+      return;
+    }
+
+    try {
+      // Compress image
+      const compressedImage = await compressImage(file, 800, 0.7);
+      
+      // Check compressed size
+      const base64Size = (compressedImage.length * 3) / 4 / 1024; // Size in KB
+      console.log(`Compressed image size: ${base64Size.toFixed(2)} KB`);
+
+      if (type === 'applicant') {
+        setFormData({ ...formData, applicantPhoto: compressedImage });
+      } else if (type === 'guarantor1') {
+        setFormData({ ...formData, guarantor1Photo: compressedImage });
+      } else if (type === 'guarantor2') {
+        setFormData({ ...formData, guarantor2Photo: compressedImage });
+      }
+
+      toast.success('Photo uploaded and compressed successfully');
+    } catch (error) {
+      console.error('Error compressing image:', error);
+      toast.error('Failed to process image');
+    }
   };
 
   useEffect(() => {
@@ -302,10 +391,6 @@ export default function RegisterOperatorPage() {
       setRegisteredOperator(response.data.operator);
       setShowSuccess(true);
       toast.success('Operator registered successfully!');
-      
-      setTimeout(() => {
-        navigate('/director/personnel/all');
-      }, 3000);
     } catch (error: any) {
       console.error('Registration error:', error);
       toast.error(error.response?.data?.error || 'Failed to register operator');
@@ -333,12 +418,40 @@ export default function RegisterOperatorPage() {
             Operator has been registered successfully. The operator is now active and can start working.
           </p>
           {registeredOperator && (
-            <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
-              <p className="text-sm text-gray-600 mb-1">Registered Operator:</p>
-              <p className="font-semibold text-gray-900">
-                {registeredOperator.firstName} {registeredOperator.lastName}
-              </p>
-              <p className="text-sm text-gray-600">{registeredOperator.email}</p>
+            <div className="space-y-4 mb-6">
+              <div className="bg-gray-50 rounded-lg p-4 text-left">
+                <p className="text-sm text-gray-600 mb-2">Registered Operator:</p>
+                <p className="font-semibold text-gray-900">
+                  {registeredOperator.fullName}
+                </p>
+                <p className="text-sm text-gray-600">{registeredOperator.email}</p>
+                {registeredOperator.phone && (
+                  <p className="text-sm text-gray-600">{registeredOperator.phone}</p>
+                )}
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+                <p className="text-sm font-medium text-blue-900 mb-2">Credentials:</p>
+                <p className="text-sm text-blue-800">
+                  <span className="font-semibold">Employee ID:</span> {registeredOperator.employeeId}
+                </p>
+                <p className="text-sm text-blue-800">
+                  <span className="font-semibold">Location:</span> {registeredOperator.locationName}
+                </p>
+                <p className="text-sm text-blue-800">
+                  <span className="font-semibold">Password:</span> {registeredOperator.temporaryPassword}
+                </p>
+              </div>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <p className="text-xs text-green-800 flex items-center gap-2">
+                  <span className="text-base">📧</span>
+                  <span>Welcome email with credentials has been sent to: <strong>{registeredOperator.email}</strong></span>
+                </p>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
+                <p className="text-xs text-blue-700">
+                  💡 The operator should check their email inbox for login credentials and instructions.
+                </p>
+              </div>
             </div>
           )}
           <button
@@ -700,14 +813,26 @@ export default function RegisterOperatorPage() {
                           </button>
                         </div>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => startCamera('guarantor1')}
-                          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                        >
-                          <Camera className="w-5 h-5" />
-                          Take Photo
-                        </button>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => startCamera('guarantor1')}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                          >
+                            <Camera className="w-5 h-5" />
+                            Take Photo
+                          </button>
+                          <label className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer">
+                            <Upload className="w-5 h-5" />
+                            Upload Photo
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handlePhotoUpload(e, 'guarantor1')}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -779,14 +904,26 @@ export default function RegisterOperatorPage() {
                           </button>
                         </div>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => startCamera('guarantor2')}
-                          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                        >
-                          <Camera className="w-5 h-5" />
-                          Take Photo
-                        </button>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => startCamera('guarantor2')}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                          >
+                            <Camera className="w-5 h-5" />
+                            Take Photo
+                          </button>
+                          <label className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer">
+                            <Upload className="w-5 h-5" />
+                            Upload Photo
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handlePhotoUpload(e, 'guarantor2')}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -819,14 +956,26 @@ export default function RegisterOperatorPage() {
                       </button>
                     </div>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => startCamera('applicant')}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                    >
-                      <Camera className="w-5 h-5" />
-                      Take Photo
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => startCamera('applicant')}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      >
+                        <Camera className="w-5 h-5" />
+                        Take Photo
+                      </button>
+                      <label className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer">
+                        <Upload className="w-5 h-5" />
+                        Upload Photo
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handlePhotoUpload(e, 'applicant')}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
                   )}
                 </div>
 
@@ -852,17 +1001,33 @@ export default function RegisterOperatorPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     NIN Document (Optional)
                   </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="file"
-                      onChange={(e) => handleFileUpload(e, 'ninDocument')}
-                      accept="image/*,.pdf"
-                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                    />
-                  </div>
-                  {formData.ninDocument && (
-                    <p className="text-sm text-green-600 mt-1">Document uploaded</p>
+                  {formData.ninDocument ? (
+                    <div className="relative inline-block">
+                      <div className="w-48 h-32 bg-gray-100 rounded-lg flex items-center justify-center p-4">
+                        <FileText className="w-12 h-12 text-gray-400" />
+                        <span className="text-xs text-gray-600 ml-2">Document Attached</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, ninDocument: '' })}
+                        className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer w-fit">
+                      <Upload className="w-5 h-5" />
+                      Upload Document
+                      <input
+                        type="file"
+                        accept="image/*,application/pdf"
+                        onChange={handleNINDocumentUpload}
+                        className="hidden"
+                      />
+                    </label>
                   )}
+                  <p className="text-xs text-gray-500 mt-1">Upload image or PDF (max 5MB)</p>
                 </div>
               </div>
             )}

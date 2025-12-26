@@ -233,6 +233,12 @@ export default function MessagingPage() {
     if (showLoading) setIsLoading(true);
     try {
       const result = await messagingService.getMessages(conversationId);
+      console.log('📩 Loaded messages:', result.messages.map(m => ({
+        id: m.id,
+        senderId: m.senderId,
+        senderName: `${m.sender?.firstName} ${m.sender?.lastName}`,
+        profilePhoto: m.sender?.profilePhoto
+      })));
       setMessages(result.messages);
     } catch (error) {
       console.error('Load messages error:', error);
@@ -1134,6 +1140,9 @@ export default function MessagingPage() {
                           {contact.firstName} {contact.lastName}
                         </h4>
                         <p className="text-xs text-gray-500">{contact.email}</p>
+                        {contact.phone && (
+                          <p className="text-xs text-gray-500">📱 {contact.phone}</p>
+                        )}
                       </div>
                     </button>
                   ))}
