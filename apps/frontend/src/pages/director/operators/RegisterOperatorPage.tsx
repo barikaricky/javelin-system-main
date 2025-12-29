@@ -69,12 +69,31 @@ interface Location {
   address: string;
 }
 
+interface Bit {
+  _id: string;
+  bitCode: string;
+  bitName: string;
+  locationId: string | { _id: string; locationName: string };
+  numberOfOperators: number;
+}
+
+interface Supervisor {
+  _id: string;
+  userId: {
+    firstName: string;
+    lastName: string;
+  };
+}
+
 export default function RegisterOperatorPage() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [bits, setBits] = useState<Bit[]>([]);
+  const [filteredBits, setFilteredBits] = useState<Bit[]>([]);
+  const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
   const [registeredOperator, setRegisteredOperator] = useState<any>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
@@ -94,6 +113,8 @@ export default function RegisterOperatorPage() {
     
     // Work Assignment
     locationId: '',
+    bitId: '',
+    supervisorId: '',
     shiftType: 'DAY',
     
     // First Guarantor
@@ -120,6 +141,8 @@ export default function RegisterOperatorPage() {
 
   useEffect(() => {
     fetchLocations();
+    fetchBits();
+    fetchSupervisors();
   }, []);
 
   const fetchLocations = async () => {
@@ -147,6 +170,63 @@ export default function RegisterOperatorPage() {
       toast.error('Failed to load locations');
     }
   };
+
+  const fetchBits = async () => {
+    try {
+      const response = await api.get('/bits', {
+        params: {
+          isActive: 'all',
+          limit: 500,
+        }
+      });
+      
+      const bitsList = response.data.bits || [];
+      console.log('Fetched bits:', bitsList);
+      setBits(bitsList);
+    } catch (error) {
+      console.error('Failed to fetch bits:', error);
+      toast.error('Failed to load BITs');
+    }
+  };
+
+  const fetchSupervisors = async () => {
+    try {
+      const response = await api.get('/director/supervisors', {
+        params: {
+          approvalStatus: 'APPROVED',
+          limit: 500,
+        }
+      });
+      
+      const supervisorsList = response.data.supervisors || [];
+      console.log('Fetched supervisors:', supervisorsList);
+      setSupervisors(supervisorsList);
+    } catch (error) {
+      console.error('Failed to fetch supervisors:', error);
+      toast.error('Failed to load supervisors');
+    }
+  };
+
+  // Filter bits when location changes
+  useEffect(() => {
+    if (formData.locationId) {
+      const filtered = bits.filter(bit => {
+        const bitLocationId = typeof bit.locationId === 'string' 
+          ? bit.locationId 
+          : bit.locationId._id;
+        return bitLocationId === formData.locationId;
+      });
+      setFilteredBits(filtered);
+      
+      // Reset bitId if currently selected bit is not in filtered list
+      if (formData.bitId && !filtered.find(b => b._id === formData.bitId)) {
+        setFormData(prev => ({ ...prev, bitId: '' }));
+      }
+    } else {
+      setFilteredBits([]);
+      setFormData(prev => ({ ...prev, bitId: '' }));
+    }
+  }, [formData.locationId, bits]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -383,10 +463,29 @@ export default function RegisterOperatorPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await api.post('/director/operators/register', {
+      // Prepare data - only include optional fields if they have values
+      const submitData: any = {
         ...formData,
         status: 'ACTIVE', // Director can directly activate operators
+      };
+
+      // Only send bitId if it's not empty
+      if (!formData.bitId || formData.bitId === '') {
+        delete submitData.bitId;
+      }
+
+      // Only send supervisorId if it's not empty
+      if (!formData.supervisorId || formData.supervisorId === '') {
+        delete submitData.supervisorId;
+      }
+
+      console.log('Submitting operator registration:', {
+        hasBitId: !!submitData.bitId,
+        hasLocationId: !!submitData.locationId,
+        hasSupervisorId: !!submitData.supervisorId,
       });
+
+      const response = await api.post('/director/operators/register', submitData);
 
       setRegisteredOperator(response.data.operator);
       setShowSuccess(true);
@@ -688,6 +787,54 @@ export default function RegisterOperatorPage() {
                       {locations.map((location) => (
                         <option key={location.id} value={location.id}>
                           {location.name} - {location.address}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Assigned BIT (Optional)
+                  </label>
+                  <div className="relative">
+                    <Shield className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                    <select
+                      name="bitId"
+                      value={formData.bitId}
+                      onChange={handleChange}
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      disabled={!formData.locationId}
+                    >
+                      <option value="">No specific BIT (Location only)</option>
+                      {filteredBits.map((bit) => (
+                        <option key={bit._id} value={bit._id}>
+                          {bit.bitName} ({bit.bitCode}) - {bit.numberOfOperators} operator(s) required
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {!formData.locationId && (
+                    <p className="text-xs text-gray-500 mt-1">Select a location first to see available BITs</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Assigned Supervisor (Optional)
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                    <select
+                      name="supervisorId"
+                      value={formData.supervisorId}
+                      onChange={handleChange}
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">No supervisor assigned yet</option>
+                      {supervisors.map((supervisor) => (
+                        <option key={supervisor._id} value={supervisor._id}>
+                          {supervisor.userId.firstName} {supervisor.userId.lastName}
                         </option>
                       ))}
                     </select>

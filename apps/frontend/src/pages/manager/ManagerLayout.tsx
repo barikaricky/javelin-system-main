@@ -145,6 +145,13 @@ const menuItems = [
     badge: 'View',
   },
   {
+    id: 'bit-expenses',
+    label: 'BIT Expenses',
+    icon: FileText,
+    path: '/manager/bit-expenses',
+    badge: 'View',
+  },
+  {
     id: 'requests',
     label: 'Requests',
     icon: FileText,

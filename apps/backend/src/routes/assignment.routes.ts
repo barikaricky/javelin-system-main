@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { assignmentService } from '../services/assignment.service';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
-import User from '../models/User.model';
+import { User } from '../models/User.model';
 
 const router = Router();
 
@@ -538,6 +538,179 @@ router.post(
       res.status(500).json({
         success: false,
         message: 'Failed to validate operator eligibility',
+      });
+    }
+  }
+);
+
+/**
+ * @route   POST /api/assignments/assign
+ * @desc    Assign a guard to a BIT (simplified endpoint for director)
+ * @access  Private (Director)
+ */
+router.post(
+  '/assign',
+  authenticate,
+  authorize('DIRECTOR', 'MANAGER', 'GENERAL_SUPERVISOR', 'DEVELOPER'),
+  async (req: Request, res: Response) => {
+    try {
+      const {
+        operatorId,
+        bitId,
+        supervisorId,
+        shiftType,
+        assignmentType,
+        startDate,
+      } = req.body;
+
+      // Validate required fields (locationId not needed - gets from BIT)
+      if (!operatorId || !bitId || !supervisorId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Missing required fields: operatorId, bitId, supervisorId',
+        });
+      }
+
+      const user = (req as any).user;
+      
+      // Fetch full user details
+      const userDetails = await User.findById(user.userId);
+      if (!userDetails) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found',
+        });
+      }
+
+      const assignedBy = {
+        userId: user.userId,
+        role: user.role,
+        name: `${userDetails.firstName} ${userDetails.lastName}`,
+      };
+
+      // Create the assignment (ACTIVE status automatically set for DIRECTOR role)
+      const assignment = await assignmentService.createAssignment({
+        operatorId,
+        bitId,
+        supervisorId,
+        shiftType: shiftType || 'DAY',
+        startDate: startDate ? new Date(startDate) : new Date(),
+        assignmentType: assignmentType || 'PERMANENT',
+        assignedBy,
+      });
+
+      res.status(201).json({
+        success: true,
+        message: 'Guard assigned successfully',
+        assignment,
+      });
+    } catch (error: any) {
+      console.error('Error assigning guard:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to assign guard',
+      });
+    }
+  }
+);
+
+/**
+ * @route   PUT /api/assignments/:id
+ * @desc    Update/reassign a guard assignment
+ * @access  Private (Director)
+ */
+router.put(
+  '/:id',
+  authenticate,
+  authorize('DIRECTOR', 'MANAGER', 'GENERAL_SUPERVISOR', 'DEVELOPER'),
+  async (req: Request, res: Response) => {
+    try {
+      const {
+        locationId,
+        bitId,
+        supervisorId,
+        shiftType,
+        assignmentType,
+        startDate,
+      } = req.body;
+
+      const user = (req as any).user;
+      
+      // Fetch the existing assignment
+      const existingAssignment = await assignmentService.getAssignmentById(req.params.id);
+      if (!existingAssignment) {
+        return res.status(404).json({
+          success: false,
+          message: 'Assignment not found',
+        });
+      }
+
+      // Get user details
+      const userDetails = await User.findById(user.userId);
+      if (!userDetails) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found',
+        });
+      }
+
+      const updatedBy = {
+        userId: user.userId,
+        role: user.role,
+        name: `${userDetails.firstName} ${userDetails.lastName}`,
+      };
+
+      // Update the assignment
+      const updateData: any = {};
+      if (locationId) updateData.locationId = locationId;
+      if (bitId) updateData.bitId = bitId;
+      if (supervisorId) updateData.supervisorId = supervisorId;
+      if (shiftType) updateData.shiftType = shiftType;
+      if (assignmentType) updateData.assignmentType = assignmentType;
+      if (startDate) updateData.startDate = new Date(startDate);
+
+      const assignment = await assignmentService.updateAssignment(req.params.id, {
+        ...updateData,
+        approvedBy: updatedBy,
+      });
+
+      res.json({
+        success: true,
+        message: 'Assignment updated successfully',
+        assignment,
+      });
+    } catch (error: any) {
+      console.error('Error updating assignment:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to update assignment',
+      });
+    }
+  }
+);
+
+/**
+ * @route   DELETE /api/assignments/:id
+ * @desc    Delete/unassign a guard assignment
+ * @access  Private (Director)
+ */
+router.delete(
+  '/:id',
+  authenticate,
+  authorize('DIRECTOR', 'MANAGER', 'GENERAL_SUPERVISOR', 'DEVELOPER'),
+  async (req: Request, res: Response) => {
+    try {
+      await assignmentService.deleteAssignment(req.params.id);
+
+      res.json({
+        success: true,
+        message: 'Guard unassigned successfully',
+      });
+    } catch (error: any) {
+      console.error('Error deleting assignment:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to unassign guard',
       });
     }
   }

@@ -295,6 +295,4 @@ GuardAssignmentSchema.statics.findOperatorHistory = function(operatorId: mongoos
 GuardAssignmentSchema.set('toJSON', { virtuals: true });
 GuardAssignmentSchema.set('toObject', { virtuals: true });
 
-const GuardAssignment = mongoose.model<IGuardAssignment>('GuardAssignment', GuardAssignmentSchema);
-
-export default GuardAssignment;
+export const GuardAssignment = mongoose.model<IGuardAssignment>('GuardAssignment', GuardAssignmentSchema);

@@ -29,6 +29,8 @@ import MeetingRoomPage from './pages/meeting/MeetingRoomPage';
 // Director Messaging Pages
 import MessagingPage from './pages/director/messaging/MessagingPage';
 import DirectorCommunicationPage from './pages/director/communication/CommunicationPage';
+import DirectorBitExpensesPage from './pages/director/BitExpensesPage';
+import DirectorNotificationsPage from './pages/director/NotificationsPage';
 
 // Manager Dashboard imports
 import ManagerLayout from './pages/manager/ManagerLayout';
@@ -49,6 +51,7 @@ import { ManagerLocationsListPage } from './pages/manager/locations/LocationsLis
 import { ManagerEditBitPage } from './pages/manager/bits/EditBitPage';
 import { ManagerEditLocationPage } from './pages/manager/locations/EditLocationPage';
 import ManagerMoneyInView from './pages/manager/MoneyInView';
+import ManagerBitExpensesPage from './pages/manager/BitExpensesPage';
 
 // Supervisor imports
 import SupervisorLayout from './pages/supervisor/SupervisorLayout';
@@ -62,6 +65,7 @@ import SupervisorEnhancedSettingsPage from './pages/supervisor/EnhancedSettingsP
 
 // Director Operator Registration
 import DirectorRegisterOperatorPage from './pages/director/operators/RegisterOperatorPage';
+import GuardAssignmentPage from './pages/director/operators/GuardAssignmentPage';
 
 // General Supervisor imports
 import {
@@ -109,6 +113,7 @@ import ClientsListPage from './pages/secretary/clients/ClientsListPage';
 import AddClientPage from './pages/secretary/clients/AddClientPage';
 import ClientDetailPage from './pages/secretary/clients/ClientDetailPage';
 import SecretaryMessagingPage from './pages/secretary/messaging/MessagingPage';
+import SecretaryBitExpensesPage from './pages/secretary/BitExpensesPage';
 
 // Director imports
 import MoneyInReports from './pages/director/financial/MoneyInReports';
@@ -226,6 +231,7 @@ function App() {
         <Route path="id-cards" element={<SecretaryIDCardGenerator />} />
         <Route path="messages" element={<SecretaryMessagingPage />} />
         <Route path="settings" element={<SecretarySettingsPage />} />
+        <Route path="bit-expenses" element={<SecretaryBitExpensesPage />} />
       </Route>
       
       {/* Manager Routes */}
@@ -255,6 +261,7 @@ function App() {
         <Route path="salary" element={<SalaryView />} />
         <Route path="assignments" element={<AssignmentsListPage />} />
         <Route path="assignments/assign" element={<AssignGuardPage />} />
+        <Route path="bit-expenses" element={<ManagerBitExpensesPage />} />
       </Route>
       
       {/* Supervisor Routes */}
@@ -304,6 +311,7 @@ function App() {
       <Route path="/director/personnel/pending-approvals" element={<DirectorLayout><PendingApprovalsPage /></DirectorLayout>} />
       <Route path="/director/personnel/all" element={<DirectorLayout><WorkersPage /></DirectorLayout>} />
       <Route path="/director/operators/register" element={<DirectorLayout><DirectorRegisterOperatorPage /></DirectorLayout>} />
+      <Route path="/director/operators/assign" element={<DirectorLayout><GuardAssignmentPage /></DirectorLayout>} />
       <Route path="/director/messaging" element={<DirectorLayout><MessagingPage /></DirectorLayout>} />
       <Route path="/director/communications/messages" element={<DirectorLayout><MessagingPage /></DirectorLayout>} />
       <Route path="/director/communications/center" element={<DirectorLayout><DirectorCommunicationPage /></DirectorLayout>} />
@@ -327,6 +335,8 @@ function App() {
       <Route path="/director/bits/guards" element={<DirectorLayout><BitGuardsView /></DirectorLayout>} />
       <Route path="/director/id-cards" element={<DirectorLayout><IDCardGenerator /></DirectorLayout>} />
       <Route path="/director/settings" element={<DirectorLayout><SettingsPage /></DirectorLayout>} />
+      <Route path="/director/bit-expenses" element={<DirectorLayout><DirectorBitExpensesPage /></DirectorLayout>} />
+      <Route path="/director/notifications" element={<DirectorLayout><DirectorNotificationsPage /></DirectorLayout>} />
       
       {/* Root redirects */}
       <Route path="/" element={<RoleBasedRedirect />} />

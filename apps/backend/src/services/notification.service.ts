@@ -1,6 +1,23 @@
 import { User, Notification, Meeting, MeetingParticipant, Director } from '../models';
 import { logger } from '../utils/logger';
 
+// Lightweight wrapper used by other services for simple notifications
+export async function sendNotification(data: {
+  recipientId: string;
+  title: string;
+  message: string;
+  type: string;
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH';
+}) {
+  return createNotification({
+    receiverId: data.recipientId,
+    type: data.type,
+    subject: data.title,
+    message: data.message,
+    metadata: { priority: data.priority || 'MEDIUM' },
+  });
+}
+
 interface CreateNotificationData {
   senderId?: string;
   receiverId: string;

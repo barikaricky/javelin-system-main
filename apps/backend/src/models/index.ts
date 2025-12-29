@@ -29,6 +29,8 @@ export * from './Client.model';
 export * from './Invoice.model';
 export * from './Budget.model';
 export * from './Bit.model';
+export * from './BitExpense.model';
+export { GuardAssignment } from './GuardAssignment.model';
 export * from './CompanyDocument.model';
 export * from './MoneyOut.model';
 export * from './Salary.model';

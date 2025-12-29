@@ -22,7 +22,8 @@ import {
   Notification,
   Bit,
   Invoice,
-  Transaction
+  Transaction,
+  GuardAssignment
 } from '../models';
 import MoneyOut from '../models/MoneyOut.model';
 import { logger } from '../utils/logger';
@@ -224,8 +225,25 @@ router.get('/dashboard/stats', async (req: Request & { user?: any }, res, next) 
       })
     );
 
-    // Calculate understaffed locations (locations with less than 5 operators)
-    const understaffedLocations = locationOperatorCounts.filter(loc => loc.count < 5).length;
+    // Calculate understaffed BITs (BITs where assigned operators < required numberOfOperators)
+    const { GuardAssignment } = require('../models/GuardAssignment.model');
+    const allBits = await Bit.find({ isActive: true }).lean();
+    let understaffedLocations = 0;
+    
+    for (const bit of allBits) {
+      const assignedCount = await GuardAssignment.countDocuments({ 
+        bitId: bit._id, 
+        status: 'ACTIVE' 
+      });
+      if (assignedCount < bit.numberOfOperators) {
+        understaffedLocations++;
+      }
+    }
+
+    console.log('🔍 Understaffed calculation:', {
+      totalActiveBits: allBits.length,
+      understaffedBits: understaffedLocations,
+    });
 
     // Map locations to expected format
     const mappedLocations = await Promise.all(
@@ -359,10 +377,15 @@ router.post('/supervisors', async (req: Request & { user?: any }, res, next) => 
   }
 });
 
-router.get('/supervisors', async (_req, res, next) => {
+router.get('/supervisors', async (req, res, next) => {
   try {
-    const supervisors = await getSupervisors();
-    res.json(supervisors);
+    const filters = {
+      approvalStatus: req.query.approvalStatus as string,
+      supervisorType: req.query.supervisorType as string,
+      limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
+    };
+    const supervisors = await getSupervisors(filters);
+    res.json({ supervisors });
   } catch (error) {
     next(error);
   }
@@ -511,12 +534,65 @@ function generateEmployeeId(prefix: string): string {
   return `${prefix}-${timestamp}-${random}`;
 }
 
+// Get all operators with optional filters
+router.get('/operators', async (req: Request, res) => {
+  try {
+    const { includeAssignments, locationId, status } = req.query;
+    
+    const query: any = {};
+    if (locationId) query.locationId = locationId;
+    
+    let operatorsQuery = Operator.find(query)
+      .populate('userId')
+      .populate('locationId')
+      .sort({ createdAt: -1 });
+
+    const operators = await operatorsQuery.lean();
+
+    // Fetch current assignments if requested
+    if (includeAssignments === 'true') {
+      const operatorIds = operators.map(op => op._id);
+      const assignments = await GuardAssignment.find({
+        operatorId: { $in: operatorIds },
+        status: 'ACTIVE'
+      })
+        .populate('bitId')
+        .populate('locationId')
+        .populate('supervisorId')
+        .populate({
+          path: 'supervisorId',
+          populate: { path: 'userId' }
+        })
+        .lean();
+
+      // Map assignments to operators
+      const assignmentMap = new Map();
+      assignments.forEach(assignment => {
+        assignmentMap.set(assignment.operatorId.toString(), assignment);
+      });
+
+      // Add currentAssignment to each operator
+      operators.forEach((operator: any) => {
+        operator.currentAssignment = assignmentMap.get(operator._id.toString()) || null;
+      });
+    }
+
+    res.json({
+      success: true,
+      count: operators.length,
+      operators,
+    });
+  } catch (error: any) {
+    console.error('Error fetching operators:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to fetch operators',
+    });
+  }
+});
+
 // Director Register Operator (Director can register directly without approval)
 router.post('/operators/register', async (req: Request & { user?: any }, res, next) => {
-  // Start a session for transaction
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     const bcrypt = require('bcryptjs');
     const { sendOperatorWelcomeEmail } = require('../services/email.service');
@@ -532,6 +608,8 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
       state,
       lga,
       locationId,
+      bitId,
+      supervisorId,
       shiftType,
       guarantor1Name,
       guarantor1Phone,
@@ -549,9 +627,13 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
     } = req.body;
 
     const directorUserId = req.user?.userId;
+    const directorUser = await User.findById(directorUserId);
 
     console.log('🔷 Director registering operator:', {
       email,
+      locationId,
+      bitId,
+      supervisorId,
       directorId: directorUserId,
     });
 
@@ -636,13 +718,14 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
       createdById: directorUserId,
     });
 
-    await newUser.save({ session });
+    await newUser.save();
 
     // Create operator record
     const newOperator = new Operator({
       userId: newUser._id,
       employeeId,
       locationId: locationId || undefined,
+      supervisorId: supervisorId || undefined,
       shiftType: shiftType || 'DAY',
       passportPhoto: applicantPhoto || undefined,
       nationalId: ninNumber || undefined,
@@ -668,11 +751,67 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
       startDate: new Date(),
     });
 
-    await newOperator.save({ session });
+    await newOperator.save();
 
-    // Commit the transaction
-    await session.commitTransaction();
-    session.endSession();
+    // Log what values we have for assignment
+    console.log('📋 Assignment data check:', {
+      hasBitId: !!bitId,
+      hasLocationId: !!locationId,
+      hasSupervisorId: !!supervisorId,
+      bitIdValue: bitId,
+      locationIdValue: locationId,
+      supervisorIdValue: supervisorId,
+    });
+
+    // Create GuardAssignment if BIT, location, and supervisor are specified (not empty strings)
+    let guardAssignment = null;
+    if (bitId && bitId !== '' && locationId && locationId !== '' && supervisorId && supervisorId !== '') {
+      try {
+        console.log('🔹 Creating GuardAssignment for operator:', {
+          operatorId: newOperator._id,
+          bitId,
+          locationId,
+          supervisorId,
+          shiftType,
+        });
+
+        guardAssignment = new GuardAssignment({
+          operatorId: newOperator._id,
+          bitId,
+          locationId,
+          supervisorId,
+          assignmentType: 'PERMANENT',
+          shiftType: shiftType || 'DAY',
+          startDate: new Date(),
+          status: 'ACTIVE',
+          assignedBy: {
+            userId: directorUserId,
+            role: 'DIRECTOR',
+            name: `${directorUser?.firstName || ''} ${directorUser?.lastName || ''}`.trim() || 'Director',
+          },
+          approvedBy: {
+            userId: directorUserId,
+            role: 'DIRECTOR',
+            name: `${directorUser?.firstName || ''} ${directorUser?.lastName || ''}`.trim() || 'Director',
+          },
+          approvedAt: new Date(),
+        });
+
+        await guardAssignment.save();
+        console.log('✅ GuardAssignment created successfully:', guardAssignment._id);
+      } catch (assignmentError) {
+        console.error('❌ Failed to create GuardAssignment:', assignmentError);
+        // Don't fail the registration if assignment creation fails
+        // The operator can be assigned later through the assignment page
+      }
+    } else if (bitId || supervisorId) {
+      console.warn('⚠️ Partial assignment data provided:', {
+        hasbitId: !!bitId,
+        hasLocationId: !!locationId,
+        hasSupervisorId: !!supervisorId,
+      });
+      console.warn('⚠️ GuardAssignment requires bitId, locationId, and supervisorId. Skipping assignment creation.');
+    }
 
     // Get location details for SMS
     let locationName = 'Unassigned';
@@ -707,7 +846,9 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
 
     res.status(201).json({
       success: true,
-      message: 'Operator registered and activated successfully.',
+      message: guardAssignment 
+        ? 'Operator registered, activated, and assigned to BIT successfully.'
+        : 'Operator registered and activated successfully.',
       operator: {
         id: newOperator._id,
         userId: newUser._id,
@@ -720,13 +861,11 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
         status: 'ACTIVE',
         temporaryPassword, // Include for reference
         emailSent: true, // Email notification enabled
+        assignmentCreated: !!guardAssignment,
+        assignmentId: guardAssignment?._id,
       },
     });
   } catch (error) {
-    // Rollback transaction on error
-    await session.abortTransaction();
-    session.endSession();
-    
     console.error('Error registering operator:', error);
     next(error);
   }

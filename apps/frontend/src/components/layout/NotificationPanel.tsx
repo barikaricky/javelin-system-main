@@ -110,16 +110,33 @@ export default function NotificationPanel() {
   };
 
   const formatTime = (date: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - new Date(date).getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
+    try {
+      const now = new Date();
+      const notificationDate = new Date(date);
+      
+      // Check if date is valid
+      if (isNaN(notificationDate.getTime())) {
+        return 'Recently';
+      }
+      
+      const diff = now.getTime() - notificationDate.getTime();
+      
+      // Handle negative diff (future dates)
+      if (diff < 0) {
+        return 'Just now';
+      }
+      
+      const minutes = Math.floor(diff / 60000);
+      const hours = Math.floor(minutes / 60);
+      const days = Math.floor(hours / 24);
 
-    if (days > 0) return `${days}d ago`;
-    if (hours > 0) return `${hours}h ago`;
-    if (minutes > 0) return `${minutes}m ago`;
-    return 'Just now';
+      if (days > 0) return `${days}d ago`;
+      if (hours > 0) return `${hours}h ago`;
+      if (minutes > 0) return `${minutes}m ago`;
+      return 'Just now';
+    } catch (error) {
+      return 'Recently';
+    }
   };
 
   return (

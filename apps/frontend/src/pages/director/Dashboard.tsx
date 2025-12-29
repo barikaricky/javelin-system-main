@@ -46,6 +46,7 @@ import {
   Printer,
   Fingerprint,
   Crown,
+  DollarSign,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { api } from '../../lib/api';
@@ -426,8 +427,9 @@ export default function DirectorDashboard() {
             <QuickAction icon={BadgeCheck} label="Approvals" badge={stats.pendingApprovals} color="yellow" onClick={() => navigate('/director/personnel/pending-approvals')} />
             <QuickAction icon={CalendarPlus} label="Meeting" color="green" onClick={() => navigate('/director/meetings/create')} />
             <QuickAction icon={Megaphone} label="Broadcast" color="red" onClick={() => navigate('/director/communications/broadcast')} />
-            <QuickAction icon={Building2} label="Location" color="purple" onClick={() => navigate('/director/locations/new')} />
+            <QuickAction icon={Building2} label="Location" color="purple" onClick={() => navigate('/director/locations')} />
             <QuickAction icon={CreditCard} label="Expenses" color="indigo" onClick={() => navigate('/director/transactions/expenses')} />
+            <QuickAction icon={DollarSign} label="BIT Expenses" color="cyan" onClick={() => navigate('/director/bit-expenses')} />
             <QuickAction icon={Fingerprint} label="ID Cards" color="teal" onClick={() => navigate('/director/id-cards')} />
             <QuickAction icon={Settings} label="Settings" color="gray" onClick={() => navigate('/director/settings')} />
           </div>

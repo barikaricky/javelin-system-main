@@ -1,11 +1,11 @@
 import mongoose from 'mongoose';
-import GuardAssignment, { IGuardAssignment } from '../models/GuardAssignment.model';
+import { GuardAssignment, IGuardAssignment } from '../models/GuardAssignment.model';
 import { Operator } from '../models/Operator.model';
 import { Bit } from '../models/Bit.model';
 import { Supervisor } from '../models/Supervisor.model';
 import User from '../models/User.model';
-import { activityService } from './activity.service';
-import { notificationService } from './notification.service';
+import * as activityService from './activity.service';
+import * as notificationService from './notification.service';
 
 export class AssignmentService {
   /**
@@ -537,6 +537,45 @@ export class AssignmentService {
       type: 'ASSIGNMENT',
       priority: 'HIGH',
     });
+  }
+
+  /**
+   * Update an existing guard assignment
+   */
+  async updateAssignment(assignmentId: string, updates: Partial<IGuardAssignment>): Promise<IGuardAssignment> {
+    const assignment = await GuardAssignment.findById(assignmentId);
+    if (!assignment) {
+      throw new Error('Assignment not found');
+    }
+
+    // Update fields
+    Object.assign(assignment, updates);
+    await assignment.save();
+
+    // Populate for return
+    await assignment.populate([
+      { path: 'operatorId', populate: { path: 'userId' } },
+      { path: 'bitId' },
+      { path: 'locationId' },
+      { path: 'supervisorId', populate: { path: 'userId' } },
+    ]);
+
+    return assignment;
+  }
+
+  /**
+   * Delete/cancel an assignment
+   */
+  async deleteAssignment(assignmentId: string): Promise<void> {
+    const assignment = await GuardAssignment.findById(assignmentId);
+    if (!assignment) {
+      throw new Error('Assignment not found');
+    }
+
+    // Update status to ENDED instead of deleting
+    assignment.status = 'ENDED';
+    assignment.endDate = new Date();
+    await assignment.save();
   }
 }
 

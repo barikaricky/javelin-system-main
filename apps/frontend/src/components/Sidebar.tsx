@@ -61,6 +61,7 @@ const menuItems: MenuItem[] = [
     children: [
       { name: 'Register Manager', icon: UserPlus, path: '/director/personnel/register-manager' },
       { name: 'Register Operator', icon: UserPlus, path: '/director/operators/register' },
+      { name: 'Assign Guards to BITs', icon: Shield, path: '/director/operators/assign' },
       { name: 'Pending Approvals', icon: AlertCircle, path: '/director/personnel/pending-approvals', badge: 5 },
       { name: 'All Personnel', icon: UsersRound, path: '/director/personnel/all' },
     ]
@@ -113,6 +114,7 @@ const menuItems: MenuItem[] = [
       { name: 'Money In Reports', icon: TrendingUp, path: '/director/financial/money-in' },
       { name: 'Money Out Reports', icon: TrendingDown, path: '/director/financial/money-out' },
       { name: 'Salary Management', icon: Users, path: '/director/salary' },
+      { name: 'BIT Expenses', icon: Receipt, path: '/director/bit-expenses' },
     ]
   },
 ];

@@ -99,13 +99,30 @@ export async function createSupervisor(directorId: string, data: any) {
   }
 }
 
-export async function getSupervisors() {
-  return Supervisor.find()
+export async function getSupervisors(filters?: any) {
+  const query: any = {};
+  
+  if (filters?.approvalStatus) {
+    query.approvalStatus = filters.approvalStatus;
+  }
+  
+  if (filters?.supervisorType) {
+    query.supervisorType = filters.supervisorType;
+  }
+  
+  let queryBuilder = Supervisor.find(query)
     .populate({
       path: 'userId',
       select: 'email phone firstName lastName status',
     })
-    .populate('locationId');
+    .populate('locationId')
+    .sort({ createdAt: -1 });
+  
+  if (filters?.limit) {
+    queryBuilder = queryBuilder.limit(filters.limit);
+  }
+  
+  return queryBuilder;
 }
 
 export async function getSupervisorById(id: string) {

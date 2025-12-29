@@ -90,10 +90,6 @@ router.post('/register', authorize('SUPERVISOR', 'GENERAL_SUPERVISOR', 'DEVELOPE
   const temporaryPassword = `Opr${Math.random().toString(36).substring(2, 10)}!`;
   const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
 
-  // Start a session for transaction
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     // Create user with PENDING status
     const newUser = new User({
@@ -114,7 +110,7 @@ router.post('/register', authorize('SUPERVISOR', 'GENERAL_SUPERVISOR', 'DEVELOPE
       createdById: supervisorUserId,
     });
 
-    await newUser.save({ session });
+    await newUser.save();
 
     // Create operator record
     const newOperator = new Operator({
@@ -128,9 +124,7 @@ router.post('/register', authorize('SUPERVISOR', 'GENERAL_SUPERVISOR', 'DEVELOPE
       startDate: new Date(),
     });
 
-    await newOperator.save({ session });
-
-    await session.commitTransaction();
+    await newOperator.save();
 
     // Notify Directors
     try {
@@ -162,10 +156,7 @@ router.post('/register', authorize('SUPERVISOR', 'GENERAL_SUPERVISOR', 'DEVELOPE
       },
     });
   } catch (error) {
-    await session.abortTransaction();
     throw error;
-  } finally {
-    session.endSession();
   }
 }));
 

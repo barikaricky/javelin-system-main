@@ -135,7 +135,6 @@ export default function GSRegisterSupervisorPage() {
   const [registeredSupervisor, setRegisteredSupervisor] = useState<any>(null);
   const [locations, setLocations] = useState<Location[]>([]);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [newBit, setNewBit] = useState('');
 
   // 5 steps for supervisor registration
   const totalSteps = 5;
@@ -188,21 +187,15 @@ export default function GSRegisterSupervisorPage() {
     });
   };
 
-  const addBit = () => {
-    if (newBit.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        bitsAssigned: [...prev.bitsAssigned, newBit.trim()],
-      }));
-      setNewBit('');
-    }
-  };
-
-  const removeBit = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      bitsAssigned: prev.bitsAssigned.filter((_, i) => i !== index),
-    }));
+  const handleSupervisedLocationToggle = (locationId: string) => {
+    setFormData(prev => {
+      const current = prev.bitsAssigned;
+      if (current.includes(locationId)) {
+        return { ...prev, bitsAssigned: current.filter(id => id !== locationId) };
+      } else {
+        return { ...prev, bitsAssigned: [...current, locationId] };
+      }
+    });
   };
 
   const validateStep = (step: number): boolean => {
@@ -851,44 +844,48 @@ export default function GSRegisterSupervisorPage() {
               </div>
             </div>
 
-            {/* Bits Assignment */}
+            {/* Supervised Locations Assignment */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Bits Assigned (Optional)</label>
-              <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  value={newBit}
-                  onChange={(e) => setNewBit(e.target.value)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  placeholder="Enter bit name/ID"
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addBit())}
-                />
-                <button
-                  type="button"
-                  onClick={addBit}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
-                >
-                  Add
-                </button>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Supervised Locations (Select all locations this supervisor will oversee)</label>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-700">
+                    Select all locations where this supervisor will manage guards and operations. They will receive updates and reports from these locations.
+                  </p>
+                </div>
+              </div>
+              <div className="border border-gray-200 rounded-xl p-4 max-h-60 overflow-y-auto">
+                {locations.length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-4">No locations available</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {locations.map(loc => (
+                      <label
+                        key={loc.id}
+                        className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer border border-gray-100 transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.bitsAssigned.includes(loc.id)}
+                          onChange={() => handleSupervisedLocationToggle(loc.id)}
+                          className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 mt-0.5 flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-medium text-gray-900 block">{loc.name}</span>
+                          {loc.address && (
+                            <span className="text-xs text-gray-500 block mt-0.5">{loc.address}</span>
+                          )}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
               {formData.bitsAssigned.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {formData.bitsAssigned.map((bit, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm"
-                    >
-                      {bit}
-                      <button
-                        type="button"
-                        onClick={() => removeBit(index)}
-                        className="hover:text-emerald-900"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
+                <p className="text-sm text-emerald-600 mt-2">
+                  ✓ {formData.bitsAssigned.length} location(s) selected for supervision
+                </p>
               )}
             </div>
 

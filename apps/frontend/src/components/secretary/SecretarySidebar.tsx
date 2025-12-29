@@ -68,6 +68,7 @@ const menuItems: MenuItem[] = [
       { name: 'Money In', icon: ArrowDownCircle, path: '/secretary/money-in' },
       { name: 'Money Out', icon: ArrowUpCircle, path: '/secretary/money-out' },
       { name: 'Salary Panel', icon: Users, path: '/secretary/salary' },
+      { name: 'BIT Expenses', icon: FileText, path: '/secretary/bit-expenses' },
     ]
   },
   { 
