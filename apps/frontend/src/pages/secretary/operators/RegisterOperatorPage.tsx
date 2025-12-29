@@ -21,7 +21,7 @@ import {
 import toast from 'react-hot-toast';
 import { api } from '../../../lib/api';
 import { useNavigate } from 'react-router-dom';
-import { nigerianStates, nigerianLGAs } from '../../../data/nigeriaStatesLGA';
+import { nigerianStates, nigerianLGAs } from '@/data/nigeriaStatesLGA';
 
 // Image compression utility
 const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.7): Promise<string> => {
