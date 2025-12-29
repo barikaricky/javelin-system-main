@@ -57,7 +57,12 @@ app.use(cors({
       return callback(null, true);
     }
     
-    // Allow Railway production backend
+    // Allow Render production backend
+    if (origin && origin.includes('onrender.com')) {
+      return callback(null, true);
+    }
+    
+    // Allow Railway production backend (legacy)
     if (origin && origin.includes('railway.app')) {
       return callback(null, true);
     }
