@@ -189,7 +189,7 @@ export default function RegisterOperatorPage() {
 
   const fetchSupervisors = async () => {
     try {
-      const response = await api.get('/manager/supervisors');
+      const response = await api.get('/managers/supervisors');
       setSupervisors(response.data.supervisors || []);
     } catch (error) {
       console.error('Failed to fetch supervisors:', error);
