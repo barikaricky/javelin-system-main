@@ -4,11 +4,11 @@ import { logger } from '../utils/logger';
 // Create SMTP transporter
 const createTransporter = () => {
   if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
-    logger.warn('Email service not configured - missing SMTP credentials');
+    logger.warn('⚠️ Email service not configured - missing SMTP credentials');
     return null;
   }
 
-  return nodemailer.createTransporter({
+  return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || '465'),
     secure: process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465', // true for 465, false for other ports
