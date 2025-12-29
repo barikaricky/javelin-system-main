@@ -21,6 +21,7 @@ import {
 import toast from 'react-hot-toast';
 import { api } from '../../../lib/api';
 import { useNavigate } from 'react-router-dom';
+import { nigerianStates, nigerianLGAs } from '../../../data/nigeriaStatesLGA';
 
 // Image compression utility
 const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.7): Promise<string> => {
@@ -117,6 +118,10 @@ export default function RegisterOperatorPage() {
     supervisorId: '',
     shiftType: 'DAY',
     
+    // Salary
+    salary: '',
+    salaryCategory: 'STANDARD',
+    
     // First Guarantor
     guarantor1Name: '',
     guarantor1Phone: '',
@@ -138,6 +143,17 @@ export default function RegisterOperatorPage() {
     ninNumber: '',
     ninDocument: '',
   });
+
+  const [availableLGAs, setAvailableLGAs] = useState<string[]>([]);
+
+  // Update available LGAs when state changes
+  useEffect(() => {
+    if (formData.state) {
+      setAvailableLGAs(nigerianLGAs[formData.state] || []);
+    } else {
+      setAvailableLGAs([]);
+    }
+  }, [formData.state]);
 
   useEffect(() => {
     fetchLocations();
@@ -456,6 +472,20 @@ export default function RegisterOperatorPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Guarantor 1 validation
+    if (!formData.guarantor1Name || !formData.guarantor1Phone || !formData.guarantor1Address) {
+      toast.error('Please fill all Guarantor 1 information (Name, Phone, Address)');
+      setCurrentStep(3); // Go to guarantor step
+      return;
+    }
+    
+    // Guarantor 2 validation
+    if (!formData.guarantor2Name || !formData.guarantor2Phone || !formData.guarantor2Address) {
+      toast.error('Please fill all Guarantor 2 information (Name, Phone, Address)');
+      setCurrentStep(3); // Go to guarantor step
+      return;
+    }
+
     if (!validateStep(4)) {
       return;
     }
@@ -738,28 +768,46 @@ export default function RegisterOperatorPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      State
+                      State *
                     </label>
-                    <input
-                      type="text"
+                    <select
+                      required
                       name="state"
                       value={formData.state}
-                      onChange={handleChange}
+                      onChange={(e) => {
+                        handleChange(e);
+                        setFormData({ ...formData, state: e.target.value, lga: '' });
+                      }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
+                    >
+                      <option value="">Select State</option>
+                      {nigerianStates.map((state) => (
+                        <option key={state} value={state}>
+                          {state}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      LGA
+                      LGA *
                     </label>
-                    <input
-                      type="text"
+                    <select
+                      required
                       name="lga"
                       value={formData.lga}
                       onChange={handleChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
+                      disabled={!formData.state}
+                    >
+                      <option value="">Select LGA</option>
+                      {availableLGAs.map((lga) => (
+                        <option key={lga} value={lga}>
+                          {lga}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
@@ -858,6 +906,39 @@ export default function RegisterOperatorPage() {
                       <option value="NIGHT">Night Shift (6 PM - 6 AM)</option>
                     </select>
                   </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Monthly Salary (₦) *
+                  </label>
+                  <input
+                    type="number"
+                    name="salary"
+                    value={formData.salary}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="50000"
+                    min="0"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Salary Category *
+                  </label>
+                  <select
+                    name="salaryCategory"
+                    value={formData.salaryCategory}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="STANDARD">Standard</option>
+                    <option value="PREMIUM">Premium</option>
+                    <option value="BASIC">Basic</option>
+                  </select>
                 </div>
 
                 <div>
@@ -1222,7 +1303,7 @@ export default function RegisterOperatorPage() {
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Capture Photo</h3>
-              <button onClick={stopCamera} className="text-gray-500 hover:text-gray-700">
+              <button type="button" onClick={stopCamera} className="text-gray-500 hover:text-gray-700">
                 <X className="w-6 h-6" />
               </button>
             </div>
@@ -1234,12 +1315,14 @@ export default function RegisterOperatorPage() {
             />
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={capturePhoto}
                 className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
               >
                 Capture Photo
               </button>
               <button
+                type="button"
                 onClick={stopCamera}
                 className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
               >

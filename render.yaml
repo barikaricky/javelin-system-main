@@ -1,0 +1,45 @@
+services:
+  # Backend API Service
+  - type: web
+    name: javelin-backend
+    env: node
+    region: oregon
+    plan: free
+    rootDir: apps/backend
+    buildCommand: npm install --legacy-peer-deps
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3002
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 30d
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: DEVELOPER_ONBOARDING_TOKEN
+        sync: false
+      - key: FRONTEND_URL
+        value: https://javelinadmin.netlify.app
+      - key: CORS_ORIGIN
+        value: https://javelinadmin.netlify.app
+      - key: SMTP_HOST
+        value: smtp.sendgrid.net
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: EMAIL_FROM
+        value: noreply@javelin.com
+    healthCheckPath: /api/health
+    autoDeploy: true

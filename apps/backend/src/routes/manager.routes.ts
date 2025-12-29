@@ -2,6 +2,8 @@ import { Router, Response, NextFunction } from 'express';
 import { authenticate, AuthRequest } from '../middlewares/auth.middleware';
 import { AppError } from '../middlewares/error.middleware';
 import { Supervisor, Operator, Location, IncidentReport, Attendance, User, Secretary } from '../models';
+import bcrypt from 'bcryptjs';
+import { notifyDirectorsOfOperatorRegistration } from '../services/notification.service';
 import {
   registerManager,
   checkEmailAvailability,
@@ -720,6 +722,165 @@ router.get('/salary-panel', authenticate, async (_req: AuthRequest, res: Respons
       },
     });
   } catch (error) {
+    next(error);
+  }
+});
+
+// Helper function to generate employee ID
+function generateEmployeeId(prefix: string): string {
+  const timestamp = Date.now().toString().slice(-8);
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `${prefix}-${timestamp}-${random}`;
+}
+
+// Manager Register Operator (requires Manager/Director approval)
+router.post('/register-operator', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      phoneNumber,
+      gender,
+      dateOfBirth,
+      address,
+      state,
+      lga,
+      locationId,
+      bitId,
+      supervisorId,
+      salary,
+      salaryCategory,
+      bankName,
+      bankAccountNumber,
+      guarantor1Name,
+      guarantor1Phone,
+      guarantor1Address,
+      guarantor1Photo,
+      guarantor2Name,
+      guarantor2Phone,
+      guarantor2Address,
+      guarantor2Photo,
+      previousExperience,
+      medicalFitness,
+      applicantPhoto,
+      passportPhoto,
+      leftThumb,
+      rightThumb,
+      ninNumber,
+      ninDocument,
+    } = req.body;
+
+    const managerUserId = req.user?.userId;
+
+    console.log('🔷 Manager registering operator:', {
+      email,
+      locationId,
+      bitId,
+      supervisorId,
+      managerId: managerUserId,
+    });
+
+    // Check if email already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(400).json({ error: 'A user with this email already exists' });
+    }
+
+    // Check if phone already exists
+    const phoneToCheck = phoneNumber || phone;
+    if (phoneToCheck) {
+      const existingPhone = await User.findOne({ phoneNumber: phoneToCheck });
+      if (existingPhone) {
+        return res.status(400).json({ error: 'A user with this phone number already exists' });
+      }
+    }
+
+    // Generate employee ID
+    const employeeId = generateEmployeeId('OPR');
+
+    // Generate temporary password
+    const temporaryPassword = `Opr${Math.random().toString(36).substring(2, 10)}!`;
+    const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+
+    // Create user with PENDING status (requires approval)
+    const newUser = new User({
+      email: email.toLowerCase(),
+      phoneNumber: phoneToCheck || undefined,
+      passwordHash: hashedPassword,
+      role: 'OPERATOR',
+      status: 'PENDING',
+      firstName,
+      lastName,
+      profilePhoto: applicantPhoto || passportPhoto,
+    });
+
+    await newUser.save();
+    console.log('✅ User created for operator', { userId: newUser._id });
+
+    // Create operator profile with PENDING approval status
+    const newOperator = new Operator({
+      userId: newUser._id,
+      employeeId,
+      gender,
+      dateOfBirth,
+      address,
+      state,
+      lga,
+      locationId: locationId || null,
+      bitId: bitId || null,
+      supervisorId: supervisorId || null,
+      salary: salary || 0,
+      salaryCategory: salaryCategory || 'STANDARD',
+      bankName: bankName || '',
+      bankAccountNumber: bankAccountNumber || '',
+      guarantor1Name,
+      guarantor1Phone,
+      guarantor1Address,
+      guarantor1Photo,
+      guarantor2Name,
+      guarantor2Phone,
+      guarantor2Address,
+      guarantor2Photo,
+      previousExperience,
+      medicalFitness: medicalFitness || false,
+      applicantPhoto,
+      passportPhoto,
+      leftThumb,
+      rightThumb,
+      ninNumber,
+      ninDocument,
+      approvalStatus: 'PENDING', // Registered by manager, requires Director approval
+      registeredBy: managerUserId,
+    });
+
+    await newOperator.save();
+    console.log('✅ Operator profile created', { operatorId: newOperator._id });
+
+    // Notify directors about new operator registration
+    await notifyDirectorsOfOperatorRegistration(newOperator._id.toString());
+
+    res.status(201).json({
+      message: 'Operator registered successfully. Awaiting Director approval.',
+      operator: {
+        _id: newOperator._id,
+        employeeId,
+        userId: {
+          _id: newUser._id,
+          firstName,
+          lastName,
+          email: newUser.email,
+        },
+        approvalStatus: 'PENDING',
+      },
+      credentials: {
+        email: newUser.email,
+        temporaryPassword,
+      },
+    });
+  } catch (error: any) {
+    console.error('❌ Error registering operator:', error);
     next(error);
   }
 });

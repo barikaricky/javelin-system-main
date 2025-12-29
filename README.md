@@ -105,6 +105,62 @@ jevelin-management-system/
    - Backend API: http://localhost:3001
    - Frontend: http://localhost:3000
 
+## 🌐 Production Deployment
+
+### Hosting Configuration
+
+**Backend:** Deployed on [Render](https://render.com) (FREE tier)
+- URL: `https://javelin-backend.onrender.com`
+- Auto-deploys from `main` branch
+- Free tier includes 750 hours/month (sufficient for 24/7 operation)
+
+**Frontend:** Deployed on [Netlify](https://netlify.app)
+- URL: `https://javelinadmin.netlify.app`
+- Auto-deploys from `main` branch
+- Free tier with unlimited bandwidth
+
+### 🚀 Deploy to Render (Backend)
+
+**Quick Start:** See [`RENDER-QUICK-START.md`](./RENDER-QUICK-START.md)
+
+**Detailed Guide:** See [`RENDER-DEPLOYMENT-GUIDE.md`](./RENDER-DEPLOYMENT-GUIDE.md)
+
+**Environment Variables:** See [`RENDER-ENV-VARS.md`](./RENDER-ENV-VARS.md)
+
+**Deployment Checklist:** See [`RENDER-DEPLOYMENT-CHECKLIST.md`](./RENDER-DEPLOYMENT-CHECKLIST.md)
+
+#### Quick Deploy Steps:
+1. Sign up at https://render.com with GitHub
+2. Create new Web Service from `barikaricky/javelin-system-main`
+3. Configure:
+   - Root Directory: `apps/backend`
+   - Build: `npm install`
+   - Start: `npm start`
+   - Plan: FREE
+4. Add environment variables (see RENDER-ENV-VARS.md)
+5. Deploy and get URL: `https://javelin-backend.onrender.com`
+
+#### Important Notes:
+- ⏰ Free tier spins down after 15 minutes of inactivity
+- 🐌 First request after sleep takes 30-60 seconds (cold start)
+- 💰 FREE tier vs $7/month for always-on
+- 🔄 Auto-deploys on git push to main branch
+
+### 🌐 Deploy to Netlify (Frontend)
+
+Frontend is already configured in `apps/frontend/netlify.toml`
+
+1. Connect your GitHub repository to Netlify
+2. Set build settings (auto-detected from netlify.toml):
+   - Base directory: `apps/frontend`
+   - Build command: `pnpm install && pnpm run build`
+   - Publish directory: `apps/frontend/dist`
+3. Add environment variable:
+   ```
+   VITE_API_URL=https://javelin-backend.onrender.com/api
+   ```
+4. Deploy!
+
 ## Development
 
 ### Available Scripts

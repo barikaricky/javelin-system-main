@@ -21,6 +21,7 @@ import {
 import toast from 'react-hot-toast';
 import { api } from '../../../lib/api';
 import { useNavigate } from 'react-router-dom';
+import { nigerianStates, nigerianLGAs } from '../../../data/nigeriaStatesLGA';
 
 // Image compression utility
 const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.7): Promise<string> => {
@@ -109,15 +110,9 @@ export default function RegisterOperatorPage() {
     phone: '',
     dateOfBirth: '',
     gender: 'MALE',
-    maritalStatus: 'SINGLE',
-    nationality: 'Nigerian',
-    stateOfOrigin: '',
-    lga: '',
-    
-    // Contact & Address
-    contactAddress: '',
-    state: '',
-    city: '',
+    state: '', // State of residence
+    lga: '', // LGA of residence
+    address: '', // Full address
     
     // Employment Details
     locationId: '',
@@ -126,26 +121,43 @@ export default function RegisterOperatorPage() {
     
     // Bank Details
     bankName: '',
-    accountNumber: '',
-    accountName: '',
+    bankAccountNumber: '',
+    salary: '',
+    salaryCategory: 'STANDARD',
     
     // Documents & Photos
     applicantPhoto: '',
-    guarantor1Photo: '',
-    guarantor2Photo: '',
+    passportPhoto: '',
+    leftThumb: '',
+    rightThumb: '',
     
     // Guarantor 1
     guarantor1Name: '',
     guarantor1Phone: '',
     guarantor1Address: '',
-    guarantor1Relationship: '',
+    guarantor1Photo: '',
     
     // Guarantor 2
     guarantor2Name: '',
     guarantor2Phone: '',
     guarantor2Address: '',
-    guarantor2Relationship: '',
+    guarantor2Photo: '',
+    
+    // Additional
+    previousExperience: '',
+    medicalFitness: false,
   });
+
+  const [availableLGAs, setAvailableLGAs] = useState<string[]>([]);
+
+  // Update available LGAs when state changes
+  useEffect(() => {
+    if (formData.state) {
+      setAvailableLGAs(nigerianLGAs[formData.state] || []);
+    } else {
+      setAvailableLGAs([]);
+    }
+  }, [formData.state]);
 
   useEffect(() => {
     fetchLocations();
@@ -275,6 +287,20 @@ export default function RegisterOperatorPage() {
       return;
     }
     
+    // Guarantor 1 validation
+    if (!formData.guarantor1Name || !formData.guarantor1Phone || !formData.guarantor1Address) {
+      toast.error('Please fill all Guarantor 1 information (Name, Phone, Address)');
+      setCurrentStep(4); // Go to guarantor step
+      return;
+    }
+    
+    // Guarantor 2 validation
+    if (!formData.guarantor2Name || !formData.guarantor2Phone || !formData.guarantor2Address) {
+      toast.error('Please fill all Guarantor 2 information (Name, Phone, Address)');
+      setCurrentStep(4); // Go to guarantor step
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
       const response = await api.post('/managers/register-operator', {
@@ -396,6 +422,7 @@ export default function RegisterOperatorPage() {
                   Capture {captureType === 'applicant' ? 'Applicant' : captureType === 'guarantor1' ? 'Guarantor 1' : 'Guarantor 2'} Photo
                 </h3>
                 <button
+                  type="button"
                   onClick={stopCamera}
                   className="text-gray-500 hover:text-gray-700"
                 >
@@ -410,6 +437,7 @@ export default function RegisterOperatorPage() {
               />
               <div className="flex gap-4">
                 <button
+                  type="button"
                   onClick={capturePhoto}
                   className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center"
                 >
@@ -417,6 +445,7 @@ export default function RegisterOperatorPage() {
                   Capture Photo
                 </button>
                 <button
+                  type="button"
                   onClick={stopCamera}
                   className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
                 >
@@ -524,61 +553,19 @@ export default function RegisterOperatorPage() {
                     <option value="FEMALE">Female</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Marital Status *
-                  </label>
-                  <select
-                    required
-                    value={formData.maritalStatus}
-                    onChange={(e) => setFormData({ ...formData, maritalStatus: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="SINGLE">Single</option>
-                    <option value="MARRIED">Married</option>
-                    <option value="DIVORCED">Divorced</option>
-                    <option value="WIDOWED">Widowed</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    State of Origin *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.stateOfOrigin}
-                    onChange={(e) => setFormData({ ...formData, stateOfOrigin: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Lagos"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    LGA *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.lga}
-                    onChange={(e) => setFormData({ ...formData, lga: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Ikeja"
-                  />
-                </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Contact Address *
+                    Full Address *
                   </label>
                   <div className="relative">
                     <Home className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                     <textarea
                       required
-                      value={formData.contactAddress}
-                      onChange={(e) => setFormData({ ...formData, contactAddress: e.target.value })}
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       rows={3}
-                      placeholder="Full residential address"
+                      placeholder="Enter full residential address"
                     />
                   </div>
                 </div>
@@ -586,27 +573,44 @@ export default function RegisterOperatorPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     State *
                   </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.state}
-                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Lagos"
-                  />
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <select
+                      required
+                      value={formData.state}
+                      onChange={(e) => setFormData({ ...formData, state: e.target.value, lga: '' })}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Select State</option>
+                      {nigerianStates.map((state) => (
+                        <option key={state} value={state}>
+                          {state}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    City *
+                    LGA *
                   </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Ikeja"
-                  />
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <select
+                      required
+                      value={formData.lga}
+                      onChange={(e) => setFormData({ ...formData, lga: e.target.value })}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={!formData.state}
+                    >
+                      <option value="">Select LGA</option>
+                      {availableLGAs.map((lga) => (
+                        <option key={lga} value={lga}>
+                          {lga}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
@@ -704,25 +708,41 @@ export default function RegisterOperatorPage() {
                     <input
                       type="text"
                       required
-                      value={formData.accountNumber}
-                      onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
+                      value={formData.bankAccountNumber}
+                      onChange={(e) => setFormData({ ...formData, bankAccountNumber: e.target.value })}
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="0123456789"
                     />
                   </div>
                 </div>
-                <div className="md:col-span-2">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Account Name *
+                    Monthly Salary (₦) *
                   </label>
                   <input
-                    type="text"
+                    type="number"
                     required
-                    value={formData.accountName}
-                    onChange={(e) => setFormData({ ...formData, accountName: e.target.value })}
+                    value={formData.salary}
+                    onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="John Doe"
+                    placeholder="50000"
+                    min="0"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Salary Category *
+                  </label>
+                  <select
+                    required
+                    value={formData.salaryCategory}
+                    onChange={(e) => setFormData({ ...formData, salaryCategory: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="STANDARD">Standard</option>
+                    <option value="PREMIUM">Premium</option>
+                    <option value="BASIC">Basic</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -878,14 +898,15 @@ export default function RegisterOperatorPage() {
               <div className="space-y-8">
                 {/* Guarantor 1 */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Guarantor 1</h3>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Guarantor 1 *</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Full Name
+                        Full Name *
                       </label>
                       <input
                         type="text"
+                        required
                         value={formData.guarantor1Name}
                         onChange={(e) => setFormData({ ...formData, guarantor1Name: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -894,10 +915,11 @@ export default function RegisterOperatorPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Phone Number
+                        Phone Number *
                       </label>
                       <input
                         type="tel"
+                        required
                         value={formData.guarantor1Phone}
                         onChange={(e) => setFormData({ ...formData, guarantor1Phone: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -906,22 +928,11 @@ export default function RegisterOperatorPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Relationship
+                        Address *
                       </label>
                       <input
                         type="text"
-                        value={formData.guarantor1Relationship}
-                        onChange={(e) => setFormData({ ...formData, guarantor1Relationship: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Friend, Family, Colleague"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Address
-                      </label>
-                      <input
-                        type="text"
+                        required
                         value={formData.guarantor1Address}
                         onChange={(e) => setFormData({ ...formData, guarantor1Address: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -933,14 +944,15 @@ export default function RegisterOperatorPage() {
 
                 {/* Guarantor 2 */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Guarantor 2</h3>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Guarantor 2 *</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Full Name
+                        Full Name *
                       </label>
                       <input
                         type="text"
+                        required
                         value={formData.guarantor2Name}
                         onChange={(e) => setFormData({ ...formData, guarantor2Name: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -949,10 +961,11 @@ export default function RegisterOperatorPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Phone Number
+                        Phone Number *
                       </label>
                       <input
                         type="tel"
+                        required
                         value={formData.guarantor2Phone}
                         onChange={(e) => setFormData({ ...formData, guarantor2Phone: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -961,22 +974,11 @@ export default function RegisterOperatorPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Relationship
+                        Address *
                       </label>
                       <input
                         type="text"
-                        value={formData.guarantor2Relationship}
-                        onChange={(e) => setFormData({ ...formData, guarantor2Relationship: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Friend, Family, Colleague"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Address
-                      </label>
-                      <input
-                        type="text"
+                        required
                         value={formData.guarantor2Address}
                         onChange={(e) => setFormData({ ...formData, guarantor2Address: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
