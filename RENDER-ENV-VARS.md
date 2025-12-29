@@ -77,26 +77,41 @@ https://javelinadmin.netlify.app
 
 ---
 
-### Email (Optional)
+### Email Configuration - Javelin Associates Professional Email
 
 ```
 SMTP_HOST
-smtp.sendgrid.net
+mail.javelinassociates.org
 ```
 
 ```
 SMTP_PORT
-587
+465
+```
+
+```
+SMTP_SECURE
+true
 ```
 
 ```
 SMTP_USER
-your-sendgrid-username
+noreply@javelinassociates.org
 ```
 
 ```
 SMTP_PASSWORD
-your-sendgrid-password
+your-email-password-here
+```
+
+```
+FROM_EMAIL
+noreply@javelinassociates.org
+```
+
+```
+FROM_NAME
+Javelin Associates
 ```
 
 ```
