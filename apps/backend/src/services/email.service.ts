@@ -1,6 +1,26 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
+import { logger } from '../utils/logger';
 
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+// Create SMTP transporter
+const createTransporter = () => {
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+    logger.warn('Email service not configured - missing SMTP credentials');
+    return null;
+  }
+
+  return nodemailer.createTransporter({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '465'),
+    secure: process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465', // true for 465, false for other ports
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASSWORD,
+    },
+    tls: {
+      rejectUnauthorized: false, // Allow self-signed certificates for cPanel
+    },
+  });
+};
 
 interface CredentialsEmailData {
   email: string;
@@ -20,11 +40,17 @@ interface OperatorWelcomeEmailData {
 
 export const sendCredentialsEmail = async (data: CredentialsEmailData): Promise<void> => {
   const { email, firstName, username, password } = data;
+  const transporter = createTransporter();
+
+  if (!transporter) {
+    logger.warn('Email not sent - SMTP not configured');
+    return;
+  }
 
   const mailOptions = {
-    from: process.env.SMTP_FROM || 'noreply@jevelin.com',
+    from: `${process.env.FROM_NAME || 'Javelin Associates'} <${process.env.FROM_EMAIL || 'noreply@javelinassociates.org'}>`,
     to: email,
-    subject: 'Welcome to jevelin Management System',
+    subject: 'Welcome to Javelin Management System',
     html: `
       <!DOCTYPE html>
       <html>
@@ -83,24 +109,25 @@ export const sendCredentialsEmail = async (data: CredentialsEmailData): Promise<
   };
 
   try {
-    await resend.emails.send({
-      from: process.env.FROM_EMAIL || 'onboarding@resend.dev',
-      to: email,
-      subject: mailOptions.subject,
-      html: mailOptions.html,
-    });
-    console.log(`Credentials email sent to ${email}`);
+    await transporter.sendMail(mailOptions);
+    logger.info(`✅ Credentials email sent to ${email}`);
   } catch (error) {
-    console.error('Email sending error:', error);
+    logger.error('❌ Email sending error:', error);
     throw new Error('Failed to send credentials email');
   }
 };
 
 export const sendOperatorWelcomeEmail = async (data: OperatorWelcomeEmailData): Promise<void> => {
   const { email, firstName, lastName, employeeId, locationName, temporaryPassword } = data;
+  const transporter = createTransporter();
+
+  if (!transporter) {
+    logger.warn('Email not sent - SMTP not configured');
+    return;
+  }
 
   const mailOptions = {
-    from: `Javelin Associate <${process.env.FROM_EMAIL || 'noreply@jevelin.com'}>`,
+    from: `${process.env.FROM_NAME || 'Javelin Associates'} <${process.env.FROM_EMAIL || 'noreply@javelinassociates.org'}>`,
     to: email,
     subject: '🛡️ Welcome to Javelin Associate - Your Security Career Begins!',
     html: `
@@ -481,15 +508,10 @@ export const sendOperatorWelcomeEmail = async (data: OperatorWelcomeEmailData): 
   };
 
   try {
-    const result = await resend.emails.send({
-      from: mailOptions.from,
-      to: email,
-      subject: mailOptions.subject,
-      html: mailOptions.html,
-    });
-    console.log(`✅ Welcome email sent to ${email}`, result);
+    await transporter.sendMail(mailOptions);
+    logger.info(`✅ Welcome email sent to ${email}`);
   } catch (error) {
-    console.error('❌ Email sending error:', error);
+    logger.error('❌ Email sending error:', error);
     throw error;
   }
 };
