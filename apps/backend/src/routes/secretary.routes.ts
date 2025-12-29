@@ -2,6 +2,9 @@ import { Router } from 'express';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 import { asyncHandler } from '../middlewares/error.middleware';
 import { logger } from '../utils/logger';
+import bcrypt from 'bcryptjs';
+import { notifyDirectorsOfOperatorRegistration } from '../services/notification.service';
+import { User, Operator } from '../models';
 import {
   registerSecretary,
   getAllSecretaries,
@@ -128,5 +131,177 @@ router.delete(
     res.json(result);
   })
 );
+
+// Helper function to generate employee ID
+function generateEmployeeId(prefix: string): string {
+  const timestamp = Date.now().toString().slice(-8);
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `${prefix}-${timestamp}-${random}`;
+}
+
+// Register Operator (Secretary can register, requires Manager/Director approval)
+router.post('/register-operator', authorize('SECRETARY', 'DEVELOPER'), asyncHandler(async (req: any, res) => {
+  const {
+    firstName,
+    lastName,
+    email,
+    phoneNumber,
+    gender,
+    dateOfBirth,
+    address,
+    state,
+    lga,
+    locationId,
+    bitId,
+    supervisorId,
+    salary,
+    salaryCategory,
+    bankName,
+    bankAccountNumber,
+    guarantor1Name,
+    guarantor1Phone,
+    guarantor1Address,
+    guarantor2Name,
+    guarantor2Phone,
+    guarantor2Address,
+    applicantPhoto,
+    passportPhoto,
+    leftThumb,
+    rightThumb,
+  } = req.body;
+
+  const secretaryUserId = req.user?.userId;
+
+  logger.info('Operator registration request by Secretary', {
+    email,
+    secretaryId: secretaryUserId,
+  });
+
+  // Check if email already exists
+  const existingUser = await User.findOne({ email: email.toLowerCase() });
+  if (existingUser) {
+    return res.status(400).json({ error: 'A user with this email already exists' });
+  }
+
+  // Check if phone already exists
+  if (phoneNumber) {
+    const existingPhone = await User.findOne({ phoneNumber });
+    if (existingPhone) {
+      return res.status(400).json({ error: 'A user with this phone number already exists' });
+    }
+  }
+
+  // Generate employee ID
+  const employeeId = generateEmployeeId('OPR');
+
+  // Generate temporary password
+  const temporaryPassword = `Opr${Math.random().toString(36).substring(2, 10)}!`;
+  const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+
+  try {
+    // Create user with PENDING status (requires Manager/Director approval)
+    const newUser = new User({
+      email: email.toLowerCase(),
+      phoneNumber: phoneNumber || undefined,
+      passwordHash: hashedPassword,
+      role: 'OPERATOR',
+      status: 'PENDING',
+      firstName,
+      lastName,
+      profilePhoto: applicantPhoto || passportPhoto,
+    });
+
+    await newUser.save();
+    logger.info('User created for operator', { userId: newUser._id });
+
+    // Create operator profile with PENDING approval status
+    const newOperator = new Operator({
+      userId: newUser._id,
+      employeeId,
+      gender,
+      dateOfBirth,
+      address,
+      state,
+      lga,
+      locationId: locationId || null,
+      bitId: bitId || null,
+      supervisorId: supervisorId || null,
+      salary: salary || 0,
+      salaryCategory: salaryCategory || 'STANDARD',
+      bankName: bankName || '',
+      bankAccountNumber: bankAccountNumber || '',
+      guarantor1Name,
+      guarantor1Phone,
+      guarantor1Address,
+      guarantor2Name,
+      guarantor2Phone,
+      guarantor2Address,
+      applicantPhoto,
+      passportPhoto,
+      leftThumb,
+      rightThumb,
+      approvalStatus: 'PENDING', // Registered by secretary, requires approval
+      registeredBy: secretaryUserId,
+    });
+
+    await newOperator.save();
+    logger.info('Operator profile created', { operatorId: newOperator._id });
+
+    // Notify directors about new operator registration
+    await notifyDirectorsOfOperatorRegistration(newOperator._id.toString());
+
+    res.status(201).json({
+      message: 'Operator registered successfully. Awaiting Manager/Director approval.',
+      operator: {
+        _id: newOperator._id,
+        employeeId,
+        userId: {
+          _id: newUser._id,
+          firstName,
+          lastName,
+          email: newUser.email,
+        },
+        approvalStatus: 'PENDING',
+      },
+      credentials: {
+        email: newUser.email,
+        temporaryPassword,
+      },
+    });
+  } catch (error: any) {
+    logger.error('Error registering operator:', error);
+    throw error;
+  }
+}));
+
+// Get all operators (for secretary view)
+router.get('/operators', authorize('SECRETARY', 'DEVELOPER'), asyncHandler(async (req: any, res) => {
+  try {
+    const operators = await Operator.find()
+      .populate('userId', 'firstName lastName email phoneNumber profilePhoto')
+      .populate('locationId', 'locationName')
+      .populate('bitId', 'bitName')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({
+      operators: operators.map((op: any) => ({
+        ...op,
+        userId: {
+          ...op.userId,
+          _id: op.userId._id,
+          firstName: op.userId.firstName,
+          lastName: op.userId.lastName,
+          email: op.userId.email,
+          phoneNumber: op.userId.phoneNumber,
+          profilePhoto: op.userId.profilePhoto,
+        },
+      })),
+    });
+  } catch (error: any) {
+    logger.error('Error fetching operators:', error);
+    throw error;
+  }
+}));
 
 export default router;

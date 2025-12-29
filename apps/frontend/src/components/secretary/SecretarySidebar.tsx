@@ -37,6 +37,8 @@ import {
   FileText as FileIcon,
   Upload,
   AlertCircle as AlertIcon,
+  Receipt,
+  UserCheck,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { getImageUrl } from '../../lib/api';
@@ -50,7 +52,7 @@ interface MenuItem {
   name: string;
   icon: any;
   path?: string;
-  badge?: number;
+  badge?: string | number;
   children?: MenuItem[];
 }
 
@@ -60,20 +62,38 @@ const menuItems: MenuItem[] = [
     icon: Home, 
     path: '/secretary/dashboard' 
   },
-  { 
-    name: 'Transactions', 
-    icon: DollarSign,
+  {
+    name: 'Personnel Management',
+    icon: Users,
     children: [
-      { name: 'Financial Overview', icon: TrendingUp, path: '/secretary/financial-overview' },
-      { name: 'Money In', icon: ArrowDownCircle, path: '/secretary/money-in' },
-      { name: 'Money Out', icon: ArrowUpCircle, path: '/secretary/money-out' },
-      { name: 'Salary Panel', icon: Users, path: '/secretary/salary' },
-      { name: 'BIT Expenses', icon: FileText, path: '/secretary/bit-expenses' },
+      { name: 'Register Operator', icon: UserPlus, path: '/secretary/operators/register', badge: 'New' },
+      { name: 'All Operators', icon: Users, path: '/secretary/operators' },
     ]
   },
   { 
-    name: 'Clients', 
-    icon: Users,
+    name: 'Financial Management', 
+    icon: DollarSign,
+    children: [
+      { name: 'Financial Overview', icon: TrendingUp, path: '/secretary/financial-overview' },
+      { name: 'Daily Logs', icon: Calendar, path: '/secretary/daily-logs' },
+      { name: 'Monthly Logs', icon: CalendarDays, path: '/secretary/monthly-logs' },
+      { name: 'Salary Panel', icon: Banknote, path: '/secretary/salary' },
+      { name: 'BIT Expenses', icon: Receipt, path: '/secretary/bit-expenses' },
+    ]
+  },
+  { 
+    name: 'Money Tracking', 
+    icon: ArrowDownCircle,
+    children: [
+      { name: 'Money In', icon: ArrowDownCircle, path: '/secretary/money-in' },
+      { name: 'Record Money In', icon: PlusCircle, path: '/secretary/money-in/record' },
+      { name: 'Money Out', icon: ArrowUpCircle, path: '/secretary/money-out' },
+      { name: 'Record Money Out', icon: PlusCircle, path: '/secretary/money-out/record' },
+    ]
+  },
+  { 
+    name: 'Client Management', 
+    icon: Briefcase,
     children: [
       { name: 'All Clients', icon: Users, path: '/secretary/clients' },
       { name: 'Add Client', icon: UserPlus, path: '/secretary/clients/add' },
@@ -92,7 +112,7 @@ const menuItems: MenuItem[] = [
   },
   { 
     name: 'Budgets', 
-    icon: Briefcase,
+    icon: CreditCard,
     children: [
       { name: 'Create Budget', icon: PlusCircle, path: '/secretary/budgets/create' },
       { name: 'Active Budgets', icon: Activity, path: '/secretary/budgets/active' },
@@ -101,17 +121,11 @@ const menuItems: MenuItem[] = [
     ]
   },
   { 
-    name: 'Locations', 
-    icon: Building2,
+    name: 'Locations & Bits', 
+    icon: MapPin,
     children: [
-      { name: 'All Locations', icon: MapPin, path: '/secretary/locations' },
+      { name: 'All Locations', icon: Building2, path: '/secretary/locations' },
       { name: 'Add Location', icon: PlusCircle, path: '/secretary/locations/create' },
-    ]
-  },
-  { 
-    name: 'Bits', 
-    icon: Shield,
-    children: [
       { name: 'All Bits', icon: Shield, path: '/secretary/bits' },
       { name: 'Add Bit', icon: PlusCircle, path: '/secretary/bits/create' },
     ]
@@ -126,17 +140,15 @@ const menuItems: MenuItem[] = [
     ]
   },
   { 
-    name: 'Messages', 
-    icon: MessageSquare, 
-    path: '/secretary/messages' 
+    name: 'Communications', 
+    icon: MessageSquare,
+    children: [
+      { name: 'Messages', icon: MessageSquare, path: '/secretary/messages' },
+      { name: 'Meetings', icon: Video, path: '/secretary/meetings' },
+    ]
   },
   { 
-    name: 'Meetings', 
-    icon: Video, 
-    path: '/secretary/meetings' 
-  },
-  { 
-    name: 'ID Card', 
+    name: 'ID Cards', 
     icon: IDCardIcon, 
     path: '/secretary/id-cards' 
   },
@@ -150,7 +162,7 @@ export default function SecretarySidebar({ isOpen, onClose }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, clearAuth } = useAuthStore();
-  const [expandedMenus, setExpandedMenus] = useState<string[]>(['Transactions']);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>(['Financial Management']);
 
   const toggleMenu = (menuName: string) => {
     setExpandedMenus(prev => 

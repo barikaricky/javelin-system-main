@@ -117,6 +117,8 @@ import AddClientPage from './pages/secretary/clients/AddClientPage';
 import ClientDetailPage from './pages/secretary/clients/ClientDetailPage';
 import SecretaryMessagingPage from './pages/secretary/messaging/MessagingPage';
 import SecretaryBitExpensesPage from './pages/secretary/BitExpensesPage';
+import SecretaryRegisterOperatorPage from './pages/secretary/operators/RegisterOperatorPage';
+import SecretaryOperatorsListPage from './pages/secretary/operators/OperatorsListPage';
 
 // Director imports
 import MoneyInReports from './pages/director/financial/MoneyInReports';
@@ -231,6 +233,8 @@ function App() {
         <Route path="money-out/detail/:id" element={<MoneyOutDetail />} />
         <Route path="money-out/edit/:id" element={<RecordMoneyOut />} />
         <Route path="salary" element={<SalaryPanel />} />
+        <Route path="operators" element={<SecretaryOperatorsListPage />} />
+        <Route path="operators/register" element={<SecretaryRegisterOperatorPage />} />
         <Route path="id-cards" element={<SecretaryIDCardGenerator />} />
         <Route path="messages" element={<SecretaryMessagingPage />} />
         <Route path="settings" element={<SecretarySettingsPage />} />
