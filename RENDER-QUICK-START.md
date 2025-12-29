@@ -20,8 +20,8 @@
    Name: javelin-backend
    Root Directory: apps/backend
    Environment: Node
-   Build: npm install
-   Start: npm start
+   Build Command: corepack enable && pnpm install
+   Start Command: pnpm start
    Plan: FREE
    ```
 5. Click **"Advanced"** → Add environment variables from `RENDER-ENV-VARS.md`

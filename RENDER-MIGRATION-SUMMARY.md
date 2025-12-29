@@ -36,8 +36,8 @@ Migrated Javelin backend from **Railway → Render** to save costs.
 https://render.com → Sign up → New Web Service
 Repository: barikaricky/javelin-system-main
 Root Directory: apps/backend
-Build Command: npm install
-Start Command: npm start
+Build Command: corepack enable && pnpm install
+Start Command: pnpm start
 Add env variables from RENDER-ENV-VARS.md
 ```
 

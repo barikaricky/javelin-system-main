@@ -32,8 +32,8 @@ Region: Oregon (US West) - or closest to you
 Branch: main
 Root Directory: apps/backend
 Environment: Node
-Build Command: npm install
-Start Command: npm start
+Build Command: corepack enable && pnpm install
+Start Command: pnpm start
 ```
 
 4. Select **"Free"** plan

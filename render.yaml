@@ -6,8 +6,8 @@ services:
     region: oregon
     plan: free
     rootDir: apps/backend
-    buildCommand: npm install --legacy-peer-deps
-    startCommand: npm start
+    buildCommand: corepack enable && pnpm install
+    startCommand: pnpm start
     envVars:
       - key: NODE_ENV
         value: production

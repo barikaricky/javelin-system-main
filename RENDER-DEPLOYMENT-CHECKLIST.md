@@ -13,8 +13,8 @@
 - [ ] Created new Web Service
 - [ ] Set service name: `javelin-backend`
 - [ ] Set root directory: `apps/backend`
-- [ ] Set build command: `npm install`
-- [ ] Set start command: `npm start`
+- [ ] Set build command: `corepack enable && pnpm install`
+- [ ] Set start command: `pnpm start`
 - [ ] Selected FREE plan
 - [ ] Added DATABASE_URL variable
 - [ ] Added NODE_ENV=production variable
