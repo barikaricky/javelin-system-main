@@ -205,7 +205,5 @@ Use Find & Replace in VS Code:
 - Find: `prisma\.(\w+)\.findUnique\(`
 - This helps identify all findUnique calls to replace
 
----
-
 **Estimated Time to Complete**: 4-6 hours for all service files
 **Most Critical**: director.service.ts, manager.service.ts, supervisor.service.ts (authentication flow depends on these)

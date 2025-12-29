@@ -18,12 +18,18 @@ import {
   X,
   Bell,
   ChevronDown,
+  ChevronRight,
   Shield,
   Building2,
   CheckCircle,
   XCircle,
   Clock,
   TrendingUp,
+  UserPlus,
+  Receipt,
+  Video,
+  Briefcase,
+  CreditCard,
 } from 'lucide-react';
 import { api, getImageUrl } from '../../lib/api';
 import { notificationService, Notification } from '../../services/notificationService';
@@ -39,7 +45,16 @@ interface User {
   passportPhoto?: string;
 }
 
-const menuItems = [
+interface MenuItem {
+  id: string;
+  label: string;
+  icon: any;
+  path?: string;
+  badge?: string | number;
+  children?: MenuItem[];
+}
+
+const menuItems: MenuItem[] = [
   {
     id: 'dashboard',
     label: 'Dashboard',
@@ -47,128 +62,183 @@ const menuItems = [
     path: '/manager/dashboard',
   },
   {
-    id: 'supervisors',
-    label: 'Supervisors',
-    icon: UserCheck,
-    path: '/manager/supervisors',
-    badge: 'View',
-  },
-  {
-    id: 'register-gs',
-    label: 'Register General Supervisor',
-    icon: Shield,
-    path: '/manager/supervisors/register',
-    badge: 'New',
-  },
-  {
-    id: 'register-secretary',
-    label: 'Register Secretary',
-    icon: Building2,
-    path: '/manager/secretary/register',
-    badge: 'New',
-  },
-  {
-    id: 'pending-approvals',
-    label: 'Pending Approvals',
-    icon: Clock,
-    path: '/manager/pending-approvals',
-    badge: 'Review',
-  },
-  {
-    id: 'operator-approvals',
-    label: 'Operator Approvals',
-    icon: UserCheck,
-    path: '/manager/operator-approvals',
-    badge: 'Approve',
-  },
-  {
-    id: 'operators',
-    label: 'Operators',
+    id: 'staff-management',
+    label: 'Staff Management',
     icon: Users,
-    path: '/manager/operators',
-    badge: 'View',
+    children: [
+      {
+        id: 'register-gs',
+        label: 'Register General Supervisor',
+        icon: Shield,
+        path: '/manager/supervisors/register',
+        badge: 'New',
+      },
+      {
+        id: 'supervisors',
+        label: 'Supervisors',
+        icon: UserCheck,
+        path: '/manager/supervisors',
+        badge: 'View',
+      },
+      {
+        id: 'register-secretary',
+        label: 'Register Secretary',
+        icon: Briefcase,
+        path: '/manager/secretary/register',
+        badge: 'New',
+      },
+      {
+        id: 'register-operator',
+        label: 'Register Operator',
+        icon: UserPlus,
+        path: '/manager/operators/register',
+        badge: 'New',
+      },
+      {
+        id: 'operators',
+        label: 'Operators',
+        icon: Users,
+        path: '/manager/operators',
+        badge: 'View',
+      },
+    ],
   },
   {
-    id: 'assignments',
-    label: 'Guard Assignments',
+    id: 'approvals',
+    label: 'Approvals & Reviews',
+    icon: Clock,
+    children: [
+      {
+        id: 'pending-approvals',
+        label: 'Pending Approvals',
+        icon: Clock,
+        path: '/manager/pending-approvals',
+        badge: 'Review',
+      },
+      {
+        id: 'operator-approvals',
+        label: 'Operator Approvals',
+        icon: UserCheck,
+        path: '/manager/operator-approvals',
+        badge: 'Approve',
+      },
+    ],
+  },
+  {
+    id: 'operations',
+    label: 'Operations & Assignments',
     icon: Shield,
-    path: '/manager/assignments',
-    badge: 'New',
+    children: [
+      {
+        id: 'assignments',
+        label: 'Guard Assignments',
+        icon: Shield,
+        path: '/manager/assignments',
+        badge: 'New',
+      },
+      {
+        id: 'locations',
+        label: 'Locations',
+        icon: MapPin,
+        path: '/manager/locations',
+        badge: 'View',
+      },
+      {
+        id: 'bits',
+        label: 'Bits',
+        icon: Building2,
+        path: '/manager/bits',
+        badge: 'View',
+      },
+      {
+        id: 'attendance',
+        label: 'Attendance',
+        icon: ClipboardCheck,
+        path: '/manager/attendance',
+        badge: 'View',
+      },
+    ],
   },
   {
-    id: 'locations',
-    label: 'Locations',
-    icon: MapPin,
-    path: '/manager/locations',
-    badge: 'View',
-  },
-  {
-    id: 'bits',
-    label: 'Bits',
-    icon: Shield,
-    path: '/manager/bits',
-    badge: 'View',
-  },
-  {
-    id: 'attendance',
-    label: 'Attendance',
-    icon: ClipboardCheck,
-    path: '/manager/attendance',
-    badge: 'View',
-  },
-  {
-    id: 'incidents',
-    label: 'Incidents',
-    icon: AlertTriangle,
-    path: '/manager/incidents',
-    badge: 'Escalate',
-  },
-  {
-    id: 'activity-logs',
-    label: 'Activity Logs',
-    icon: Activity,
-    path: '/manager/activity-logs',
-    badge: 'View',
-  },
-  {
-    id: 'salary',
-    label: 'Salary Panel',
-    icon: DollarSign,
-    path: '/manager/salary',
-    badge: 'View',
-  },
-  {
-    id: 'money-in',
-    label: 'Money In (View Only)',
-    icon: TrendingUp,
-    path: '/manager/money-in',
-    badge: 'View',
-  },
-  {
-    id: 'bit-expenses',
-    label: 'BIT Expenses',
-    icon: FileText,
-    path: '/manager/bit-expenses',
-    badge: 'View',
-  },
-  {
-    id: 'requests',
-    label: 'Requests',
-    icon: FileText,
-    path: '/manager/requests',
-  },
-  {
-    id: 'messages',
-    label: 'Messages',
-    icon: MessageSquare,
-    path: '/manager/messages',
-  },
-  {
-    id: 'analytics',
-    label: 'Analytics',
+    id: 'monitoring',
+    label: 'Monitoring & Reports',
     icon: BarChart3,
-    path: '/manager/analytics',
-    badge: 'View',
+    children: [
+      {
+        id: 'incidents',
+        label: 'Incidents',
+        icon: AlertTriangle,
+        path: '/manager/incidents',
+        badge: 'Escalate',
+      },
+      {
+        id: 'activity-logs',
+        label: 'Activity Logs',
+        icon: Activity,
+        path: '/manager/activity-logs',
+        badge: 'View',
+      },
+      {
+        id: 'analytics',
+        label: 'Analytics',
+        icon: BarChart3,
+        path: '/manager/analytics',
+        badge: 'View',
+      },
+    ],
+  },
+  {
+    id: 'finance',
+    label: 'Finance & Expenses',
+    icon: DollarSign,
+    children: [
+      {
+        id: 'salary',
+        label: 'Salary Panel',
+        icon: DollarSign,
+        path: '/manager/salary',
+        badge: 'View',
+      },
+      {
+        id: 'money-in',
+        label: 'Money In (View Only)',
+        icon: TrendingUp,
+        path: '/manager/money-in',
+        badge: 'View',
+      },
+      {
+        id: 'bit-expenses',
+        label: 'BIT Expenses',
+        icon: Receipt,
+        path: '/manager/bit-expenses',
+        badge: 'View',
+      },
+    ],
+  },
+  {
+    id: 'communication',
+    label: 'Communications',
+    icon: MessageSquare,
+    children: [
+      {
+        id: 'messages',
+        label: 'Messages',
+        icon: MessageSquare,
+        path: '/manager/messages',
+      },
+      {
+        id: 'communication',
+        label: 'Communication Center',
+        icon: MessageSquare,
+        path: '/manager/communication',
+      },
+    ],
+  },
+  {
+    id: 'id-cards',
+    label: 'ID Cards',
+    icon: CreditCard,
+    path: '/manager/id-cards',
   },
   {
     id: 'settings',
@@ -186,10 +256,31 @@ export default function ManagerLayout() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>(['staff-management']);
   
   // Get user from auth store
   const { user: authUser, isAuthenticated, clearAuth } = useAuthStore();
   const [user, setUser] = useState<User | null>(null);
+
+  const toggleMenu = (menuId: string) => {
+    setExpandedMenus(prev =>
+      prev.includes(menuId)
+        ? prev.filter(id => id !== menuId)
+        : [...prev, menuId]
+    );
+  };
+
+  const isActive = (path?: string) => {
+    if (!path) return false;
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
+
+  const isParentActive = (item: MenuItem) => {
+    if (item.children) {
+      return item.children.some(child => isActive(child.path));
+    }
+    return isActive(item.path);
+  };
 
   useEffect(() => {
     if (isAuthenticated() && authUser) {
@@ -293,8 +384,6 @@ export default function ManagerLayout() {
     navigate('/login');
   };
 
-  const isActive = (path: string) => location.pathname === path;
-
   return (
     <div className="h-screen bg-gray-50 flex overflow-hidden">
       {/* Mobile Sidebar Overlay */}
@@ -365,11 +454,73 @@ export default function ManagerLayout() {
               {menuItems.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.path);
+                const isExpanded = expandedMenus.includes(item.id);
+                const hasActiveChild = isParentActive(item);
                 
+                // Parent menu item with children
+                if (item.children) {
+                  return (
+                    <div key={item.id} className="space-y-0.5">
+                      <button
+                        onClick={() => toggleMenu(item.id)}
+                        className={`flex items-center gap-2 sm:gap-2.5 md:gap-3 w-full px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl transition-all duration-200 group ${
+                          hasActiveChild
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            : 'text-gray-400 hover:text-white hover:bg-slate-700/50'
+                        }`}
+                      >
+                        <Icon className={`w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 ${hasActiveChild ? 'text-emerald-400' : 'group-hover:text-emerald-400'}`} />
+                        <span className="flex-1 font-medium text-xs sm:text-sm truncate text-left">{item.label}</span>
+                        <ChevronRight 
+                          className={`w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 transition-transform duration-200 ${
+                            isExpanded ? 'rotate-90' : ''
+                          } ${hasActiveChild ? 'text-emerald-400' : 'text-gray-500'}`}
+                        />
+                      </button>
+                      
+                      {/* Sub-menu items */}
+                      {isExpanded && (
+                        <div className="ml-3 sm:ml-4 pl-3 sm:pl-4 border-l-2 border-slate-700/50 space-y-0.5 mt-0.5">
+                          {item.children.map((child) => {
+                            const ChildIcon = child.icon;
+                            const childActive = isActive(child.path);
+                            
+                            return (
+                              <Link
+                                key={child.id}
+                                to={child.path!}
+                                onClick={() => setSidebarOpen(false)}
+                                className={`flex items-center gap-2 sm:gap-2.5 px-2 sm:px-3 py-2 sm:py-2.5 rounded-lg transition-all duration-200 group ${
+                                  childActive
+                                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                    : 'text-gray-400 hover:text-white hover:bg-slate-700/50'
+                                }`}
+                              >
+                                <ChildIcon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 ${childActive ? 'text-emerald-400' : 'group-hover:text-emerald-400'}`} />
+                                <span className="flex-1 font-medium text-[11px] sm:text-xs truncate">{child.label}</span>
+                                {child.badge && (
+                                  <span className={`text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${
+                                    child.badge === 'View' 
+                                      ? 'bg-slate-700 text-slate-300' 
+                                      : 'bg-amber-500/20 text-amber-400'
+                                  }`}>
+                                    {child.badge}
+                                  </span>
+                                )}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+                
+                // Single menu item without children
                 return (
                   <Link
                     key={item.id}
-                    to={item.path}
+                    to={item.path!}
                     onClick={() => setSidebarOpen(false)}
                     className={`flex items-center gap-2 sm:gap-2.5 md:gap-3 px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl transition-all duration-200 group ${
                       active

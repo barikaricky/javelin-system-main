@@ -128,15 +128,8 @@ export class AssignmentService {
       }
     );
 
-    // Send notifications
-    if (status === 'ACTIVE') {
-      await this.notifyAssignmentActive(assignment);
-    } else if (status === 'PENDING') {
-      await this.notifyAssignmentPending(assignment);
-    }
-
-    // Populate and return
-    return await GuardAssignment.findById(assignment._id)
+    // Populate for notifications and return
+    const populatedAssignment = await GuardAssignment.findById(assignment._id)
       .populate({
         path: 'operatorId',
         populate: { path: 'userId' },
@@ -148,6 +141,20 @@ export class AssignmentService {
         populate: { path: 'userId' },
       })
       .lean() as IGuardAssignment;
+
+    // Send notifications after populating (don't let notification errors break assignment)
+    try {
+      if (status === 'ACTIVE') {
+        await this.notifyAssignmentActive(populatedAssignment);
+      } else if (status === 'PENDING') {
+        await this.notifyAssignmentPending(populatedAssignment);
+      }
+    } catch (notificationError) {
+      console.error('Failed to send assignment notification:', notificationError);
+      // Continue anyway - assignment was successful
+    }
+
+    return populatedAssignment;
   }
 
   /**
@@ -479,10 +486,17 @@ export class AssignmentService {
     const operator = assignment.operatorId as any;
     const bit = assignment.bitId as any;
     
+    // Safely get operator userId
+    const operatorUserId = operator?.userId?._id || operator?.userId;
+    if (!operatorUserId) {
+      console.warn('Cannot send notification: operator userId not found');
+      return;
+    }
+    
     await notificationService.sendNotification({
-      recipientId: operator.userId._id.toString(),
+      recipientId: operatorUserId.toString(),
       title: 'New Assignment',
-      message: `You have been assigned to ${bit.bitName}. Your shift starts on ${new Date(assignment.startDate).toLocaleDateString()}.`,
+      message: `You have been assigned to ${bit?.bitName || 'a BIT'}. Your shift starts on ${new Date(assignment.startDate).toLocaleDateString()}.`,
       type: 'ASSIGNMENT',
       priority: 'HIGH',
     });
@@ -491,16 +505,19 @@ export class AssignmentService {
   private async notifyAssignmentPending(assignment: IGuardAssignment) {
     // Notify General Supervisor about pending assignment
     const supervisor = assignment.supervisorId as any;
-    if (supervisor.generalSupervisorId) {
+    if (supervisor?.generalSupervisorId) {
       const gs = await Supervisor.findById(supervisor.generalSupervisorId).populate('userId');
       if (gs) {
-        await notificationService.sendNotification({
-          recipientId: (gs.userId as any)._id.toString(),
-          title: 'Assignment Awaiting Approval',
-          message: `New assignment request from ${assignment.assignedBy.name} needs your approval.`,
-          type: 'ASSIGNMENT',
-          priority: 'MEDIUM',
-        });
+        const gsUserId = (gs.userId as any)?._id || gs.userId;
+        if (gsUserId) {
+          await notificationService.sendNotification({
+            recipientId: gsUserId.toString(),
+            title: 'Assignment Awaiting Approval',
+            message: `New assignment request from ${assignment.assignedBy.name} needs your approval.`,
+            type: 'ASSIGNMENT',
+            priority: 'MEDIUM',
+          });
+        }
       }
     }
   }
@@ -509,23 +526,28 @@ export class AssignmentService {
     const operator = assignment.operatorId as any;
     const bit = assignment.bitId as any;
     
-    // Notify operator
-    await notificationService.sendNotification({
-      recipientId: operator.userId._id.toString(),
-      title: 'Assignment Approved',
-      message: `Your assignment to ${bit.bitName} has been approved. Your shift starts on ${new Date(assignment.startDate).toLocaleDateString()}.`,
-      type: 'ASSIGNMENT',
-      priority: 'HIGH',
-    });
+    const operatorUserId = operator?.userId?._id || operator?.userId;
+    if (operatorUserId) {
+      // Notify operator
+      await notificationService.sendNotification({
+        recipientId: operatorUserId.toString(),
+        title: 'Assignment Approved',
+        message: `Your assignment to ${bit?.bitName || 'a BIT'} has been approved. Your shift starts on ${new Date(assignment.startDate).toLocaleDateString()}.`,
+        type: 'ASSIGNMENT',
+        priority: 'HIGH',
+      });
+    }
 
     // Notify requester
-    await notificationService.sendNotification({
-      recipientId: assignment.assignedBy.userId.toString(),
-      title: 'Assignment Approved',
-      message: `Your assignment request has been approved by ${assignment.approvedBy?.name}.`,
-      type: 'ASSIGNMENT',
-      priority: 'MEDIUM',
-    });
+    if (assignment.assignedBy?.userId) {
+      await notificationService.sendNotification({
+        recipientId: assignment.assignedBy.userId.toString(),
+        title: 'Assignment Approved',
+        message: `Your assignment request has been approved by ${assignment.approvedBy?.name}.`,
+        type: 'ASSIGNMENT',
+        priority: 'MEDIUM',
+      });
+    }
   }
 
   private async notifyAssignmentRejected(assignment: IGuardAssignment) {

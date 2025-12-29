@@ -67,6 +67,9 @@ import SupervisorEnhancedSettingsPage from './pages/supervisor/EnhancedSettingsP
 import DirectorRegisterOperatorPage from './pages/director/operators/RegisterOperatorPage';
 import GuardAssignmentPage from './pages/director/operators/GuardAssignmentPage';
 
+// Manager Operator Registration
+import ManagerRegisterOperatorPage from './pages/manager/operators/RegisterOperatorPage';
+
 // General Supervisor imports
 import {
   GSLayout,
@@ -245,6 +248,7 @@ function App() {
         <Route path="supervisors/register" element={<RegisterSupervisorPage />} />
         <Route path="supervisors/:supervisorId" element={<SupervisorDetailPage />} />
         <Route path="operators" element={<ManagerOperatorsListPage />} />
+        <Route path="operators/register" element={<ManagerRegisterOperatorPage />} />
         <Route path="pending-approvals" element={<ManagerPendingApprovalsPage />} />
         <Route path="operator-approvals" element={<OperatorApprovalsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
