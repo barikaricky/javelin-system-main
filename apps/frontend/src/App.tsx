@@ -134,6 +134,8 @@ import { DirectorBitsListPage } from './pages/director/bits/BitsListPage';
 import { DirectorLocationsListPage } from './pages/director/locations/LocationsListPage';
 import { DirectorEditBitPage } from './pages/director/bits/EditBitPage';
 import { DirectorEditLocationPage } from './pages/director/locations/EditLocationPage';
+import { BitDetailsPage } from './pages/director/bits/BitDetailsPage';
+import { LocationDetailsPage } from './pages/director/locations/LocationDetailsPage';
 import BitGuardsView from './pages/director/bits/BitGuardsView';
 import IDCardGenerator from './pages/director/IDCardGenerator';
 import ManagerIDCardGenerator from './pages/manager/IDCardGenerator';
@@ -344,8 +346,10 @@ function App() {
       <Route path="/director/money-in/record" element={<DirectorLayout><RecordMoneyIn /></DirectorLayout>} />
       <Route path="/director/money-in/:id" element={<DirectorLayout><MoneyInDetail /></DirectorLayout>} />
       <Route path="/director/locations" element={<DirectorLayout><DirectorLocationsListPage /></DirectorLayout>} />
+      <Route path="/director/locations/:id/details" element={<DirectorLayout><LocationDetailsPage /></DirectorLayout>} />
       <Route path="/director/locations/:id/edit" element={<DirectorLayout><DirectorEditLocationPage /></DirectorLayout>} />
       <Route path="/director/bits" element={<DirectorLayout><DirectorBitsListPage /></DirectorLayout>} />
+      <Route path="/director/bits/:id/details" element={<DirectorLayout><BitDetailsPage /></DirectorLayout>} />
       <Route path="/director/bits/:id/edit" element={<DirectorLayout><DirectorEditBitPage /></DirectorLayout>} />
       <Route path="/director/bits/guards" element={<DirectorLayout><BitGuardsView /></DirectorLayout>} />
       <Route path="/director/id-cards" element={<DirectorLayout><IDCardGenerator /></DirectorLayout>} />
