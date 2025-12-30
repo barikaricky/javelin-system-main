@@ -239,6 +239,7 @@ export const CreateLocationPage = () => {
             </label>
             {formData.state && STATE_LGAS[formData.state] ? (
               <select
+                key={formData.state}
                 name="lga"
                 value={formData.lga}
                 onChange={handleChange}
@@ -251,6 +252,7 @@ export const CreateLocationPage = () => {
               </select>
             ) : (
               <input
+                key={formData.state || 'no-state'}
                 type="text"
                 name="lga"
                 value={formData.lga}
