@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Building2, Phone, User, FileText, Save, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
@@ -91,6 +91,7 @@ export const CreateLocationPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [availableLGAs, setAvailableLGAs] = useState<string[]>([]);
   const [formData, setFormData] = useState<LocationFormData>({
     locationName: '',
     city: '',
@@ -103,7 +104,19 @@ export const CreateLocationPage = () => {
     notes: '',
   });
 
+  // Update available LGAs when state changes
+  useEffect(() => {
+    if (formData.state && STATE_LGAS[formData.state]) {
+      setAvailableLGAs(STATE_LGAS[formData.state]);
+      console.log(`LGAs loaded for ${formData.state}:`, STATE_LGAS[formData.state].length);
+    } else {
+      setAvailableLGAs([]);
+      console.log('No LGAs available - state:', formData.state);
+    }
+  }, [formData.state]);
+
   const handleCitySelect = (city: { name: string; state: string }) => {
+    console.log('City selected:', city);
     setFormData(prev => ({
       ...prev,
       city: city.name,
@@ -237,22 +250,22 @@ export const CreateLocationPage = () => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Local Government Area (LGA)
             </label>
-            {formData.state && STATE_LGAS[formData.state] ? (
+            {availableLGAs.length > 0 ? (
               <select
-                key={formData.state}
+                key={`lga-select-${formData.state}`}
                 name="lga"
                 value={formData.lga}
                 onChange={handleChange}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               >
                 <option value="">Select LGA</option>
-                {STATE_LGAS[formData.state].map(lga => (
+                {availableLGAs.map(lga => (
                   <option key={lga} value={lga}>{lga}</option>
                 ))}
               </select>
             ) : (
               <input
-                key={formData.state || 'no-state'}
+                key={`lga-input-${formData.state || 'no-state'}`}
                 type="text"
                 name="lga"
                 value={formData.lga}
@@ -264,6 +277,9 @@ export const CreateLocationPage = () => {
             )}
             {!formData.state && (
               <p className="mt-1 text-sm text-gray-500">Select a city/state first to see LGA options</p>
+            )}
+            {formData.state && availableLGAs.length > 0 && (
+              <p className="mt-1 text-sm text-gray-500">{availableLGAs.length} LGAs available</p>
             )}
           </div>
 
