@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Search, Building2, TrendingUp, Edit } from 'lucide-react';
+import { MapPin, Search, Building2, TrendingUp, Edit, Eye } from 'lucide-react';
 import axios from 'axios';
 import { getApiBaseURL } from '../../../lib/api';
 
@@ -232,16 +232,28 @@ export const ManagerLocationsListPage = () => {
                     <span className="text-gray-600">Bits:</span>
                     <span className="font-medium text-purple-600">{location.totalBits}</span>
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/manager/locations/${location._id}/edit`);
-                    }}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
-                  >
-                    <Edit className="h-4 w-4" />
-                    Edit Location
-                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/manager/locations/${location._id}/details`);
+                      }}
+                      className="flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all transform hover:scale-105 text-xs sm:text-sm font-medium shadow-sm"
+                    >
+                      <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
+                      Details
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/manager/locations/${location._id}/edit`);
+                      }}
+                      className="flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all transform hover:scale-105 text-xs sm:text-sm font-medium shadow-sm"
+                    >
+                      <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+                      Edit
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

@@ -51,6 +51,8 @@ import { ManagerBitsListPage } from './pages/manager/bits/BitsListPage';
 import { ManagerLocationsListPage } from './pages/manager/locations/LocationsListPage';
 import { ManagerEditBitPage } from './pages/manager/bits/EditBitPage';
 import { ManagerEditLocationPage } from './pages/manager/locations/EditLocationPage';
+import { ManagerBitDetailsPage } from './pages/manager/bits/BitDetailsPage';
+import { ManagerLocationDetailsPage } from './pages/manager/locations/LocationDetailsPage';
 import ManagerMoneyInView from './pages/manager/MoneyInView';
 import ManagerBitExpensesPage from './pages/manager/BitExpensesPage';
 
@@ -263,8 +265,10 @@ function App() {
         <Route path="operator-approvals" element={<OperatorApprovalsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="locations" element={<ManagerLocationsListPage />} />
+        <Route path="locations/:id/details" element={<ManagerLocationDetailsPage />} />
         <Route path="locations/:id/edit" element={<ManagerEditLocationPage />} />
         <Route path="bits" element={<ManagerBitsListPage />} />
+        <Route path="bits/:id/details" element={<ManagerBitDetailsPage />} />
         <Route path="bits/:id/edit" element={<ManagerEditBitPage />} />
         <Route path="messages" element={<ManagerMessagingPage />} />
         <Route path="communication" element={<ManagerCommunicationPage />} />
