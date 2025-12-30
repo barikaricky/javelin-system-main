@@ -19,6 +19,8 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
+import { api } from '../../lib/api';
+import toast from 'react-hot-toast';
 
 // Types
 interface StatsCardProps {
@@ -224,30 +226,31 @@ export default function GSDashboard() {
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/general-supervisor/dashboard', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      console.log('📊 Fetching dashboard data...');
       
-      if (response.ok) {
-        const data = await response.json();
-        if (data.stats) {
-          setStats(data.stats);
-        }
-        if (data.supervisors) {
-          setSupervisors(data.supervisors);
-        }
-        if (data.incidents) {
-          setRecentIncidents(data.incidents);
-        }
-        if (data.locations) {
-          setLocationStatuses(data.locations);
-        }
+      const response = await api.get('/general-supervisor/dashboard');
+      console.log('✅ Dashboard data received:', response.data);
+      
+      if (response.data.stats) {
+        console.log('📈 Stats:', response.data.stats);
+        setStats(response.data.stats);
       }
-    } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
+      if (response.data.supervisors) {
+        console.log('👥 Supervisors:', response.data.supervisors.length);
+        setSupervisors(response.data.supervisors);
+      }
+      if (response.data.incidents) {
+        console.log('⚠️ Incidents:', response.data.incidents.length);
+        setRecentIncidents(response.data.incidents);
+      }
+      if (response.data.locations) {
+        console.log('📍 Locations:', response.data.locations.length);
+        setLocationStatuses(response.data.locations);
+      }
+    } catch (error: any) {
+      console.error('❌ Failed to fetch dashboard data:', error);
+      console.error('📋 Error details:', error.response?.data);
+      toast.error('Failed to load dashboard data');
     } finally {
       setIsLoading(false);
     }

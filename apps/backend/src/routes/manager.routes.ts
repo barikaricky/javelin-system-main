@@ -1,9 +1,9 @@
 import { Router, Response, NextFunction } from 'express';
 import { authenticate, AuthRequest } from '../middlewares/auth.middleware';
 import { AppError } from '../middlewares/error.middleware';
-import { Supervisor, Operator, Location, IncidentReport, Attendance, User, Secretary } from '../models';
+import { Supervisor, Operator, Location, IncidentReport, Attendance, User, Secretary, GuardAssignment } from '../models';
 import bcrypt from 'bcryptjs';
-import { notifyDirectorsOfOperatorRegistration } from '../services/notification.service';
+import { sendOperatorWelcomeEmail } from '../services/email.service';
 import {
   registerManager,
   checkEmailAvailability,
@@ -180,6 +180,37 @@ router.get('/locations', authenticate, async (_req: AuthRequest, res: Response, 
       locations,
     });
   } catch (error) {
+    next(error);
+  }
+});
+
+// Get bits for dropdown
+router.get('/bits', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { page = '1', limit = '500', locationId } = req.query;
+    
+    const query: any = {};
+    if (locationId && locationId !== 'all') {
+      query.locationId = locationId;
+    }
+
+    const bits = await Bit.find(query)
+      .populate('locationId', 'name locationName')
+      .limit(parseInt(limit as string))
+      .skip((parseInt(page as string) - 1) * parseInt(limit as string))
+      .lean();
+
+    const total = await Bit.countDocuments(query);
+
+    res.json({
+      success: true,
+      bits,
+      total,
+      page: parseInt(page as string),
+      limit: parseInt(limit as string),
+    });
+  } catch (error) {
+    console.error('Error fetching bits:', error);
     next(error);
   }
 });
@@ -733,7 +764,7 @@ function generateEmployeeId(prefix: string): string {
   return `${prefix}-${timestamp}-${random}`;
 }
 
-// Manager Register Operator (requires Manager/Director approval)
+// Manager Register Operator (auto-approves and assigns)
 router.post('/register-operator', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const {
@@ -770,6 +801,7 @@ router.post('/register-operator', authenticate, async (req: AuthRequest, res: Re
       rightThumb,
       ninNumber,
       ninDocument,
+      shiftType = 'DAY',
     } = req.body;
 
     const managerUserId = req.user?.userId;
@@ -782,6 +814,10 @@ router.post('/register-operator', authenticate, async (req: AuthRequest, res: Re
       managerId: managerUserId,
     });
 
+    const managerUser = managerUserId
+      ? await User.findById(managerUserId).select('firstName lastName')
+      : null;
+
     // Check if email already exists
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
@@ -791,7 +827,7 @@ router.post('/register-operator', authenticate, async (req: AuthRequest, res: Re
     // Check if phone already exists
     const phoneToCheck = phoneNumber || phone;
     if (phoneToCheck) {
-      const existingPhone = await User.findOne({ phoneNumber: phoneToCheck });
+      const existingPhone = await User.findOne({ phone: phoneToCheck });
       if (existingPhone) {
         return res.status(400).json({ error: 'A user with this phone number already exists' });
       }
@@ -804,65 +840,164 @@ router.post('/register-operator', authenticate, async (req: AuthRequest, res: Re
     const temporaryPassword = `Opr${Math.random().toString(36).substring(2, 10)}!`;
     const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
 
-    // Create user with PENDING status (requires approval)
+    // Create user with ACTIVE status (manager has approval rights)
     const newUser = new User({
       email: email.toLowerCase(),
-      phoneNumber: phoneToCheck || undefined,
+      phone: phoneToCheck || undefined,
       passwordHash: hashedPassword,
       role: 'OPERATOR',
-      status: 'PENDING',
+      status: 'ACTIVE',
       firstName,
       lastName,
-      profilePhoto: applicantPhoto || passportPhoto,
+      gender: gender || undefined,
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+      address: address || undefined,
+      state: state || undefined,
+      lga: lga || undefined,
+      employeeId,
+      passportPhoto: applicantPhoto || passportPhoto,
+      accountName: `${firstName} ${lastName}`.trim(),
+      bankName: bankName || undefined,
+      accountNumber: bankAccountNumber || undefined,
+      createdById: managerUserId,
     });
 
     await newUser.save();
     console.log('✅ User created for operator', { userId: newUser._id });
 
-    // Create operator profile with PENDING approval status
+    const numericSalary = salary ? Number(salary) : 0;
+
+    const guarantors = [] as Array<{ name: string; phone: string; address: string; photo?: string }>;
+    if (guarantor1Name && guarantor1Phone && guarantor1Address) {
+      guarantors.push({
+        name: guarantor1Name,
+        phone: guarantor1Phone,
+        address: guarantor1Address,
+        photo: guarantor1Photo,
+      });
+    }
+    if (guarantor2Name && guarantor2Phone && guarantor2Address) {
+      guarantors.push({
+        name: guarantor2Name,
+        phone: guarantor2Phone,
+        address: guarantor2Address,
+        photo: guarantor2Photo,
+      });
+    }
+
+    const documents = ninDocument ? [ninDocument] : [];
+
+    // Create operator profile with APPROVED status
     const newOperator = new Operator({
       userId: newUser._id,
       employeeId,
-      gender,
-      dateOfBirth,
-      address,
-      state,
-      lga,
-      locationId: locationId || null,
-      bitId: bitId || null,
-      supervisorId: supervisorId || null,
-      salary: salary || 0,
-      salaryCategory: salaryCategory || 'STANDARD',
-      bankName: bankName || '',
-      bankAccountNumber: bankAccountNumber || '',
-      guarantor1Name,
-      guarantor1Phone,
-      guarantor1Address,
-      guarantor1Photo,
-      guarantor2Name,
-      guarantor2Phone,
-      guarantor2Address,
-      guarantor2Photo,
-      previousExperience,
+      locationId: locationId || undefined,
+      supervisorId: supervisorId || undefined,
+      shiftType,
+      passportPhoto: applicantPhoto || passportPhoto,
+      bankName: bankName || undefined,
+      bankAccount: bankAccountNumber || undefined,
+      nationalId: ninNumber || undefined,
+      documents,
+      guarantors,
+      previousExperience: previousExperience || undefined,
       medicalFitness: medicalFitness || false,
-      applicantPhoto,
-      passportPhoto,
-      leftThumb,
-      rightThumb,
-      ninNumber,
-      ninDocument,
-      approvalStatus: 'PENDING', // Registered by manager, requires Director approval
-      registeredBy: managerUserId,
+      approvalStatus: 'APPROVED',
+      salary: Number.isNaN(numericSalary) ? 0 : numericSalary,
+      startDate: new Date(),
     });
 
     await newOperator.save();
     console.log('✅ Operator profile created', { operatorId: newOperator._id });
 
-    // Notify directors about new operator registration
-    await notifyDirectorsOfOperatorRegistration(newOperator._id.toString());
+    // Log what values we have for assignment
+    console.log('📋 Assignment data check:', {
+      hasBitId: !!bitId,
+      hasLocationId: !!locationId,
+      hasSupervisorId: !!supervisorId,
+      bitIdValue: bitId,
+      locationIdValue: locationId,
+      supervisorIdValue: supervisorId,
+    });
+
+    let guardAssignment = null;
+    if (bitId && bitId !== '' && locationId && locationId !== '' && supervisorId && supervisorId !== '') {
+      try {
+        const managerName = managerUser
+          ? `${managerUser.firstName || ''} ${managerUser.lastName || ''}`.trim() || 'Manager'
+          : 'Manager';
+
+        guardAssignment = new GuardAssignment({
+          operatorId: newOperator._id,
+          bitId,
+          locationId,
+          supervisorId,
+          assignmentType: 'PERMANENT',
+          shiftType,
+          startDate: new Date(),
+          status: 'ACTIVE',
+          assignedBy: {
+            userId: managerUserId,
+            role: 'MANAGER',
+            name: managerName,
+          },
+          approvedBy: {
+            userId: managerUserId,
+            role: 'MANAGER',
+            name: managerName,
+          },
+          approvedAt: new Date(),
+        });
+
+        await guardAssignment.save();
+        console.log('✅ GuardAssignment created successfully:', guardAssignment._id);
+      } catch (assignmentError) {
+        console.error('❌ Failed to create GuardAssignment:', assignmentError);
+      }
+    } else if (bitId || supervisorId) {
+      console.warn('⚠️ Partial assignment data provided:', {
+        hasBitId: !!bitId,
+        hasLocationId: !!locationId,
+        hasSupervisorId: !!supervisorId,
+      });
+      console.warn('⚠️ GuardAssignment requires bitId, locationId, and supervisorId. Skipping assignment creation.');
+    }
+
+    let locationName = 'Unassigned';
+    if (locationId) {
+      try {
+        const location = await Location.findById(locationId).select('locationName name');
+        if (location) {
+          locationName = (location as any).locationName || location.name || 'Assigned Location';
+        }
+      } catch (error) {
+        console.warn('⚠️ Could not fetch location details:', error);
+      }
+    }
+
+    if (email) {
+      console.log('📧 Attempting to send welcome email to:', email);
+      sendOperatorWelcomeEmail({
+        email,
+        firstName,
+        lastName,
+        employeeId,
+        locationName,
+        temporaryPassword,
+      })
+        .then(() => {
+          console.log('✅ Welcome email sent successfully to:', email);
+        })
+        .catch((error: any) => {
+          console.error('❌ Failed to send welcome email:', error);
+        });
+    }
 
     res.status(201).json({
-      message: 'Operator registered successfully. Awaiting Director approval.',
+      success: true,
+      message: guardAssignment
+        ? 'Operator registered, activated, and assigned successfully.'
+        : 'Operator registered and activated successfully.',
       operator: {
         _id: newOperator._id,
         employeeId,
@@ -872,7 +1007,11 @@ router.post('/register-operator', authenticate, async (req: AuthRequest, res: Re
           lastName,
           email: newUser.email,
         },
-        approvalStatus: 'PENDING',
+        approvalStatus: 'APPROVED',
+        status: 'ACTIVE',
+        locationName,
+        assignmentCreated: !!guardAssignment,
+        assignmentId: guardAssignment?._id,
       },
       credentials: {
         email: newUser.email,

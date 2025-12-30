@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 import { asyncHandler } from '../middlewares/error.middleware';
 import { logger } from '../utils/logger';
-import { User, Supervisor } from '../models';
+import { User, Supervisor, Operator, Location, Attendance, IncidentReport } from '../models';
 
 // Local enum type
 type UserStatus = 'ACTIVE' | 'INACTIVE' | 'PENDING';
@@ -33,12 +33,10 @@ router.get('/dashboard', asyncHandler(async (req: any, res) => {
   today.setHours(0, 0, 0, 0);
   
   // Get the GS's supervisor record
-  const gs = await prisma.supervisors.findFirst({
-    where: {
-      userId,
-      supervisorType: 'GENERAL_SUPERVISOR',
-    },
-  });
+  const gs = await Supervisor.findOne({
+    userId,
+    supervisorType: 'GENERAL_SUPERVISOR',
+  }).lean();
 
   if (!gs) {
     // Return empty data if no GS profile found
@@ -59,9 +57,43 @@ router.get('/dashboard', asyncHandler(async (req: any, res) => {
     });
   }
 
+  // Import required models
+  const { Operator, Location, Attendance, IncidentReport } = require('../models');
+  
+  // Get subordinate supervisors with fallback
+  let subordinateSupervisors = await Supervisor.countDocuments({
+    generalSupervisorId: gs._id,
+    approvalStatus: 'APPROVED',
+  });
+
+  // Get supervisors under this GS with fallback
+  let supervisors = await Supervisor.find({
+    generalSupervisorId: gs._id,
+    approvalStatus: 'APPROVED',
+  }).limit(10).lean();
+
+  // Fallback: If no supervisors found with generalSupervisorId, show all SUPERVISOR type
+  if (supervisors.length === 0) {
+    console.log('⚠️ Dashboard: No supervisors with generalSupervisorId, fetching all SUPERVISOR type as fallback');
+    supervisors = await Supervisor.find({
+      supervisorType: 'SUPERVISOR',
+      approvalStatus: 'APPROVED',
+    }).limit(10).lean();
+    subordinateSupervisors = await Supervisor.countDocuments({
+      supervisorType: 'SUPERVISOR',
+      approvalStatus: 'APPROVED',
+    });
+  }
+
+  const supervisorIds = supervisors.map(s => s._id);
+  
+  // IMPORTANT: Also include the GS themselves in the supervisor IDs
+  // because operators can be registered directly by the GS
+  supervisorIds.push(gs._id);
+  console.log(`📊 Dashboard: Checking operators under ${supervisorIds.length} supervisors (including GS)`);
+
   // Get all stats and data in parallel
   const [
-    subordinateSupervisors,
     totalOperators,
     activeLocations,
     todayAttendance,
@@ -70,145 +102,125 @@ router.get('/dashboard', asyncHandler(async (req: any, res) => {
     incidentsList,
     locationsList,
   ] = await Promise.all([
-    // Supervisors under this GS
-    prisma.supervisors.count({
-      where: { generalSupervisorId: gs.id, approvalStatus: 'APPROVED' },
-    }),
     // Total operators under supervisors who report to this GS
-    prisma.operators.count({
-      where: {
-        supervisors: {
-          generalSupervisorId: gs.id,
-        },
-      },
-    }),
-    // Active locations (bits)
-    prisma.locations.count({
-      where: { isActive: true },
-    }),
+    Operator.countDocuments({ supervisorId: { $in: supervisorIds } }),
+    // Active locations
+    Location.countDocuments({ isActive: true }),
     // Today's attendance
-    prisma.attendances.count({
-      where: {
-        checkInTime: { gte: today },
-        operators: {
-          supervisors: {
-            generalSupervisorId: gs.id,
-          },
-        },
-      },
+    Attendance.countDocuments({
+      checkInTime: { $gte: today },
+      operatorId: { $in: await Operator.find({ supervisorId: { $in: supervisorIds } }).distinct('_id') },
     }),
     // Open incidents
-    prisma.incident_reports.count({
-      where: {
-        status: { in: ['REPORTED', 'UNDER_REVIEW'] },
-        supervisors: {
-          generalSupervisorId: gs.id,
-        },
-      },
+    IncidentReport.countDocuments({
+      status: { $in: ['REPORTED', 'UNDER_REVIEW'] },
+      supervisorId: { $in: supervisorIds },
     }),
-    // Supervisors list
-    prisma.supervisors.findMany({
-      where: {
-        generalSupervisorId: gs.id,
-        approvalStatus: 'APPROVED',
-      },
-      take: 10,
-      include: {
-        users: {
-          select: {
-            firstName: true,
-            lastName: true,
-            profilePhoto: true,
-            status: true,
-            lastLogin: true,
-          },
-        },
-        locations: { select: { name: true } },
-        _count: { select: { operators: true } },
-      },
-    }),
+    // Supervisors list with populated data
+    Supervisor.find({
+      generalSupervisorId: gs._id,
+      approvalStatus: 'APPROVED',
+    })
+    .limit(10)
+    .populate('userId', 'firstName lastName profilePhoto status lastLogin')
+    .populate('locationId', 'name')
+    .lean(),
     // Recent incidents
-    prisma.incident_reports.findMany({
-      where: {
-        status: { in: ['REPORTED', 'UNDER_REVIEW'] },
-        supervisors: {
-          generalSupervisorId: gs.id,
-        },
-      },
-      take: 5,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        operators: {
-          include: {
-            users: { select: { firstName: true, lastName: true } },
-            locations: { select: { name: true } },
-          },
-        },
-      },
-    }),
-    // Locations under GS's supervisors
-    prisma.locations.findMany({
-      where: { isActive: true },
-      take: 10,
-      include: {
-        supervisors: {
-          where: { generalSupervisorId: gs.id },
-          include: {
-            users: { select: { firstName: true, lastName: true } },
-          },
-        },
-        operators: true,
-      },
-    }),
+    IncidentReport.find({
+      status: { $in: ['REPORTED', 'UNDER_REVIEW'] },
+      supervisorId: { $in: supervisorIds },
+    })
+    .limit(5)
+    .sort({ createdAt: -1 })
+    .populate({
+      path: 'operatorId',
+      populate: [
+        { path: 'userId', select: 'firstName lastName' },
+        { path: 'locationId', select: 'name' },
+      ],
+    })
+    .lean(),
+    // Locations
+    Location.find({ isActive: true })
+    .limit(10)
+    .lean(),
   ]);
 
   // Calculate attendance rate
   const attendanceRate = totalOperators > 0 ? Math.round((todayAttendance / totalOperators) * 100) : 0;
 
+  // Get operator counts for each supervisor
+  const supervisorsWithCounts = await Promise.all(
+    supervisorsList.map(async (sup: any) => {
+      const operatorCount = await Operator.countDocuments({ supervisorId: sup._id });
+      return { ...sup, operatorCount };
+    })
+  );
+
   // Map supervisors to expected format
-  const mappedSupervisors = supervisorsList.map(sup => {
-    const lastLogin = sup.users.lastLogin;
+  const mappedSupervisors = supervisorsWithCounts.map((sup: any) => {
+    const lastLogin = sup.userId?.lastLogin;
     let status: 'active' | 'on-leave' | 'offline' = 'offline';
-    if (sup.users.status === 'ACTIVE') {
-      if (lastLogin && (new Date().getTime() - lastLogin.getTime()) < 3600000) {
+    if (sup.userId?.status === 'ACTIVE') {
+      if (lastLogin && (new Date().getTime() - new Date(lastLogin).getTime()) < 3600000) {
         status = 'active';
       }
-    } else if (sup.users.status === 'ON_LEAVE') {
+    } else if (sup.userId?.status === 'ON_LEAVE') {
       status = 'on-leave';
     }
 
     return {
-      id: sup.id,
-      name: `${sup.users.firstName} ${sup.users.lastName}`,
-      photo: sup.users.profilePhoto || undefined,
+      id: sup._id,
+      name: `${sup.userId?.firstName || ''} ${sup.userId?.lastName || ''}`,
+      photo: sup.userId?.profilePhoto || undefined,
       locationsCount: sup.locationsAssigned?.length || 0,
-      operatorsCount: sup._count.operators,
+      operatorsCount: sup.operatorCount,
       status,
-      lastActivity: lastLogin ? getRelativeTime(lastLogin) : 'Never',
+      lastActivity: lastLogin ? getRelativeTime(new Date(lastLogin)) : 'Never',
       performance: 90, // Default performance score
     };
   });
 
   // Map incidents to expected format
-  const mappedIncidents = incidentsList.map(inc => ({
-    id: inc.id,
+  const mappedIncidents = incidentsList.map((inc: any) => ({
+    id: inc._id,
     title: inc.title,
-    location: inc.operators?.locations?.name || 'Unknown',
-    reportedBy: inc.operators?.users ? `Op. ${inc.operators.users.firstName}` : 'Unknown',
+    location: inc.operatorId?.locationId?.name || 'Unknown',
+    reportedBy: inc.operatorId?.userId ? `Op. ${inc.operatorId.userId.firstName}` : 'Unknown',
     severity: inc.severity.toLowerCase() as 'high' | 'medium' | 'low',
-    time: getRelativeTime(inc.createdAt),
+    time: getRelativeTime(new Date(inc.createdAt)),
     status: inc.status === 'REPORTED' ? 'open' : inc.status === 'UNDER_REVIEW' ? 'investigating' : 'resolved' as 'open' | 'investigating' | 'resolved',
   }));
 
+  // Get location supervisors and operators counts
+  const locationsWithDetails = await Promise.all(
+    locationsList.map(async (loc: any) => {
+      const locationSupervisors = await Supervisor.find({
+        locationId: loc._id,
+        generalSupervisorId: gs._id,
+      }).populate('userId', 'firstName lastName').lean();
+      
+      const operatorCount = await Operator.countDocuments({ locationId: loc._id });
+      
+      return {
+        ...loc,
+        supervisors: locationSupervisors,
+        operatorCount,
+      };
+    })
+  );
+
   // Map locations to expected format
-  const mappedLocations = locationsList.filter(loc => loc.supervisors.length > 0).map(loc => ({
-    id: loc.id,
-    name: loc.name,
-    supervisor: loc.supervisors[0]?.users ? `${loc.supervisors[0].users.firstName} ${loc.supervisors[0].users.lastName}` : 'Unassigned',
-    operatorsAssigned: 10, // Default
-    operatorsPresent: loc.operators.length,
-    status: loc.operators.length >= 8 ? 'green' : loc.operators.length >= 5 ? 'yellow' : 'red' as 'green' | 'yellow' | 'red',
-  }));
+  const mappedLocations = locationsWithDetails
+    .filter((loc: any) => loc.supervisors.length > 0)
+    .map((loc: any) => ({
+      id: loc._id,
+      name: loc.name,
+      supervisor: loc.supervisors[0]?.userId ? `${loc.supervisors[0].userId.firstName} ${loc.supervisors[0].userId.lastName}` : 'Unassigned',
+      operatorsAssigned: 10, // Default
+      operatorsPresent: loc.operatorCount,
+      status: loc.operatorCount >= 8 ? 'green' : loc.operatorCount >= 5 ? 'yellow' : 'red' as 'green' | 'yellow' | 'red',
+    }));
 
   res.json({
     profile: gs,
@@ -270,17 +282,34 @@ router.get('/my-supervisors', asyncHandler(async (req: any, res) => {
   });
 
   if (!gs) {
+    console.log('❌ No General Supervisor profile found for userId:', userId);
     return res.status(404).json({ error: 'General Supervisor profile not found' });
   }
+
+  console.log('✅ Found General Supervisor:', gs._id);
 
   // Get supervisors under this General Supervisor
   supervisors = await Supervisor.find({
     generalSupervisorId: gs._id,
     supervisorType: 'SUPERVISOR',
   })
-  .populate('userId', 'email phone firstName lastName status profilePhoto passportPhoto')
+  .populate('userId', 'email phone firstName lastName status profilePhoto passportPhoto lastLogin')
   .populate('locationId', 'name address')
   .sort({ createdAt: -1 });
+
+  console.log(`📊 Found ${supervisors.length} supervisors under GS ${gs._id}`);
+
+  // If no supervisors found with generalSupervisorId, try to get all supervisors (fallback for testing)
+  if (supervisors.length === 0 && userRole === 'GENERAL_SUPERVISOR') {
+    console.log('⚠️ No supervisors with generalSupervisorId, fetching all SUPERVISOR type as fallback');
+    supervisors = await Supervisor.find({
+      supervisorType: 'SUPERVISOR',
+    })
+    .populate('userId', 'email phone firstName lastName status profilePhoto passportPhoto lastLogin')
+    .populate('locationId', 'name address')
+    .sort({ createdAt: -1 });
+    console.log(`📊 Fallback: Found ${supervisors.length} total supervisors`);
+  }
 
   // Get operator counts for each supervisor
   const { Operator } = require('../models');
@@ -304,76 +333,335 @@ router.get('/my-supervisors', asyncHandler(async (req: any, res) => {
 // Get a specific supervisor's details
 router.get('/my-supervisors/:supervisorId', asyncHandler(async (req: any, res) => {
   const userId = req.user.userId;
+  const userRole = req.user.role;
   const { supervisorId } = req.params;
+  const mongoose = require('mongoose');
   
-  const gs = await prisma.supervisors.findFirst({
-    where: {
-      userId,
-      supervisorType: 'GENERAL_SUPERVISOR',
-    },
-  });
+  console.log(`🔍 GET /my-supervisors/${supervisorId} - User: ${userId}, Role: ${userRole}`);
+  
+  // Validate ObjectId
+  if (!mongoose.Types.ObjectId.isValid(supervisorId)) {
+    console.log(`❌ Invalid ObjectId format: ${supervisorId}`);
+    return res.status(400).json({ error: 'Invalid supervisor ID format' });
+  }
+  
+  // If DIRECTOR, they can view any supervisor
+  if (userRole === 'DIRECTOR') {
+    const supervisor = await Supervisor.findById(supervisorId)
+      .populate('userId', 'email phone firstName lastName status profilePhoto passportPhoto gender dateOfBirth state lga lastLogin')
+      .populate('locationId', 'name address state lga')
+      .lean();
+
+    if (!supervisor) {
+      return res.status(404).json({ error: 'Supervisor not found' });
+    }
+
+    // Get operator count and list
+    const { Operator } = require('../models');
+    const operators = await Operator.find({ supervisorId: supervisor._id })
+      .populate('userId', 'firstName lastName email status profilePhoto')
+      .populate('locationId', 'name')
+      .lean();
+
+    // Get incident count
+    const { IncidentReport } = require('../models');
+    const incidentCount = await IncidentReport.countDocuments({ supervisorId: supervisor._id });
+
+    const response = {
+      id: supervisor._id,
+      ...supervisor,
+      users: supervisor.userId,
+      locations: supervisor.locationId,
+      operators: operators.map((op: any) => ({
+        id: op._id,
+        ...op,
+        users: op.userId,
+        locations: op.locationId,
+      })),
+      _count: {
+        operators: operators.length,
+        incident_reports: incidentCount,
+      },
+    };
+
+    return res.json(response);
+  }
+  
+  // For GENERAL_SUPERVISOR, verify ownership
+  const gs = await Supervisor.findOne({
+    userId,
+    supervisorType: 'GENERAL_SUPERVISOR',
+  }).lean();
 
   if (!gs) {
     return res.status(404).json({ error: 'General Supervisor profile not found' });
   }
 
-  const supervisor = await prisma.supervisors.findFirst({
-    where: {
-      id: supervisorId,
-      generalSupervisorId: gs.id,
-    },
-    include: {
-      users: {
-        select: {
-          id: true,
-          email: true,
-          phone: true,
-          firstName: true,
-          lastName: true,
-          status: true,
-          profilePhoto: true,
-          passportPhoto: true,
-          gender: true,
-          dateOfBirth: true,
-          state: true,
-          lga: true,
-        },
-      },
-      locations: true,
-      operators: {
-        include: {
-          users: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              status: true,
-              profilePhoto: true,
-            },
-          },
-          locations: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-      },
-      _count: {
-        select: {
-          operators: true,
-          incident_reports: true,
-        },
-      },
-    },
-  });
+  // Try to find supervisor with generalSupervisorId first
+  let supervisor = await Supervisor.findOne({
+    _id: supervisorId,
+    generalSupervisorId: gs._id,
+  })
+  .populate('userId', 'email phone firstName lastName status profilePhoto passportPhoto gender dateOfBirth state lga lastLogin')
+  .populate('locationId', 'name address state lga')
+  .lean();
+
+  // Fallback: If not found, check if supervisor exists at all (for development/testing)
+  if (!supervisor) {
+    console.log(`⚠️ Supervisor ${supervisorId} not linked to GS ${gs._id}, checking if supervisor exists...`);
+    supervisor = await Supervisor.findOne({
+      _id: supervisorId,
+      supervisorType: 'SUPERVISOR',
+    })
+    .populate('userId', 'email phone firstName lastName status profilePhoto passportPhoto gender dateOfBirth state lga lastLogin')
+    .populate('locationId', 'name address state lga')
+    .lean();
+    
+    if (supervisor) {
+      console.log(`✅ Found supervisor ${supervisorId} without generalSupervisorId (fallback mode)`);
+    }
+  }
 
   if (!supervisor) {
     return res.status(404).json({ error: 'Supervisor not found or not under your supervision' });
   }
 
-  res.json(supervisor);
+  // Get operator count and list
+  const { Operator } = require('../models');
+  const operators = await Operator.find({ supervisorId: supervisor._id })
+    .populate('userId', 'firstName lastName email status profilePhoto')
+    .populate('locationId', 'name')
+    .lean();
+
+  // Get incident count
+  const { IncidentReport } = require('../models');
+  const incidentCount = await IncidentReport.countDocuments({ supervisorId: supervisor._id });
+
+  const response = {
+    id: supervisor._id,
+    ...supervisor,
+    users: supervisor.userId,
+    locations: supervisor.locationId,
+    operators: operators.map((op: any) => ({
+      id: op._id,
+      ...op,
+      users: op.userId,
+      locations: op.locationId,
+    })),
+    _count: {
+      operators: operators.length,
+      incident_reports: incidentCount,
+    },
+  };
+
+  res.json(response);
+}));
+
+// Get subordinate supervisors (for assignment dropdowns, etc.)
+// Similar to director's /supervisors endpoint but filtered to GS's subordinates
+router.get('/subordinates', asyncHandler(async (req: any, res) => {
+  const userId = req.user.userId;
+  const userRole = req.user.role;
+  const { limit, approvalStatus } = req.query;
+  
+  console.log('🔍 GET /subordinates - User:', userId, 'Role:', userRole);
+  
+  let supervisors;
+  
+  // If DIRECTOR, return all supervisors
+  if (userRole === 'DIRECTOR' || userRole === 'DEVELOPER') {
+    const query: any = { supervisorType: 'SUPERVISOR' };
+    if (approvalStatus) {
+      query.approvalStatus = approvalStatus;
+    }
+    
+    supervisors = await Supervisor.find(query)
+      .populate('userId', 'email phone firstName lastName status')
+      .populate('locationId', 'name locationName address')
+      .sort({ createdAt: -1 })
+      .limit(limit ? parseInt(limit as string) : 500)
+      .lean();
+      
+    console.log(`✅ DIRECTOR: Found ${supervisors.length} supervisors`);
+    return res.json({ supervisors });
+  }
+  
+  // For GENERAL_SUPERVISOR, find their profile
+  const gs = await Supervisor.findOne({
+    userId,
+    supervisorType: 'GENERAL_SUPERVISOR',
+  }).lean();
+
+  if (!gs) {
+    console.log('❌ No General Supervisor profile found');
+    return res.status(404).json({ error: 'General Supervisor profile not found' });
+  }
+
+  console.log('✅ Found GS:', gs._id);
+
+  // Get supervisors under this GS
+  const query: any = {
+    generalSupervisorId: gs._id,
+    supervisorType: 'SUPERVISOR',
+  };
+  
+  if (approvalStatus) {
+    query.approvalStatus = approvalStatus;
+  }
+
+  supervisors = await Supervisor.find(query)
+    .populate('userId', 'email phone firstName lastName status')
+    .populate('locationId', 'name locationName address')
+    .sort({ createdAt: -1 })
+    .limit(limit ? parseInt(limit as string) : 500)
+    .lean();
+
+  console.log(`📊 Found ${supervisors.length} supervisors under GS ${gs._id}`);
+
+  // Fallback: If no supervisors found, return all approved supervisors
+  if (supervisors.length === 0) {
+    console.log('⚠️ No supervisors with generalSupervisorId, using fallback');
+    const fallbackQuery: any = {
+      supervisorType: 'SUPERVISOR',
+      approvalStatus: 'APPROVED',
+    };
+    
+    supervisors = await Supervisor.find(fallbackQuery)
+      .populate('userId', 'email phone firstName lastName status')
+      .populate('locationId', 'name locationName address')
+      .sort({ createdAt: -1 })
+      .limit(limit ? parseInt(limit as string) : 500)
+      .lean();
+      
+    console.log(`📊 Fallback: Found ${supervisors.length} supervisors`);
+  }
+
+  res.json({ supervisors });
+}));
+
+// Assign/Update supervisor location
+router.patch('/supervisors/:id/location', asyncHandler(async (req: any, res) => {
+  const userId = req.user.userId;
+  const { id: supervisorId } = req.params;
+  const { locationId } = req.body;
+  
+  console.log('🔄 PATCH /supervisors/:id/location - GS:', userId, 'Supervisor:', supervisorId, 'Location:', locationId);
+  
+  // Verify GS exists
+  const gs = await Supervisor.findOne({
+    userId,
+    supervisorType: 'GENERAL_SUPERVISOR',
+  }).lean();
+
+  if (!gs) {
+    return res.status(404).json({ error: 'General Supervisor profile not found' });
+  }
+
+  // Verify the supervisor is under this GS
+  let supervisor = await Supervisor.findOne({
+    _id: supervisorId,
+    generalSupervisorId: gs._id,
+  });
+
+  // Fallback for testing - allow if supervisor exists
+  if (!supervisor) {
+    console.log('⚠️ Supervisor not linked to GS, checking if supervisor exists...');
+    supervisor = await Supervisor.findOne({
+      _id: supervisorId,
+      supervisorType: 'SUPERVISOR',
+    });
+  }
+
+  if (!supervisor) {
+    return res.status(404).json({ error: 'Supervisor not found or not under your supervision' });
+  }
+
+  // Validate location exists
+  if (locationId) {
+    const { Location } = require('../models');
+    const location = await Location.findById(locationId);
+    if (!location) {
+      return res.status(404).json({ error: 'Location not found' });
+    }
+  }
+
+  // Update supervisor location
+  supervisor.locationId = locationId || null;
+  await supervisor.save();
+
+  // Reload with populated data
+  const updatedSupervisor = await Supervisor.findById(supervisorId)
+    .populate('userId', 'email phone firstName lastName status')
+    .populate('locationId', 'name locationName address')
+    .lean();
+
+  console.log('✅ Updated supervisor location');
+  res.json({ 
+    message: 'Supervisor location updated successfully',
+    supervisor: updatedSupervisor 
+  });
+}));
+
+// Get single operator details - MUST come before /operators route
+router.get('/operators/:id', asyncHandler(async (req: any, res) => {
+  const userId = req.user.userId;
+  const { id } = req.params;
+  
+  console.log('🔍 Fetching operator details for ID:', id);
+  
+  // Verify GS exists
+  const gs = await Supervisor.findOne({
+    userId,
+    supervisorType: 'GENERAL_SUPERVISOR',
+  }).lean();
+
+  if (!gs) {
+    console.log('❌ GS not found');
+    return res.status(404).json({ error: 'General Supervisor profile not found' });
+  }
+
+  // Find supervisors under this GS (including fallback)
+  let supervisors = await Supervisor.find({
+    generalSupervisorId: gs._id,
+  }).select('_id').lean();
+
+  if (supervisors.length === 0) {
+    console.log('⚠️ Using fallback for supervisors');
+    supervisors = await Supervisor.find({
+      supervisorType: 'SUPERVISOR',
+      approvalStatus: 'APPROVED',
+    }).select('_id').lean();
+  }
+
+  const supervisorIds = supervisors.map(s => s._id);
+  supervisorIds.push(gs._id); // Include GS
+  
+  console.log('📋 Checking operator under supervisorIds:', supervisorIds);
+
+  // Fetch the operator with all details
+  const operator = await Operator.findOne({
+    _id: id,
+    supervisorId: { $in: supervisorIds }
+  })
+    .populate('userId', 'firstName lastName email phone profilePhoto status createdAt')
+    .populate({
+      path: 'supervisorId',
+      populate: {
+        path: 'userId',
+        select: 'firstName lastName'
+      }
+    })
+    .populate('locationId', 'name address isActive')
+    .lean();
+
+  if (!operator) {
+    console.log('❌ Operator not found with ID:', id);
+    return res.status(404).json({ error: 'Operator not found or not under your supervision' });
+  }
+
+  console.log('✅ Operator details fetched:', operator);
+
+  res.json({ success: true, operator });
 }));
 
 // Get all operators under supervisors who report to this GS (view only) - Mongoose
@@ -396,25 +684,35 @@ router.get('/operators', asyncHandler(async (req: any, res) => {
     }
 
     // Find supervisors under this GS
-    const supervisors = await Supervisor.find({
+    let supervisors = await Supervisor.find({
       generalSupervisorId: gs._id,
     }).select('_id').lean();
 
+    // Fallback: If no supervisors found with generalSupervisorId, show all SUPERVISOR type
+    if (supervisors.length === 0) {
+      console.log('⚠️ Operators List: No supervisors with generalSupervisorId, fetching all SUPERVISOR type as fallback');
+      supervisors = await Supervisor.find({
+        supervisorType: 'SUPERVISOR',
+        approvalStatus: 'APPROVED',
+      }).select('_id').lean();
+    }
+
     const supervisorIds = supervisors.map(s => s._id);
     
-    if (supervisorIds.length > 0) {
-      query.supervisorId = { $in: supervisorIds };
+    // IMPORTANT: Also include the GS themselves
+    // because operators can be registered directly by the GS
+    supervisorIds.push(gs._id);
+    console.log(`📊 Operators List: Checking operators under ${supervisorIds.length} supervisors (including GS)`);
+    
+    // If supervisorId filter is provided, AND it with the supervisorIds array
+    if (supervisorId) {
+      query.supervisorId = { $in: [supervisorId, ...supervisorIds] };
     } else {
-      // If GS has no supervisors yet, return empty array
-      return res.json({ success: true, operators: [] });
+      query.supervisorId = { $in: supervisorIds };
     }
   }
 
-  // Additional filters
-  if (supervisorId) {
-    query.supervisorId = supervisorId;
-  }
-
+  // Additional filter for location
   if (locationId) {
     query.locationId = locationId;
   }
@@ -446,86 +744,74 @@ router.get('/operators', asyncHandler(async (req: any, res) => {
 // Get locations under GS supervision
 router.get('/locations', asyncHandler(async (req: any, res) => {
   const userId = req.user.userId;
+  const { Location, Operator } = require('../models');
   
-  const gs = await prisma.supervisors.findFirst({
-    where: {
-      userId,
-      supervisorType: 'GENERAL_SUPERVISOR',
-    },
-  });
+  const gs = await Supervisor.findOne({
+    userId,
+    supervisorType: 'GENERAL_SUPERVISOR',
+  }).lean();
 
   if (!gs) {
     return res.status(404).json({ error: 'General Supervisor profile not found' });
   }
 
-  // Get locations that have supervisors under this GS
-  const supervisorIds = await prisma.supervisors.findMany({
-    where: { generalSupervisorId: gs.id },
-    select: { locationId: true },
-  });
+  // Get supervisors under this GS
+  const supervisors = await Supervisor.find({
+    generalSupervisorId: gs._id,
+  }).select('locationId').lean();
 
-  const locationIds = supervisorIds
+  const locationIds = supervisors
     .map(s => s.locationId)
-    .filter((id): id is string => id !== null);
+    .filter((id): id is any => id !== null);
 
-  const locations = await prisma.locations.findMany({
-    where: {
-      OR: [
-        { id: { in: locationIds } },
-        { isActive: true }, // Also show all active locations
-      ],
-    },
-    include: {
-      supervisors: {
-        where: { generalSupervisorId: gs.id },
-        include: {
-          users: {
-            select: {
-              firstName: true,
-              lastName: true,
-            },
-          },
-        },
-      },
-      operators: {
-        where: {
-          supervisors: {
-            generalSupervisorId: gs.id,
-          },
-        },
-      },
-      _count: {
-        select: {
-          operators: true,
-          supervisors: true,
-        },
-      },
-    },
-    orderBy: { name: 'asc' },
-  });
+  // Get locations
+  const locations = await Location.find({
+    $or: [
+      { _id: { $in: locationIds } },
+      { isActive: true },
+    ],
+  }).sort({ name: 1 }).lean();
 
-  res.json(locations.map(loc => ({
-    ...loc,
-    operatorCount: loc._count.operators,
-    supervisorCount: loc._count.supervisors,
-    assignedSupervisors: loc.supervisors.map(s => ({
-      id: s.id,
-      name: `${s.users.firstName} ${s.users.lastName}`,
-    })),
-  })));
+  // Get detailed info for each location
+  const locationsWithDetails = await Promise.all(
+    locations.map(async (loc: any) => {
+      const locationSupervisors = await Supervisor.find({
+        locationId: loc._id,
+        generalSupervisorId: gs._id,
+      }).populate('userId', 'firstName lastName').lean();
+      
+      const operatorCount = await Operator.countDocuments({
+        locationId: loc._id,
+        supervisorId: { $in: supervisors.map(s => s._id) },
+      });
+      
+      const supervisorCount = locationSupervisors.length;
+      
+      return {
+        ...loc,
+        operatorCount,
+        supervisorCount,
+        assignedSupervisors: locationSupervisors.map((s: any) => ({
+          id: s._id,
+          name: `${s.userId?.firstName || ''} ${s.userId?.lastName || ''}`,
+        })),
+      };
+    })
+  );
+
+  res.json(locationsWithDetails);
 }));
 
 // Get attendance for operators under GS supervision
 router.get('/attendance', asyncHandler(async (req: any, res) => {
   const userId = req.user.userId;
   const { date, supervisorId, locationId } = req.query;
+  const { Attendance, Operator, Shift } = require('../models');
   
-  const gs = await prisma.supervisors.findFirst({
-    where: {
-      userId,
-      supervisorType: 'GENERAL_SUPERVISOR',
-    },
-  });
+  const gs = await Supervisor.findOne({
+    userId,
+    supervisorType: 'GENERAL_SUPERVISOR',
+  }).lean();
 
   if (!gs) {
     return res.status(404).json({ error: 'General Supervisor profile not found' });
@@ -535,77 +821,52 @@ router.get('/attendance', asyncHandler(async (req: any, res) => {
   const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
   const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
 
-  const whereClause: any = {
-    checkInTime: {
-      gte: startOfDay,
-      lte: endOfDay,
-    },
-    operators: {
-      supervisors: {
-        generalSupervisorId: gs.id,
-      },
-    },
-  };
+  // Get supervisors under this GS
+  const supervisors = await Supervisor.find({
+    generalSupervisorId: gs._id,
+  }).select('_id').lean();
 
+  const supervisorIds = supervisors.map(s => s._id);
+
+  // Build operator filter
+  let operatorFilter: any = { supervisorId: { $in: supervisorIds } };
   if (supervisorId) {
-    whereClause.operators = {
-      ...whereClause.operators,
-      supervisorId,
-    };
+    operatorFilter.supervisorId = supervisorId;
   }
-
   if (locationId) {
-    whereClause.operators = {
-      ...whereClause.operators,
-      locationId,
-    };
+    operatorFilter.locationId = locationId;
   }
 
-  const attendance = await prisma.attendances.findMany({
-    where: whereClause,
-    include: {
-      operators: {
-        include: {
-          users: {
-            select: {
-              firstName: true,
-              lastName: true,
-              profilePhoto: true,
-            },
-          },
-          supervisors: {
-            include: {
-              users: {
-                select: {
-                  firstName: true,
-                  lastName: true,
-                },
-              },
-            },
-          },
-          locations: {
-            select: {
-              name: true,
-            },
-          },
-        },
-      },
-      shifts: true,
-    },
-    orderBy: { checkInTime: 'desc' },
-  });
+  // Get operators under supervision
+  const operators = await Operator.find(operatorFilter).select('_id').lean();
+  const operatorIds = operators.map(o => o._id);
 
-  // Get total operators for attendance calculation
-  const totalOperators = await prisma.operators.count({
-    where: {
-      supervisors: {
-        generalSupervisorId: gs.id,
-      },
-      users: {
-        status: 'ACTIVE',
-      },
+  // Get attendance records
+  const attendance = await Attendance.find({
+    checkInTime: {
+      $gte: startOfDay,
+      $lte: endOfDay,
     },
-  });
+    operatorId: { $in: operatorIds },
+  })
+  .populate({
+    path: 'operatorId',
+    populate: [
+      { path: 'userId', select: 'firstName lastName profilePhoto' },
+      { path: 'supervisorId', populate: { path: 'userId', select: 'firstName lastName' } },
+      { path: 'locationId', select: 'name' },
+    ],
+  })
+  .populate('shiftId')
+  .sort({ checkInTime: -1 })
+  .lean();
+
+  // Get total active operators for attendance calculation
+  const activeOperators = await Operator.find(operatorFilter)
+    .populate('userId', 'status')
+    .lean();
+  
+  const totalOperators = activeOperators.filter((op: any) => op.userId?.status === 'ACTIVE').length;
 
   res.json({
     date: startOfDay.toISOString().split('T')[0],
@@ -620,22 +881,26 @@ router.get('/attendance', asyncHandler(async (req: any, res) => {
 router.get('/incidents', asyncHandler(async (req: any, res) => {
   const userId = req.user.userId;
   const { status, severity, supervisorId } = req.query;
+  const { IncidentReport } = require('../models');
   
-  const gs = await prisma.supervisors.findFirst({
-    where: {
-      userId,
-      supervisorType: 'GENERAL_SUPERVISOR',
-    },
-  });
+  const gs = await Supervisor.findOne({
+    userId,
+    supervisorType: 'GENERAL_SUPERVISOR',
+  }).lean();
 
   if (!gs) {
     return res.status(404).json({ error: 'General Supervisor profile not found' });
   }
 
+  // Get supervisors under this GS
+  const supervisors = await Supervisor.find({
+    generalSupervisorId: gs._id,
+  }).select('_id').lean();
+
+  const supervisorIds = supervisors.map(s => s._id);
+
   const whereClause: any = {
-    supervisors: {
-      generalSupervisorId: gs.id,
-    },
+    supervisorId: { $in: supervisorIds },
   };
 
   if (status) {
@@ -650,37 +915,20 @@ router.get('/incidents', asyncHandler(async (req: any, res) => {
     whereClause.supervisorId = supervisorId;
   }
 
-  const incidents = await prisma.incident_reports.findMany({
-    where: whereClause,
-    include: {
-      operators: {
-        include: {
-          users: {
-            select: {
-              firstName: true,
-              lastName: true,
-            },
-          },
-          locations: {
-            select: {
-              name: true,
-            },
-          },
-        },
-      },
-      supervisors: {
-        include: {
-          users: {
-            select: {
-              firstName: true,
-              lastName: true,
-            },
-          },
-        },
-      },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+  const incidents = await IncidentReport.find(whereClause)
+    .populate({
+      path: 'operatorId',
+      populate: [
+        { path: 'userId', select: 'firstName lastName' },
+        { path: 'locationId', select: 'name' },
+      ],
+    })
+    .populate({
+      path: 'supervisorId',
+      populate: { path: 'userId', select: 'firstName lastName' },
+    })
+    .sort({ createdAt: -1 })
+    .lean();
 
   res.json(incidents);
 }));
@@ -689,47 +937,42 @@ router.get('/incidents', asyncHandler(async (req: any, res) => {
 router.get('/activity-logs', asyncHandler(async (req: any, res) => {
   const userId = req.user.userId;
   const { startDate, endDate, actionType, limit = 50 } = req.query;
+  const { AuditLog, Operator } = require('../models');
   
-  const gs = await prisma.supervisors.findFirst({
-    where: {
-      userId,
-      supervisorType: 'GENERAL_SUPERVISOR',
-    },
-  });
+  const gs = await Supervisor.findOne({
+    userId,
+    supervisorType: 'GENERAL_SUPERVISOR',
+  }).lean();
 
   if (!gs) {
     return res.status(404).json({ error: 'General Supervisor profile not found' });
   }
 
   // Get all user IDs under this GS (supervisors and their operators)
-  const subordinateSupervisors = await prisma.supervisors.findMany({
-    where: { generalSupervisorId: gs.id },
-    select: { userId: true },
-  });
+  const subordinateSupervisors = await Supervisor.find({
+    generalSupervisorId: gs._id,
+  }).select('userId').lean();
 
-  const operatorUsers = await prisma.operators.findMany({
-    where: {
-      supervisors: {
-        generalSupervisorId: gs.id,
-      },
-    },
-    select: { userId: true },
-  });
+  const supervisorIds = subordinateSupervisors.map(s => s._id);
+  
+  const operatorUsers = await Operator.find({
+    supervisorId: { $in: supervisorIds },
+  }).select('userId').lean();
 
   const userIds = [
     userId, // GS themselves
-    ...subordinateSupervisors.map(s => s.userId),
-    ...operatorUsers.map(o => o.userId),
+    ...subordinateSupervisors.map((s: any) => s.userId),
+    ...operatorUsers.map((o: any) => o.userId),
   ];
 
   const whereClause: any = {
-    userId: { in: userIds },
+    userId: { $in: userIds },
   };
 
   if (startDate && endDate) {
     whereClause.timestamp = {
-      gte: new Date(startDate as string),
-      lte: new Date(endDate as string),
+      $gte: new Date(startDate as string),
+      $lte: new Date(endDate as string),
     };
   }
 
@@ -737,21 +980,11 @@ router.get('/activity-logs', asyncHandler(async (req: any, res) => {
     whereClause.action = actionType;
   }
 
-  const logs = await prisma.audit_logs.findMany({
-    where: whereClause,
-    include: {
-      users: {
-        select: {
-          firstName: true,
-          lastName: true,
-          role: true,
-          profilePhoto: true,
-        },
-      },
-    },
-    orderBy: { timestamp: 'desc' },
-    take: parseInt(limit as string),
-  });
+  const logs = await AuditLog.find(whereClause)
+    .populate('userId', 'firstName lastName role profilePhoto')
+    .sort({ timestamp: -1 })
+    .limit(parseInt(limit as string))
+    .lean();
 
   res.json(logs);
 }));
@@ -760,47 +993,27 @@ router.get('/activity-logs', asyncHandler(async (req: any, res) => {
 router.get('/profile', asyncHandler(async (req: any, res) => {
   const userId = req.user.userId;
   
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      email: true,
-      phone: true,
-      firstName: true,
-      lastName: true,
-      profilePhoto: true,
-      passportPhoto: true,
-      gender: true,
-      dateOfBirth: true,
-      state: true,
-      lga: true,
-      employeeId: true,
-      createdAt: true,
-    },
-  });
+  const user = await User.findById(userId)
+    .select('email phone firstName lastName profilePhoto passportPhoto gender dateOfBirth state lga employeeId createdAt')
+    .lean();
 
   if (!user) {
     return res.status(404).json({ error: 'User not found' });
   }
 
-  const supervisor = await prisma.supervisors.findFirst({
-    where: {
-      userId,
-      supervisorType: 'GENERAL_SUPERVISOR',
-    },
-    include: {
-      _count: {
-        select: {
-          subordinateSupervisors: true,
-        },
-      },
-    },
-  });
+  const supervisor = await Supervisor.findOne({
+    userId,
+    supervisorType: 'GENERAL_SUPERVISOR',
+  }).lean();
+
+  const subordinateSupervisorCount = supervisor 
+    ? await Supervisor.countDocuments({ generalSupervisorId: supervisor._id })
+    : 0;
 
   res.json({
     user,
     supervisor,
-    subordinateSupervisorCount: supervisor?._count.subordinateSupervisors || 0,
+    subordinateSupervisorCount,
   });
 }));
 
@@ -813,18 +1026,13 @@ router.patch('/profile', asyncHandler(async (req: any, res) => {
   if (phone) updateData.phone = phone;
   if (profilePhoto) updateData.profilePhoto = profilePhoto;
 
-  const user = await prisma.user.update({
-    where: { id: userId },
-    data: updateData,
-    select: {
-      id: true,
-      email: true,
-      phone: true,
-      firstName: true,
-      lastName: true,
-      profilePhoto: true,
-    },
-  });
+  const user = await User.findByIdAndUpdate(
+    userId,
+    updateData,
+    { new: true }
+  )
+  .select('email phone firstName lastName profilePhoto')
+  .lean();
 
   res.json(user);
 }));

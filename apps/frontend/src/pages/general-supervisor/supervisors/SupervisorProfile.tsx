@@ -19,6 +19,7 @@ import {
   Eye,
   MessageSquare
 } from 'lucide-react';
+import { api, getImageUrl } from '../../../lib/api';
 
 interface SupervisorDetail {
   id: string;
@@ -72,62 +73,105 @@ interface VisitLog {
   notes: string;
 }
 
-// Mock data
-const mockSupervisor: SupervisorDetail = {
-  id: 'sup-001',
-  firstName: 'John',
-  lastName: 'Smith',
-  email: 'john.smith@company.com',
-  phone: '+1 234 567 8901',
-  profilePhoto: null,
-  status: 'active',
-  address: '123 Main Street, City, State 12345',
-  emergencyContact: '+1 234 567 8999',
-  joinDate: '2024-01-15',
-  performanceScore: 92,
-  shiftsCompleted: 156,
-  incidentsReported: 8,
-  attendanceRate: 98,
-  lastActive: '2 hours ago',
-  assignedLocations: [
-    { id: 'loc-1', name: 'Downtown Office', address: '100 Business Ave', operatorCount: 5 },
-    { id: 'loc-2', name: 'North Mall', address: '200 Shopping Blvd', operatorCount: 4 },
-    { id: 'loc-3', name: 'Tech Park', address: '300 Innovation Dr', operatorCount: 3 }
-  ],
-  operators: [
-    { id: 'op-1', firstName: 'Alex', lastName: 'Johnson', status: 'on_duty' },
-    { id: 'op-2', firstName: 'Maria', lastName: 'Garcia', status: 'on_duty' },
-    { id: 'op-3', firstName: 'James', lastName: 'Wilson', status: 'off_duty' },
-    { id: 'op-4', firstName: 'Lisa', lastName: 'Anderson', status: 'on_duty' },
-    { id: 'op-5', firstName: 'Robert', lastName: 'Taylor', status: 'break' }
-  ],
-  recentActivity: [
-    { id: 'act-1', action: 'Check-in', description: 'Checked in at Downtown Office', timestamp: '2 hours ago' },
-    { id: 'act-2', action: 'Incident Report', description: 'Filed incident report #IR-456', timestamp: '3 hours ago' },
-    { id: 'act-3', action: 'Operator Review', description: 'Reviewed operator Alex Johnson', timestamp: '4 hours ago' },
-    { id: 'act-4', action: 'Check-out', description: 'Checked out from North Mall', timestamp: '1 day ago' },
-    { id: 'act-5', action: 'Shift End', description: 'Completed evening shift', timestamp: '1 day ago' }
-  ],
-  visitLogs: [
-    { id: 'v-1', locationName: 'Downtown Office', checkInTime: '08:00 AM', checkOutTime: '10:30 AM', duration: '2h 30m', notes: 'Routine check' },
-    { id: 'v-2', locationName: 'North Mall', checkInTime: '11:00 AM', checkOutTime: '01:00 PM', duration: '2h', notes: 'Operator training' },
-    { id: 'v-3', locationName: 'Tech Park', checkInTime: '02:00 PM', checkOutTime: null, duration: 'Ongoing', notes: 'Incident follow-up' }
-  ]
-};
+// Helper function to calculate duration
+function calculateDuration(checkIn: string, checkOut: string | null): string {
+  if (!checkOut) return 'Ongoing';
+  
+  const checkInTime = new Date(checkIn).getTime();
+  const checkOutTime = new Date(checkOut).getTime();
+  const diff = checkOutTime - checkInTime;
+  
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  return `${minutes}m`;
+}
+
+// Helper function to get relative time
+function getRelativeTime(date: string | Date): string {
+  const now = new Date();
+  const past = new Date(date);
+  const diff = now.getTime() - past.getTime();
+  
+  const minutes = Math.floor(diff / (1000 * 60));
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  
+  if (minutes < 60) return `${minutes} mins ago`;
+  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  return `${days} day${days > 1 ? 's' : ''} ago`;
+}
 
 export default function SupervisorProfile() {
   const { id } = useParams();
   const [supervisor, setSupervisor] = useState<SupervisorDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'locations' | 'operators' | 'activity' | 'visits'>('overview');
 
   useEffect(() => {
     const fetchSupervisor = async () => {
-      setLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setSupervisor(mockSupervisor);
-      setLoading(false);
+      if (!id) return;
+      
+      try {
+        setLoading(true);
+        setError(null);
+        console.log('🔍 Fetching supervisor details for ID:', id);
+        
+        const response = await api.get(`/general-supervisor/my-supervisors/${id}`);
+        console.log('✅ Supervisor response:', response.data);
+        
+        const data = response.data;
+        
+        // Map backend data to frontend format
+        const mappedSupervisor: SupervisorDetail = {
+          id: data.id || data._id,
+          firstName: data.users?.firstName || 'Unknown',
+          lastName: data.users?.lastName || '',
+          email: data.users?.email || '',
+          phone: data.users?.phone || '',
+          profilePhoto: data.users?.profilePhoto || data.users?.passportPhoto 
+            ? getImageUrl(data.users.profilePhoto || data.users.passportPhoto) 
+            : null,
+          status: (data.users?.status?.toLowerCase() || 'active') as 'active' | 'inactive' | 'on_leave',
+          address: `${data.users?.state || ''}, ${data.users?.lga || ''}`.trim() || 'Not specified',
+          emergencyContact: data.users?.emergencyContact || 'Not specified',
+          joinDate: data.createdAt ? new Date(data.createdAt).toLocaleDateString() : 'Unknown',
+          performanceScore: data.performanceScore || 90, // Default score
+          shiftsCompleted: data.shiftsCompleted || 0,
+          incidentsReported: data._count?.incident_reports || 0,
+          attendanceRate: data.attendanceRate || 95, // Default attendance
+          lastActive: data.users?.lastLogin ? getRelativeTime(data.users.lastLogin) : 'Never',
+          assignedLocations: data.locations ? [{
+            id: data.locations.id,
+            name: data.locations.name,
+            address: data.locations.address || '',
+            operatorCount: data.operators?.length || 0
+          }] : [],
+          operators: (data.operators || []).map((op: any) => ({
+            id: op.id || op._id,
+            firstName: op.users?.firstName || 'Unknown',
+            lastName: op.users?.lastName || '',
+            status: op.users?.status?.toLowerCase() || 'unknown'
+          })),
+          recentActivity: [], // TODO: Fetch from activity logs endpoint
+          visitLogs: [] // TODO: Fetch from visit logs endpoint
+        };
+        
+        console.log('📊 Mapped supervisor:', mappedSupervisor);
+        setSupervisor(mappedSupervisor);
+      } catch (err: any) {
+        console.error('❌ Failed to fetch supervisor:', err);
+        console.error('📋 Error details:', err.response?.data);
+        setError(err.response?.data?.error || err.response?.data?.message || 'Failed to load supervisor details');
+      } finally {
+        setLoading(false);
+      }
     };
+    
     fetchSupervisor();
   }, [id]);
 
@@ -184,12 +228,31 @@ export default function SupervisorProfile() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+          <AlertTriangle size={48} className="mx-auto text-red-600 mb-4" />
+          <h2 className="text-xl font-semibold text-red-900 mb-2">Failed to load supervisor</h2>
+          <p className="text-red-700 mb-4">{error}</p>
+          <Link
+            to="/general-supervisor/supervisors"
+            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+          >
+            <ArrowLeft size={18} />
+            Back to Supervisors
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (!supervisor) {
     return (
       <div className="p-6">
         <div className="text-center py-12">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Supervisor not found</h2>
-          <Link to="/gs/supervisors" className="text-blue-600 hover:text-blue-700">
+          <Link to="/general-supervisor/supervisors" className="text-blue-600 hover:text-blue-700">
             Back to Supervisors
           </Link>
         </div>
@@ -201,7 +264,7 @@ export default function SupervisorProfile() {
     <div className="p-6 space-y-6">
       {/* Back Button */}
       <Link
-        to="/gs/supervisors"
+        to="/general-supervisor/supervisors"
         className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
       >
         <ArrowLeft size={20} />
@@ -571,14 +634,14 @@ export default function SupervisorProfile() {
             Send Message
           </button>
           <Link
-            to={`/gs/supervisors/${id}/activity`}
+            to={`/general-supervisor/supervisors/${id}/activity`}
             className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <Activity size={18} />
             Full Activity Log
           </Link>
           <Link
-            to={`/gs/supervisors/${id}/visits`}
+            to={`/general-supervisor/supervisors/${id}/visits`}
             className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <MapPin size={18} />

@@ -407,21 +407,21 @@ export default function SupervisorsList() {
                   {selectedSupervisor === supervisor.id && (
                     <div className="absolute right-0 top-8 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[150px] z-10">
                       <Link
-                        to={`/gs/supervisors/${supervisor.id}`}
+                        to={`/general-supervisor/supervisors/${supervisor.id}`}
                         className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                       >
                         <Eye size={16} />
                         View Profile
                       </Link>
                       <Link
-                        to={`/gs/supervisors/${supervisor.id}/activity`}
+                        to={`/general-supervisor/supervisors/${supervisor.id}/activity`}
                         className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                       >
                         <Activity size={16} />
                         Activity Log
                       </Link>
                       <Link
-                        to={`/gs/supervisors/${supervisor.id}/visits`}
+                        to={`/general-supervisor/supervisors/${supervisor.id}/visits`}
                         className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                       >
                         <MapPin size={16} />
@@ -491,13 +491,13 @@ export default function SupervisorsList() {
             {/* Card Footer */}
             <div className="px-4 py-3 border-t border-gray-100 flex gap-2">
               <Link
-                to={`/gs/supervisors/${supervisor.id}`}
+                to={`/general-supervisor/supervisors/${supervisor.id}`}
                 className="flex-1 text-center py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
               >
                 View Details
               </Link>
               <Link
-                to={`/gs/supervisors/${supervisor.id}/activity`}
+                to={`/general-supervisor/supervisors/${supervisor.id}/activity`}
                 className="flex-1 text-center py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 Activity
