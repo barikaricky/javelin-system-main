@@ -14,6 +14,7 @@ import RegisterManagerPage from './pages/director/RegisterManagerPage';
 import PendingApprovalsPage from './pages/director/PendingApprovalsPage';
 import LoadingScreen from './components/LoadingScreen';
 import MandatoryPollModal from './components/MandatoryPollModal';
+import VersionAnnouncement from './components/VersionAnnouncement';
 
 // Director Poll Pages
 import { CreatePollPage, ActivePollsPage, PollResultsPage } from './pages/director/polls';
@@ -91,6 +92,7 @@ import {
 // GS Supervisor Registration Page
 import GSRegisterSupervisorPage from './pages/general-supervisor/supervisors/RegisterSupervisorPage';
 import GSOperatorApprovalPage from './pages/general-supervisor/operators/OperatorApprovalPage';
+import GSOperatorProfile from './pages/general-supervisor/operators/OperatorProfile';
 import GSEnhancedCommunicationPage from './pages/general-supervisor/communication/EnhancedCommunicationPage';
 
 // Secretary imports
@@ -100,6 +102,7 @@ import { LocationsListPage } from './pages/secretary/locations/LocationsListPage
 import { CreateLocationPage } from './pages/secretary/locations/CreateLocationPage';
 import { BitsListPage } from './pages/secretary/bits/BitsListPage';
 import { CreateBitPage } from './pages/secretary/bits/CreateBitPage';
+import { EditBitPage } from './pages/secretary/bits/EditBitPage';
 import { DocumentsListPage } from './pages/secretary/documents/DocumentsListPage';
 import { UploadDocumentPage } from './pages/secretary/documents/UploadDocumentPage';
 import RecordMoneyIn from './pages/secretary/money-in/RecordMoneyIn';
@@ -191,7 +194,7 @@ function App() {
     location.pathname === '/dev/init-director' ||
     location.pathname.startsWith('/verify-id/');
 
-  const content = (
+  const routes = (
     <Routes>
       {/* Public routes */}
       <Route path="/login" element={<LoginPage />} />
@@ -222,6 +225,7 @@ function App() {
         <Route path="locations/create" element={<CreateLocationPage />} />
         <Route path="bits" element={<BitsListPage />} />
         <Route path="bits/create" element={<CreateBitPage />} />
+        <Route path="bits/:id/edit" element={<EditBitPage />} />
         <Route path="documents" element={<DocumentsListPage />} />
         <Route path="documents/upload" element={<UploadDocumentPage />} />
         <Route path="money-in" element={<MoneyInList />} />
@@ -291,9 +295,12 @@ function App() {
         <Route index element={<Navigate to="/general-supervisor/dashboard" replace />} />
         <Route path="dashboard" element={<GSDashboard />} />
         <Route path="supervisors" element={<SupervisorsList />} />
+        <Route path="supervisors/profiles" element={<SupervisorsList />} />
         <Route path="supervisors/register" element={<GSRegisterSupervisorPage />} />
+        <Route path="supervisors/activity" element={<Navigate to="/general-supervisor/activity-logs" replace />} />
         <Route path="supervisors/:id" element={<SupervisorProfile />} />
         <Route path="operators" element={<GSOperatorsList />} />
+        <Route path="operators/:id" element={<GSOperatorProfile />} />
         <Route path="operators/approval" element={<GSOperatorApprovalPage />} />
         <Route path="locations" element={<GSLocationsList />} />
         <Route path="attendance" element={<GSAttendancePage />} />
@@ -354,6 +361,8 @@ function App() {
       <Route path="*" element={<RoleBasedRedirect />} />
     </Routes>
   );
+
+  const content = <VersionAnnouncement>{routes}</VersionAnnouncement>;
 
   if (isPublicRoute || !user) {
     return content;

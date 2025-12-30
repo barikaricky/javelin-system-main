@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Plus, Search, MapPin, Users, Clock } from 'lucide-react';
+import { Shield, Plus, Search, MapPin, Users, Clock, Edit } from 'lucide-react';
 import axios from 'axios';
 import { getApiBaseURL } from '../../../lib/api';
 
@@ -219,11 +219,10 @@ export const BitsListPage = () => {
             {bits.map((bit, index) => (
               <div
                 key={bit._id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 p-4 sm:p-6 transform hover:-translate-y-1 cursor-pointer border border-gray-100 hover:border-purple-200"
+                className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 p-4 sm:p-6 transform hover:-translate-y-1 border border-gray-100 hover:border-purple-200"
                 style={{
                   animation: `fadeInUp 0.5s ease-out ${index * 0.1}s both`
                 }}
-                onClick={() => navigate(`/secretary/bits/${bit._id}`)}
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -271,7 +270,7 @@ export const BitsListPage = () => {
                 </div>
 
                 <div className="pt-4 border-t border-gray-100">
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1.5 mb-3">
                     {bit.securityType.slice(0, 3).map((type, idx) => (
                       <span
                         key={idx}
@@ -286,6 +285,16 @@ export const BitsListPage = () => {
                       </span>
                     )}
                   </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/secretary/bits/${bit._id}/edit`);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                  >
+                    <Edit className="h-4 w-4" />
+                    Edit Bit
+                  </button>
                 </div>
               </div>
             ))}
