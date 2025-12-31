@@ -4,7 +4,7 @@ import { asyncHandler } from '../middlewares/error.middleware';
 import { logger } from '../utils/logger';
 import bcrypt from 'bcryptjs';
 import { notifyDirectorsOfOperatorRegistration } from '../services/notification.service';
-import { User, Operator } from '../models';
+import { User, Operator, GuardAssignment } from '../models';
 import {
   registerSecretary,
   getAllSecretaries,
@@ -105,23 +105,42 @@ router.get('/operators', authorize('SECRETARY', 'DEVELOPER'), asyncHandler(async
     const operators = await Operator.find()
       .populate('userId', 'firstName lastName email phoneNumber profilePhoto')
       .populate('locationId', 'locationName')
-      .populate('bitId', 'bitName')
+      .populate('supervisorId', 'firstName lastName')
       .sort({ createdAt: -1 })
       .lean();
 
+    // Get current assignments for operators
+    const operatorIds = operators.map((op: any) => op._id);
+    const assignments = await GuardAssignment.find({
+      operatorId: { $in: operatorIds },
+      status: 'ACTIVE'
+    })
+      .populate('bitId', 'bitName')
+      .lean();
+
+    // Map assignments to operators
+    const assignmentMap = new Map();
+    assignments.forEach((assignment: any) => {
+      assignmentMap.set(assignment.operatorId.toString(), assignment);
+    });
+
     res.json({
-      operators: operators.map((op: any) => ({
-        ...op,
-        userId: {
-          ...op.userId,
-          _id: op.userId._id,
-          firstName: op.userId.firstName,
-          lastName: op.userId.lastName,
-          email: op.userId.email,
-          phoneNumber: op.userId.phoneNumber,
-          profilePhoto: op.userId.profilePhoto,
-        },
-      })),
+      operators: operators.map((op: any) => {
+        const assignment = assignmentMap.get(op._id.toString());
+        return {
+          ...op,
+          bitId: assignment?.bitId || null,
+          userId: {
+            ...op.userId,
+            _id: op.userId._id,
+            firstName: op.userId.firstName,
+            lastName: op.userId.lastName,
+            email: op.userId.email,
+            phoneNumber: op.userId.phoneNumber,
+            profilePhoto: op.userId.profilePhoto,
+          },
+        };
+      }),
     });
   } catch (error: any) {
     logger.error('Error fetching operators:', error);
