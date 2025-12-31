@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api, getImageUrl } from '../../../lib/api';
+import OperatorDetailModal from '../../../components/secretary/OperatorDetailModal';
 
 interface Operator {
   _id: string;
@@ -48,6 +49,8 @@ export default function OperatorsListPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedOperator, setSelectedOperator] = useState<Operator | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   useEffect(() => {
     fetchOperators();
@@ -277,8 +280,11 @@ export default function OperatorsListPage() {
             {filteredOperators.map((operator) => (
               <div
                 key={operator._id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all p-5 border border-gray-100 cursor-pointer"
-                onClick={() => navigate(`/secretary/operators/${operator._id}`)}
+                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all p-5 border border-gray-100 cursor-pointer hover:border-purple-300"
+                onClick={() => {
+                  setSelectedOperator(operator);
+                  setShowDetailModal(true);
+                }}
               >
                 <div className="flex items-start gap-4">
                   {/* Profile Photo */}
@@ -333,6 +339,16 @@ export default function OperatorsListPage() {
           </div>
         )}
       </div>
+
+      {/* Operator Detail Modal */}
+      <OperatorDetailModal
+        operator={selectedOperator}
+        isOpen={showDetailModal}
+        onClose={() => {
+          setShowDetailModal(false);
+          setSelectedOperator(null);
+        }}
+      />
     </div>
   );
 }

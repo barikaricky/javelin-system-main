@@ -64,7 +64,39 @@ export default function OperatorApprovalsPage() {
   const fetchPendingOperators = async () => {
     try {
       const response = await api.get('/operators/pending-approvals');
-      setOperators(response.data.operators || []);
+      const operators = response.data.operators || [];
+      // Transform data to match expected format
+      const transformedOperators = operators.map((op: any) => ({
+        id: op._id,
+        userId: op.userId?._id,
+        employeeId: op.employeeId,
+        users: {
+          id: op.userId?._id,
+          email: op.userId?.email,
+          firstName: op.userId?.firstName,
+          lastName: op.userId?.lastName,
+          phone: op.userId?.phone,
+          gender: op.userId?.gender,
+          dateOfBirth: op.userId?.dateOfBirth,
+          state: op.userId?.state,
+          lga: op.userId?.lga,
+          profilePhoto: op.userId?.profilePhoto || op.passportPhoto,
+          passportPhoto: op.passportPhoto,
+          createdAt: op.userId?.createdAt,
+        },
+        supervisors: {
+          users: {
+            firstName: op.supervisorId?.userId?.firstName || 'Unknown',
+            lastName: op.supervisorId?.userId?.lastName || '',
+          },
+        },
+        locations: op.locationId ? {
+          id: op.locationId._id,
+          name: op.locationId.name,
+          address: op.locationId.address,
+        } : null,
+      }));
+      setOperators(transformedOperators);
     } catch (error) {
       console.error('Error fetching operators:', error);
       toast.error('Failed to load pending operators');
