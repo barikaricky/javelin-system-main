@@ -99,7 +99,37 @@ router.get(
   })
 );
 
-// Get secretary by ID
+// Get all operators (for secretary view) - MUST be before /:id route
+router.get('/operators', authorize('SECRETARY', 'DEVELOPER'), asyncHandler(async (req: any, res) => {
+  try {
+    const operators = await Operator.find()
+      .populate('userId', 'firstName lastName email phoneNumber profilePhoto')
+      .populate('locationId', 'locationName')
+      .populate('bitId', 'bitName')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({
+      operators: operators.map((op: any) => ({
+        ...op,
+        userId: {
+          ...op.userId,
+          _id: op.userId._id,
+          firstName: op.userId.firstName,
+          lastName: op.userId.lastName,
+          email: op.userId.email,
+          phoneNumber: op.userId.phoneNumber,
+          profilePhoto: op.userId.profilePhoto,
+        },
+      })),
+    });
+  } catch (error: any) {
+    logger.error('Error fetching operators:', error);
+    throw error;
+  }
+}));
+
+// Get secretary by ID - MUST be after specific routes like /operators
 router.get(
   '/:id',
   authorize('MANAGER', 'DIRECTOR', 'SECRETARY', 'DEVELOPER'),
@@ -270,36 +300,6 @@ router.post('/register-operator', authorize('SECRETARY', 'DEVELOPER'), asyncHand
     });
   } catch (error: any) {
     logger.error('Error registering operator:', error);
-    throw error;
-  }
-}));
-
-// Get all operators (for secretary view)
-router.get('/operators', authorize('SECRETARY', 'DEVELOPER'), asyncHandler(async (req: any, res) => {
-  try {
-    const operators = await Operator.find()
-      .populate('userId', 'firstName lastName email phoneNumber profilePhoto')
-      .populate('locationId', 'locationName')
-      .populate('bitId', 'bitName')
-      .sort({ createdAt: -1 })
-      .lean();
-
-    res.json({
-      operators: operators.map((op: any) => ({
-        ...op,
-        userId: {
-          ...op.userId,
-          _id: op.userId._id,
-          firstName: op.userId.firstName,
-          lastName: op.userId.lastName,
-          email: op.userId.email,
-          phoneNumber: op.userId.phoneNumber,
-          profilePhoto: op.userId.profilePhoto,
-        },
-      })),
-    });
-  } catch (error: any) {
-    logger.error('Error fetching operators:', error);
     throw error;
   }
 }));
