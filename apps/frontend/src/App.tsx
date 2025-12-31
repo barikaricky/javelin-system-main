@@ -15,6 +15,7 @@ import PendingApprovalsPage from './pages/director/PendingApprovalsPage';
 import LoadingScreen from './components/LoadingScreen';
 import MandatoryPollModal from './components/MandatoryPollModal';
 import VersionAnnouncement from './components/VersionAnnouncement';
+import FeatureAnnouncement from './components/FeatureAnnouncement';
 
 // Director Poll Pages
 import { CreatePollPage, ActivePollsPage, PollResultsPage } from './pages/director/polls';
@@ -378,7 +379,13 @@ function App() {
     </Routes>
   );
 
-  const content = <VersionAnnouncement>{routes}</VersionAnnouncement>;
+  const content = (
+    <VersionAnnouncement>
+      <FeatureAnnouncement>
+        {routes}
+      </FeatureAnnouncement>
+    </VersionAnnouncement>
+  );
 
   if (isPublicRoute || !user) {
     return content;
