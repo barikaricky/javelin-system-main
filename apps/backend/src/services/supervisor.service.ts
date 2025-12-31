@@ -470,7 +470,7 @@ export async function getPendingSupervisorApprovals() {
     })
       .populate({
         path: 'userId',
-        select: 'email phone firstName lastName status passportPhoto createdById createdAt',
+        select: 'email phone phoneNumber firstName lastName status passportPhoto profilePhoto createdById createdAt',
       })
       .populate({
         path: 'locationId',
@@ -483,6 +483,7 @@ export async function getPendingSupervisorApprovals() {
           select: 'firstName lastName',
         },
       })
+      .select('fullName employeeId supervisorType approvalStatus createdAt regionAssigned shiftType visitSchedule salary salaryCategory userId locationId generalSupervisorId')
       .sort({ createdAt: -1 });
 
     const supervisorsWithManager = await Promise.all(

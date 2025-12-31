@@ -30,23 +30,25 @@ interface PendingSupervisor {
   visitSchedule?: string;
   salary: number;
   salaryCategory: string;
-  users?: {
+  userId?: {
     id: string;
     email: string;
-    phone: string;
+    phone?: string;
+    phoneNumber?: string;
     firstName: string;
     lastName: string;
     passportPhoto?: string;
+    profilePhoto?: string;
     createdAt: string;
   };
-  locations?: {
+  locationId?: {
     id: string;
     name: string;
     address: string;
   };
-  generalSupervisor?: {
+  generalSupervisorId?: {
     fullName: string;
-    users: {
+    userId: {
       firstName: string;
       lastName: string;
     };
@@ -84,6 +86,8 @@ export default function ManagerPendingApprovalsPage() {
     try {
       setIsLoading(true);
       const response = await api.get('/supervisors/pending-approvals');
+      console.log('📋 Pending Approvals Response:', response.data);
+      console.log('📋 First Supervisor Data:', response.data[0]);
       setPendingSupervisors(response.data);
     } catch (error) {
       console.error('Error fetching pending approvals:', error);
@@ -211,9 +215,9 @@ export default function ManagerPendingApprovalsPage() {
                 <div className="flex items-start gap-4">
                   {/* Photo */}
                   <div className="w-16 h-16 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0">
-                    {supervisor.users?.passportPhoto ? (
+                    {(supervisor.userId?.passportPhoto || supervisor.userId?.profilePhoto) ? (
                       <img
-                        src={getImageUrl(supervisor.users.passportPhoto)}
+                        src={getImageUrl(supervisor.userId.passportPhoto || supervisor.userId.profilePhoto || '')}
                         alt={supervisor.fullName}
                         className="w-full h-full object-cover"
                       />
@@ -246,24 +250,45 @@ export default function ManagerPendingApprovalsPage() {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
                       <div key="email" className="flex items-center gap-2 text-sm text-gray-600">
                         <Mail className="w-4 h-4 text-gray-400" />
-                        <span className="truncate">{supervisor.users?.email || 'N/A'}</span>
+                        <span className="truncate">{supervisor.userId?.email || 'N/A'}</span>
                       </div>
                       <div key="phone" className="flex items-center gap-2 text-sm text-gray-600">
                         <Phone className="w-4 h-4 text-gray-400" />
-                        <span>{supervisor.users?.phone || 'N/A'}</span>
+                        <span>{supervisor.userId?.phone || supervisor.userId?.phoneNumber || 'N/A'}</span>
                       </div>
-                      {supervisor.locations && (
+                      {supervisor.locationId && (
                         <div key="location" className="flex items-center gap-2 text-sm text-gray-600">
                           <MapPin className="w-4 h-4 text-gray-400" />
-                          <span className="truncate">{supervisor.locations.name}</span>
+                          <span className="truncate">{supervisor.locationId.name}</span>
                         </div>
                       )}
-                      <div key="date" className="flex items-center gap-2 text-sm text-gray-600">
+                    </div>
+
+                    {/* Additional Info Row */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-3">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Clock className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <span className="text-xs text-gray-500">Shift: </span>
+                          <span className="font-medium">{supervisor.shiftType || 'Not set'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Calendar className="w-4 h-4 text-gray-400" />
-                        <span>{formatDate(supervisor.createdAt)}</span>
+                        <div>
+                          <span className="text-xs text-gray-500">Schedule: </span>
+                          <span className="font-medium">{supervisor.visitSchedule || 'Not set'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Calendar className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <span className="text-xs text-gray-500">Registered: </span>
+                          <span className="font-medium">{formatDate(supervisor.createdAt)}</span>
+                        </div>
                       </div>
                     </div>
 
@@ -342,11 +367,11 @@ export default function ManagerPendingApprovalsPage() {
                       <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Salary Category</p>
                       <p className="font-medium text-gray-900">{supervisor.salaryCategory}</p>
                     </div>
-                    {supervisor.generalSupervisor && (
+                    {supervisor.generalSupervisorId && (
                       <div>
                         <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Reports To</p>
                         <p className="font-medium text-gray-900">
-                          {supervisor.generalSupervisor.users.firstName} {supervisor.generalSupervisor.users.lastName}
+                          {supervisor.generalSupervisorId.userId.firstName} {supervisor.generalSupervisorId.userId.lastName}
                         </p>
                       </div>
                     )}
