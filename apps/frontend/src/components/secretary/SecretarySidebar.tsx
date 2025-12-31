@@ -39,6 +39,8 @@ import {
   AlertCircle as AlertIcon,
   Receipt,
   UserCheck,
+  UserCog,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { getImageUrl } from '../../lib/api';
@@ -68,6 +70,10 @@ const menuItems: MenuItem[] = [
     children: [
       { name: 'Register Operator', icon: UserPlus, path: '/secretary/operators/register', badge: 'New' },
       { name: 'All Operators', icon: Users, path: '/secretary/operators' },
+      { name: 'All Supervisors', icon: Shield, path: '/secretary/supervisors', badge: 'New' },
+      { name: 'General Supervisors', icon: ShieldCheck, path: '/secretary/general-supervisors', badge: 'New' },
+      { name: 'All Managers', icon: UserCog, path: '/secretary/managers', badge: 'New' },
+      { name: 'Assign Operators', icon: UserCheck, path: '/secretary/assignments/assign', badge: 'New' },
     ]
   },
   { 
