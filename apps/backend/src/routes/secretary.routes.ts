@@ -4,7 +4,7 @@ import { asyncHandler } from '../middlewares/error.middleware';
 import { logger } from '../utils/logger';
 import bcrypt from 'bcryptjs';
 import { notifyDirectorsOfOperatorRegistration } from '../services/notification.service';
-import { User, Operator, GuardAssignment } from '../models';
+import { User, Operator, GuardAssignment, Supervisor } from '../models';
 import {
   registerSecretary,
   getAllSecretaries,
@@ -13,6 +13,7 @@ import {
   deleteSecretary,
   getSecretaryStats,
 } from '../services/secretary.service';
+import { getSupervisors } from '../services/director.service';
 
 const router = Router();
 
@@ -96,6 +97,23 @@ router.get(
   asyncHandler(async (req, res) => {
     const stats = await getSecretaryStats();
     res.json(stats);
+  })
+);
+
+// Get all supervisors (for secretary to use in assignments)
+router.get(
+  '/supervisors',
+  authorize('SECRETARY', 'MANAGER', 'DIRECTOR', 'DEVELOPER'),
+  asyncHandler(async (req, res) => {
+    logger.info('📋 GET /secretaries/supervisors - Query params:', req.query);
+    const filters = {
+      approvalStatus: req.query.approvalStatus as string,
+      supervisorType: req.query.supervisorType as string,
+      limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
+    };
+    const supervisors = await getSupervisors(filters);
+    logger.info('✅ Supervisors found for secretary:', supervisors.length);
+    res.json({ supervisors });
   })
 );
 

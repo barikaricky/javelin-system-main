@@ -68,10 +68,24 @@ export class AssignmentService {
       }
     }
 
-    // Validate supervisor
-    const supervisor = await Supervisor.findById(data.supervisorId);
-    if (!supervisor) {
-      throw new Error('Supervisor not found');
+    // Validate supervisor (optional if not provided - will use default from BIT or system)
+    let supervisor = null;
+    if (data.supervisorId) {
+      supervisor = await Supervisor.findById(data.supervisorId);
+      if (!supervisor) {
+        console.error('❌ Supervisor validation failed:', {
+          supervisorId: data.supervisorId,
+          supervisorIdType: typeof data.supervisorId,
+        });
+        throw new Error('Supervisor not found');
+      }
+      console.log('✅ Supervisor validated:', {
+        supervisorId: supervisor._id,
+        name: supervisor.fullName,
+        type: supervisor.supervisorType,
+      });
+    } else {
+      console.log('⚠️  No supervisor provided for assignment');
     }
 
     // Get location from BIT
@@ -85,7 +99,8 @@ export class AssignmentService {
     if (
       data.assignedBy.role === 'MANAGER' ||
       data.assignedBy.role === 'GENERAL_SUPERVISOR' ||
-      data.assignedBy.role === 'DIRECTOR'
+      data.assignedBy.role === 'DIRECTOR' ||
+      data.assignedBy.role === 'SECRETARY'
     ) {
       status = 'ACTIVE';
     }
@@ -485,6 +500,7 @@ export class AssignmentService {
   private async notifyAssignmentActive(assignment: IGuardAssignment) {
     const operator = assignment.operatorId as any;
     const bit = assignment.bitId as any;
+    const location = assignment.locationId as any;
     
     // Safely get operator userId
     const operatorUserId = operator?.userId?._id || operator?.userId;
@@ -493,6 +509,7 @@ export class AssignmentService {
       return;
     }
     
+    // Notify the operator
     await notificationService.sendNotification({
       recipientId: operatorUserId.toString(),
       title: 'New Assignment',
@@ -500,6 +517,41 @@ export class AssignmentService {
       type: 'ASSIGNMENT',
       priority: 'HIGH',
     });
+
+    // If assigned by SECRETARY, notify all DIRECTORS and MANAGERS
+    if (assignment.assignedBy?.role === 'SECRETARY') {
+      try {
+        // Find all directors and managers
+        const directorsAndManagers = await User.find({
+          role: { $in: ['DIRECTOR', 'MANAGER'] },
+          status: 'ACTIVE'
+        }).select('_id').lean();
+
+        const operatorName = operator?.userId?.firstName && operator?.userId?.lastName
+          ? `${operator.userId.firstName} ${operator.userId.lastName}`
+          : 'an operator';
+        
+        const locationName = location?.locationName || 'a location';
+        const bitName = bit?.bitName || 'a BIT';
+
+        // Send notification to each director and manager
+        const notificationPromises = directorsAndManagers.map(user =>
+          notificationService.sendNotification({
+            recipientId: user._id.toString(),
+            title: 'New Guard Assignment by Secretary',
+            message: `${assignment.assignedBy.name} (Secretary) has assigned ${operatorName} to ${bitName} at ${locationName}.`,
+            type: 'ASSIGNMENT',
+            priority: 'MEDIUM',
+          })
+        );
+
+        await Promise.all(notificationPromises);
+        console.log(`✅ Notified ${directorsAndManagers.length} directors/managers about secretary assignment`);
+      } catch (error) {
+        console.error('Failed to notify directors/managers:', error);
+        // Don't throw - notification failure shouldn't break assignment
+      }
+    }
   }
 
   private async notifyAssignmentPending(assignment: IGuardAssignment) {

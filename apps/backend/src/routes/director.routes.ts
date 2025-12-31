@@ -379,14 +379,17 @@ router.post('/supervisors', async (req: Request & { user?: any }, res, next) => 
 
 router.get('/supervisors', async (req, res, next) => {
   try {
+    console.log('📋 GET /director/supervisors - Query params:', req.query);
     const filters = {
       approvalStatus: req.query.approvalStatus as string,
       supervisorType: req.query.supervisorType as string,
       limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
     };
     const supervisors = await getSupervisors(filters);
+    console.log('✅ Supervisors found:', supervisors.length);
     res.json({ supervisors });
   } catch (error) {
+    console.error('❌ Error fetching supervisors:', error);
     next(error);
   }
 });
@@ -548,10 +551,19 @@ router.get('/operators', async (req: Request, res) => {
       .sort({ createdAt: -1 });
 
     const operators = await operatorsQuery.lean();
+    
+    // Filter out operators with null userId (invalid data)
+    const validOperators = operators.filter((op: any) => {
+      if (!op.userId) {
+        console.warn('⚠️ Operator with null userId found:', op._id);
+        return false;
+      }
+      return true;
+    });
 
     // Fetch current assignments if requested
     if (includeAssignments === 'true') {
-      const operatorIds = operators.map(op => op._id);
+      const operatorIds = validOperators.map(op => op._id);
       const assignments = await GuardAssignment.find({
         operatorId: { $in: operatorIds },
         status: 'ACTIVE'
@@ -572,15 +584,15 @@ router.get('/operators', async (req: Request, res) => {
       });
 
       // Add currentAssignment to each operator
-      operators.forEach((operator: any) => {
+      validOperators.forEach((operator: any) => {
         operator.currentAssignment = assignmentMap.get(operator._id.toString()) || null;
       });
     }
 
     res.json({
       success: true,
-      count: operators.length,
-      operators,
+      count: validOperators.length,
+      operators: validOperators,
     });
   } catch (error: any) {
     console.error('Error fetching operators:', error);

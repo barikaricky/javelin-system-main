@@ -2,18 +2,21 @@ import { Router, Request, Response } from 'express';
 import { assignmentService } from '../services/assignment.service';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 import { User } from '../models/User.model';
+import { Bit } from '../models/Bit.model';
+import { Secretary } from '../models/Secretary.model';
+import { Supervisor, SupervisorType, ApprovalStatus } from '../models/Supervisor.model';
 
 const router = Router();
 
 /**
  * @route   POST /api/assignments
  * @desc    Create a new guard assignment
- * @access  Private (Manager, General Supervisor, Supervisor)
+ * @access  Private (Secretary, Manager, General Supervisor, Supervisor, Director, Developer)
  */
 router.post(
   '/',
   authenticate,
-  authorize('MANAGER', 'GENERAL_SUPERVISOR', 'SUPERVISOR', 'DIRECTOR', 'DEVELOPER'),
+  authorize('SECRETARY', 'MANAGER', 'GENERAL_SUPERVISOR', 'SUPERVISOR', 'DIRECTOR', 'DEVELOPER'),
   async (req: Request, res: Response) => {
     try {
       const {
@@ -546,12 +549,12 @@ router.post(
 /**
  * @route   POST /api/assignments/assign
  * @desc    Assign a guard to a BIT (simplified endpoint for director)
- * @access  Private (Director)
+ * @access  Private (Director, Secretary, Manager, General Supervisor, Developer)
  */
 router.post(
   '/assign',
   authenticate,
-  authorize('DIRECTOR', 'MANAGER', 'GENERAL_SUPERVISOR', 'DEVELOPER'),
+  authorize('DIRECTOR', 'SECRETARY', 'MANAGER', 'GENERAL_SUPERVISOR', 'DEVELOPER'),
   async (req: Request, res: Response) => {
     try {
       const {
@@ -564,39 +567,143 @@ router.post(
       } = req.body;
 
       // Validate required fields (locationId not needed - gets from BIT)
-      if (!operatorId || !bitId || !supervisorId) {
+      if (!operatorId || !bitId) {
         return res.status(400).json({
           success: false,
-          message: 'Missing required fields: operatorId, bitId, supervisorId',
+          message: 'Missing required fields: operatorId, bitId',
         });
       }
 
       const user = (req as any).user;
-      
-      // Fetch full user details
-      const userDetails = await User.findById(user.userId);
-      if (!userDetails) {
+
+      console.log('🔍 Assignment request user:', user);
+
+      // Fetch BIT details to resolve supervisor automatically
+      const bit = await Bit.findById(bitId).lean();
+      if (!bit) {
         return res.status(404).json({
           success: false,
-          message: 'User not found',
+          message: 'Bit not found',
         });
+      }
+
+      // Determine supervisor (explicit selection -> BIT assignment -> fallback supervisor)
+      let finalSupervisorId = supervisorId || (bit.supervisorId ? bit.supervisorId.toString() : undefined);
+      let supervisorDoc = null;
+
+      console.log('🔍 Supervisor resolution:', {
+        explicitSupervisorId: supervisorId,
+        bitSupervisorId: bit.supervisorId,
+        finalSupervisorId,
+        bitLocationId: bit.locationId,
+      });
+
+      if (finalSupervisorId) {
+        supervisorDoc = await Supervisor.findById(finalSupervisorId).lean();
+        console.log('🔍 Supervisor lookup by ID:', {
+          supervisorId: finalSupervisorId,
+          found: !!supervisorDoc,
+          supervisorName: supervisorDoc?.fullName,
+        });
+      }
+
+      if (!supervisorDoc) {
+        console.log('🔍 Searching for fallback supervisor...');
+        
+        const supervisorQuery: any = {
+          approvalStatus: ApprovalStatus.APPROVED,
+        };
+
+        if (bit.locationId) {
+          supervisorQuery.$or = [
+            { locationId: bit.locationId },
+            { supervisorType: SupervisorType.GENERAL_SUPERVISOR },
+          ];
+        } else {
+          supervisorQuery.supervisorType = SupervisorType.GENERAL_SUPERVISOR;
+        }
+
+        console.log('🔍 Supervisor query:', JSON.stringify(supervisorQuery, null, 2));
+
+        supervisorDoc = await Supervisor.findOne(supervisorQuery)
+          .sort({ supervisorType: -1, createdAt: 1 })
+          .lean();
+
+        console.log('🔍 Fallback supervisor search result:', {
+          found: !!supervisorDoc,
+          supervisorId: supervisorDoc?._id,
+          supervisorName: supervisorDoc?.fullName,
+          supervisorType: supervisorDoc?.supervisorType,
+        });
+
+        if (supervisorDoc) {
+          finalSupervisorId = supervisorDoc._id.toString();
+          console.log('ℹ️  Using fallback supervisor:', {
+            supervisorId: finalSupervisorId,
+            name: supervisorDoc.fullName,
+            type: supervisorDoc.supervisorType,
+          });
+        }
+      }
+
+      if (!supervisorDoc || !finalSupervisorId) {
+        return res.status(404).json({
+          success: false,
+          message: 'No approved supervisor available for this assignment. Please assign a supervisor to the BIT first.',
+        });
+      }
+
+      const resolvedSupervisorId = finalSupervisorId.toString();
+      
+      console.log('✅ Resolved supervisor ID:', {
+        resolvedSupervisorId,
+        type: typeof resolvedSupervisorId,
+        supervisorDoc: supervisorDoc ? { id: supervisorDoc._id, name: supervisorDoc.fullName } : null,
+      });
+
+      // Resolve assigning user name/details
+      let userDetails = await User.findById(user.userId);
+      let userName = '';
+
+      if (!userDetails && user.role === 'SECRETARY') {
+        const secretary = await Secretary.findOne({ userId: user.userId }).populate('userId');
+        if (secretary && secretary.userId) {
+          userDetails = secretary.userId as any;
+          userName = secretary.fullName || `${userDetails.firstName} ${userDetails.lastName}`;
+        }
+      }
+
+      if (!userDetails) {
+        console.error('❌ User not found in database:', user.userId);
+        userName = user.email || 'Unknown User';
+      }
+
+      if (!userName && userDetails) {
+        userName = `${userDetails.firstName} ${userDetails.lastName}`;
       }
 
       const assignedBy = {
         userId: user.userId,
         role: user.role,
-        name: `${userDetails.firstName} ${userDetails.lastName}`,
+        name: userName,
       };
 
-      // Create the assignment (ACTIVE status automatically set for DIRECTOR role)
       const assignment = await assignmentService.createAssignment({
         operatorId,
         bitId,
-        supervisorId,
+        supervisorId: resolvedSupervisorId,
         shiftType: shiftType || 'DAY',
         startDate: startDate ? new Date(startDate) : new Date(),
         assignmentType: assignmentType || 'PERMANENT',
         assignedBy,
+      });
+
+      console.log('✅ Assignment created successfully:', {
+        assignmentId: assignment._id,
+        operatorId: assignment.operatorId,
+        bitId: assignment.bitId,
+        supervisorId: assignment.supervisorId,
+        status: assignment.status,
       });
 
       res.status(201).json({
@@ -617,12 +724,12 @@ router.post(
 /**
  * @route   PUT /api/assignments/:id
  * @desc    Update/reassign a guard assignment
- * @access  Private (Director)
+ * @access  Private (Director, Secretary, Manager, General Supervisor, Developer)
  */
 router.put(
   '/:id',
   authenticate,
-  authorize('DIRECTOR', 'MANAGER', 'GENERAL_SUPERVISOR', 'DEVELOPER'),
+  authorize('DIRECTOR', 'SECRETARY', 'MANAGER', 'GENERAL_SUPERVISOR', 'DEVELOPER'),
   async (req: Request, res: Response) => {
     try {
       const {
@@ -692,12 +799,12 @@ router.put(
 /**
  * @route   DELETE /api/assignments/:id
  * @desc    Delete/unassign a guard assignment
- * @access  Private (Director)
+ * @access  Private (Director, Secretary, Manager, General Supervisor, Developer)
  */
 router.delete(
   '/:id',
   authenticate,
-  authorize('DIRECTOR', 'MANAGER', 'GENERAL_SUPERVISOR', 'DEVELOPER'),
+  authorize('DIRECTOR', 'SECRETARY', 'MANAGER', 'GENERAL_SUPERVISOR', 'DEVELOPER'),
   async (req: Request, res: Response) => {
     try {
       await assignmentService.deleteAssignment(req.params.id);

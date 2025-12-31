@@ -3,6 +3,9 @@ import mongoose, { Schema, Document } from 'mongoose';
 export enum SupervisorType {
   GENERAL_SUPERVISOR = 'GENERAL_SUPERVISOR',
   SUPERVISOR = 'SUPERVISOR',
+  FIELD_SUPERVISOR = 'FIELD_SUPERVISOR',
+  SHIFT_SUPERVISOR = 'SHIFT_SUPERVISOR',
+  AREA_SUPERVISOR = 'AREA_SUPERVISOR',
 }
 
 export enum ApprovalStatus {
@@ -62,8 +65,8 @@ const SupervisorSchema = new Schema<ISupervisor>(
     },
     employeeId: {
       type: String,
-      required: true,
       unique: true,
+      sparse: true, // Allow null/undefined values
     },
     locationId: {
       type: Schema.Types.ObjectId,
@@ -71,7 +74,7 @@ const SupervisorSchema = new Schema<ISupervisor>(
     },
     salary: {
       type: Number,
-      required: true,
+      default: 0,
     },
     startDate: {
       type: Date,
@@ -79,11 +82,9 @@ const SupervisorSchema = new Schema<ISupervisor>(
     },
     address: {
       type: String,
-      required: true,
     },
     dateOfEmployment: {
       type: Date,
-      required: true,
     },
     fullName: {
       type: String,

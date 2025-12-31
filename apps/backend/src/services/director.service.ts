@@ -110,10 +110,12 @@ export async function getSupervisors(filters?: any) {
     query.supervisorType = filters.supervisorType;
   }
   
+  console.log('🔍 Supervisor query:', query);
+  
   let queryBuilder = Supervisor.find(query)
     .populate({
       path: 'userId',
-      select: 'email phone firstName lastName status',
+      select: 'email phoneNumber firstName lastName status',
     })
     .populate('locationId')
     .sort({ createdAt: -1 });
@@ -122,7 +124,11 @@ export async function getSupervisors(filters?: any) {
     queryBuilder = queryBuilder.limit(filters.limit);
   }
   
-  return queryBuilder;
+  const results = await queryBuilder.lean();
+  console.log('📊 Supervisor results count:', results.length);
+  console.log('📊 First supervisor sample:', results[0]);
+  
+  return results;
 }
 
 export async function getSupervisorById(id: string) {

@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../../../lib/api';
+import { api, getImageUrl } from '../../../lib/api';
 import { toast } from 'react-hot-toast';
+import { User } from 'lucide-react';
 
 interface Operator {
   _id: string;
+  employeeId?: string;
   userId: {
     _id: string;
     name: string;
     email: string;
     phone: string;
+    profilePhoto?: string;
+    firstName?: string;
+    lastName?: string;
   };
   locationId?: {
     _id: string;
@@ -84,6 +89,7 @@ const GuardAssignmentPage: React.FC = () => {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedOperator, setSelectedOperator] = useState<Operator | null>(null);
   const [assignmentForm, setAssignmentForm] = useState({
+    operatorId: '',
     locationId: '',
     bitId: '',
     supervisorId: '',
@@ -106,6 +112,8 @@ const GuardAssignmentPage: React.FC = () => {
       setLoading(true);
       
       // Fetch operators with their current assignments
+      console.log('🔄 DIRECTOR: Starting data fetch...');
+      
       const [operatorsRes, locationsRes, bitsRes, supervisorsRes] = await Promise.all([
         api.get('/director/operators?includeAssignments=true'),
         api.get('/locations?isActive=true&limit=500'),
@@ -113,20 +121,48 @@ const GuardAssignmentPage: React.FC = () => {
         api.get('/director/supervisors?approvalStatus=APPROVED&limit=500')
       ]);
 
-      setOperators(operatorsRes.data.operators || []);
+      console.log('📦 DIRECTOR: Raw API responses:');
+      console.log('  - Operators:', operatorsRes.data);
+      console.log('  - Operators array:', operatorsRes.data.operators);
+      console.log('  - Operators count:', operatorsRes.data.operators?.length);
+      console.log('  - First operator full object:', JSON.stringify(operatorsRes.data.operators[0], null, 2));
+      console.log('  - Locations:', locationsRes.data);
+      console.log('  - Bits:', bitsRes.data);
+      console.log('  - Supervisors RAW:', supervisorsRes);
+      console.log('  - Supervisors DATA:', supervisorsRes.data);
+      
+      // Filter out any null or invalid operators
+      const validOperators = (operatorsRes.data.operators || []).filter(
+        (op: any) => {
+          const isValid = op && op.userId;
+          if (!isValid) {
+            console.warn('⚠️ Skipping invalid operator:', op);
+          }
+          return isValid;
+        }
+      );
+      console.log('✅ Valid operators after filtering:', validOperators.length);
+      setOperators(validOperators);
+      
       setLocations(locationsRes.data.locations || []);
       setBits(bitsRes.data.bits || []);
-      setSupervisors(supervisorsRes.data.supervisors || []);
+      
+      const supervisorsData = supervisorsRes.data.supervisors || supervisorsRes.data || [];
+      console.log('👮 DIRECTOR: Supervisor processing:');
+      console.log('  - Raw supervisors:', supervisorsData);
+      console.log('  - Count:', supervisorsData.length);
+      console.log('  - First item:', supervisorsData[0]);
+      console.log('  - Is Array?', Array.isArray(supervisorsData));
+      
+      setSupervisors(supervisorsData);
+      console.log('✅ DIRECTOR: Supervisors set to state');
       
       console.log('✅ Data fetched:', {
         operators: operatorsRes.data.operators?.length || 0,
         locations: locationsRes.data.locations?.length || 0,
         bits: bitsRes.data.bits?.length || 0,
-        supervisors: supervisorsRes.data.supervisors?.length || 0,
+        supervisors: supervisorsData.length,
       });
-      
-      console.log('📊 Sample supervisor data:', supervisorsRes.data.supervisors?.[0]);
-      console.log('📊 Sample bit data:', bitsRes.data.bits?.[0]);
     } catch (error: any) {
       console.error('Error fetching data:', error);
       toast.error(error.response?.data?.message || 'Failed to load data');
@@ -135,23 +171,53 @@ const GuardAssignmentPage: React.FC = () => {
     }
   };
 
-  const openAssignModal = (operator: Operator) => {
-    setSelectedOperator(operator);
-    
-    // Pre-fill form if operator has existing assignment
-    if (operator.currentAssignment) {
+  const openAssignModal = (operator?: Operator) => {
+    if (operator) {
+      setSelectedOperator(operator);
+      
+      // Pre-fill form if operator has existing assignment
+      if (operator.currentAssignment) {
+        setAssignmentForm({
+          operatorId: operator._id,
+          locationId: operator.currentAssignment.locationId?._id || '',
+          bitId: operator.currentAssignment.bitId?._id || '',
+          supervisorId: operator.currentAssignment.supervisorId?._id || '',
+          shiftType: operator.currentAssignment.shiftType,
+          assignmentType: operator.currentAssignment.assignmentType,
+          startDate: operator.currentAssignment.startDate ? operator.currentAssignment.startDate.split('T')[0] : new Date().toISOString().split('T')[0]
+        });
+      } else if (operator.locationId) {
+        setAssignmentForm({
+          operatorId: operator._id,
+          locationId: operator.locationId?._id || '',
+          bitId: '',
+          supervisorId: '',
+          shiftType: 'DAY',
+          assignmentType: 'PERMANENT',
+          startDate: new Date().toISOString().split('T')[0]
+        });
+      } else {
+        setAssignmentForm({
+          operatorId: operator._id,
+          locationId: '',
+          bitId: '',
+          supervisorId: '',
+          shiftType: 'DAY',
+          assignmentType: 'PERMANENT',
+          startDate: new Date().toISOString().split('T')[0]
+        });
+      }
+    } else {
+      // Open modal without pre-selection
+      setSelectedOperator(null);
       setAssignmentForm({
-        locationId: operator.currentAssignment.locationId._id,
-        bitId: operator.currentAssignment.bitId._id,
-        supervisorId: operator.currentAssignment.supervisorId._id,
-        shiftType: operator.currentAssignment.shiftType,
-        assignmentType: operator.currentAssignment.assignmentType,
-        startDate: operator.currentAssignment.startDate.split('T')[0]
-      });
-    } else if (operator.locationId) {
-      setAssignmentForm({
-        ...assignmentForm,
-        locationId: operator.locationId._id
+        operatorId: '',
+        locationId: '',
+        bitId: '',
+        supervisorId: '',
+        shiftType: 'DAY',
+        assignmentType: 'PERMANENT',
+        startDate: new Date().toISOString().split('T')[0]
       });
     }
     
@@ -162,6 +228,7 @@ const GuardAssignmentPage: React.FC = () => {
     setShowAssignModal(false);
     setSelectedOperator(null);
     setAssignmentForm({
+      operatorId: '',
       locationId: '',
       bitId: '',
       supervisorId: '',
@@ -174,11 +241,9 @@ const GuardAssignmentPage: React.FC = () => {
   const handleAssignSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!selectedOperator) return;
-    
     // Validation
-    if (!assignmentForm.locationId || !assignmentForm.bitId || !assignmentForm.supervisorId) {
-      toast.error('Please select Location, BIT, and Supervisor');
+    if (!assignmentForm.operatorId || !assignmentForm.locationId || !assignmentForm.bitId || !assignmentForm.supervisorId) {
+      toast.error('Please fill in all required fields');
       return;
     }
 
@@ -186,7 +251,7 @@ const GuardAssignmentPage: React.FC = () => {
       setSubmitting(true);
 
       const payload = {
-        operatorId: selectedOperator._id,
+        operatorId: assignmentForm.operatorId,
         bitId: assignmentForm.bitId,
         supervisorId: assignmentForm.supervisorId,
         shiftType: assignmentForm.shiftType,
@@ -194,9 +259,11 @@ const GuardAssignmentPage: React.FC = () => {
         startDate: assignmentForm.startDate
       };
 
-      if (selectedOperator.currentAssignment) {
+      const operator = operators.find(op => op._id === assignmentForm.operatorId);
+      
+      if (operator?.currentAssignment) {
         // Update existing assignment
-        await api.put(`/assignments/${selectedOperator.currentAssignment._id}`, payload);
+        await api.put(`/assignments/${operator.currentAssignment._id}`, payload);
         toast.success('Assignment updated successfully');
       } else {
         // Create new assignment (locationId comes from BIT automatically)
@@ -256,12 +323,18 @@ const GuardAssignmentPage: React.FC = () => {
 
   // Filter operators for display
   const filteredOperators = operators.filter(operator => {
+    // Skip null or invalid operators
+    if (!operator || !operator.userId) {
+      console.warn('⚠️ Skipping invalid operator in filter:', operator);
+      return false;
+    }
+    
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      const matchesName = operator.userId.name.toLowerCase().includes(query);
-      const matchesEmail = operator.userId.email.toLowerCase().includes(query);
-      const matchesPhone = operator.userId.phone.toLowerCase().includes(query);
+      const matchesName = operator.userId.name?.toLowerCase().includes(query) || false;
+      const matchesEmail = operator.userId.email?.toLowerCase().includes(query) || false;
+      const matchesPhone = operator.userId.phone?.toLowerCase().includes(query) || false;
       if (!matchesName && !matchesEmail && !matchesPhone) return false;
     }
 
@@ -297,6 +370,24 @@ const GuardAssignmentPage: React.FC = () => {
       </div>
     );
   }
+  
+  // Safety check: Ensure all arrays are defined before rendering
+  if (!operators || !locations || !bits || !supervisors) {
+    console.error('⚠️ Missing data arrays:', { operators: !!operators, locations: !!locations, bits: !!bits, supervisors: !!supervisors });
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="text-red-600 mb-2">Error loading data</div>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -327,7 +418,7 @@ const GuardAssignmentPage: React.FC = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Locations</option>
-              {locations.map(location => (
+              {locations && locations.map(location => (
                 <option key={location._id} value={location._id}>
                   {location.locationName}
                 </option>
@@ -348,10 +439,16 @@ const GuardAssignmentPage: React.FC = () => {
             </select>
           </div>
 
-          <div className="flex items-end">
+          <div className="flex items-end gap-3">
+            <button
+              onClick={() => openAssignModal()}
+              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+            >
+              Assign Guard
+            </button>
             <button
               onClick={fetchData}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               Refresh
             </button>
@@ -409,32 +506,35 @@ const GuardAssignmentPage: React.FC = () => {
                 </td>
               </tr>
             ) : (
-              filteredOperators.map((operator) => (
+              filteredOperators
+                .filter(operator => operator && operator.userId)
+                .map((operator) => {
+                return (
                 <tr key={operator._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="font-medium text-gray-900">{operator.userId.name}</div>
+                    <div className="font-medium text-gray-900">{operator.userId?.name || 'Unknown'}</div>
                     {operator.locationId && (
-                      <div className="text-sm text-gray-500">{operator.locationId.locationName}</div>
+                      <div className="text-sm text-gray-500">{operator.locationId?.locationName}</div>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div>{operator.userId.phone}</div>
-                    <div className="text-xs">{operator.userId.email}</div>
+                    <div>{operator.userId?.phone}</div>
+                    <div className="text-xs">{operator.userId?.email}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {operator.currentAssignment ? (
                       <div className="text-sm">
                         <div className="font-medium text-gray-900">
-                          {operator.currentAssignment.bitId.bitName}
+                          {operator.currentAssignment?.bitId?.bitName || 'Unknown Bit'}
                         </div>
                         <div className="text-gray-500">
-                          {operator.currentAssignment.locationId.locationName}
+                          {operator.currentAssignment?.locationId?.locationName || 'Unknown Location'}
                         </div>
                         <div className="text-xs text-gray-500">
-                          Supervisor: {operator.currentAssignment.supervisorId.userId.name}
+                          Supervisor: {operator.currentAssignment?.supervisorId?.userId?.name || 'None'}
                         </div>
                         <div className="text-xs text-gray-500">
-                          {operator.currentAssignment.shiftType} • {operator.currentAssignment.assignmentType}
+                          {operator.currentAssignment?.shiftType} • {operator.currentAssignment?.assignmentType}
                         </div>
                       </div>
                     ) : (
@@ -461,24 +561,25 @@ const GuardAssignmentPage: React.FC = () => {
                     )}
                   </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
 
       {/* Assignment Modal */}
-      {showAssignModal && selectedOperator && (
+      {showAssignModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">
-                    {selectedOperator.currentAssignment ? 'Change Assignment' : 'Assign Guard'}
+                    Assign Guard
                   </h2>
                   <p className="text-gray-600 mt-1">
-                    Guard: {selectedOperator.userId.name}
+                    Assign a guard to a specific bit and location
                   </p>
                 </div>
                 <button
@@ -493,6 +594,83 @@ const GuardAssignmentPage: React.FC = () => {
 
               <form onSubmit={handleAssignSubmit}>
                 <div className="space-y-4">
+                  {/* Operator Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Select Operator <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={assignmentForm.operatorId}
+                      onChange={(e) => {
+                        const operatorId = e.target.value;
+                        const operator = operators.find(op => op._id === operatorId);
+                        setSelectedOperator(operator || null);
+                        
+                        if (operator?.currentAssignment) {
+                          setAssignmentForm({
+                            operatorId,
+                            locationId: operator.currentAssignment.locationId._id,
+                            bitId: operator.currentAssignment.bitId._id,
+                            supervisorId: operator.currentAssignment.supervisorId._id,
+                            shiftType: operator.currentAssignment.shiftType || 'DAY',
+                            assignmentType: operator.currentAssignment.assignmentType || 'PERMANENT',
+                            startDate: operator.currentAssignment.startDate?.split('T')[0] || new Date().toISOString().split('T')[0],
+                          });
+                        } else {
+                          setAssignmentForm(prev => ({
+                            ...prev,
+                            operatorId,
+                            locationId: operator?.locationId?._id || '',
+                            bitId: '',
+                            supervisorId: '',
+                          }));
+                        }
+                      }}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Choose an operator...</option>
+                      {operators
+                        .filter(operator => operator && operator.userId)
+                        .map((operator) => {
+                          const fullName = operator.userId.name || `${operator.userId.firstName || ''} ${operator.userId.lastName || ''}`.trim();
+                          return (
+                            <option key={operator._id} value={operator._id}>
+                              {fullName} - {operator.employeeId || operator._id.substring(0, 8)}
+                            </option>
+                          );
+                        })}
+                    </select>
+                  </div>
+
+                  {/* Show selected operator with profile picture */}
+                  {assignmentForm.operatorId && selectedOperator && (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0">
+                          {selectedOperator.userId.profilePhoto ? (
+                            <img
+                              src={getImageUrl(selectedOperator.userId.profilePhoto)}
+                              alt={selectedOperator.userId.name}
+                              className="h-12 w-12 rounded-full object-cover border-2 border-blue-300"
+                            />
+                          ) : (
+                            <div className="h-12 w-12 rounded-full bg-blue-200 flex items-center justify-center border-2 border-blue-300">
+                              <User className="h-6 w-6 text-blue-600" />
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{selectedOperator.userId.name}</p>
+                          <p className="text-sm text-gray-600">ID: {selectedOperator.employeeId || selectedOperator._id.substring(0, 8)}</p>
+                          {selectedOperator.currentAssignment && (
+                            <p className="text-xs text-amber-600 font-medium">Currently assigned</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Location */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -512,7 +690,7 @@ const GuardAssignmentPage: React.FC = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Select Location</option>
-                      {locations.map(location => (
+                      {locations && locations.map(location => (
                         <option key={location._id} value={location._id}>
                           {location.locationName} ({location.locationCode})
                         </option>
@@ -631,7 +809,7 @@ const GuardAssignmentPage: React.FC = () => {
                     disabled={submitting}
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
-                    {submitting ? 'Saving...' : (selectedOperator.currentAssignment ? 'Update Assignment' : 'Assign Guard')}
+                    {submitting ? 'Saving...' : (selectedOperator?.currentAssignment ? 'Update Assignment' : 'Assign Guard')}
                   </button>
                 </div>
               </form>
