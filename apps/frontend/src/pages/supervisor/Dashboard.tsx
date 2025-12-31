@@ -215,15 +215,21 @@ export default function SupervisorDashboard() {
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/supervisor/dashboard', {
+      const token = localStorage.getItem('token');
+      const API_BASE = window.location.origin.includes('3000') 
+        ? window.location.origin.replace('3000', '3002')
+        : window.location.origin;
+      
+      const response = await fetch(`${API_BASE}/api/supervisors/dashboard`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
       
       if (response.ok) {
         const data = await response.json();
+        console.log('📊 Dashboard data:', data);
         if (data.stats) {
           setStats(data.stats);
         }
@@ -236,6 +242,8 @@ export default function SupervisorDashboard() {
         if (data.incidents) {
           setIncidents(data.incidents);
         }
+      } else {
+        console.error('Failed to fetch dashboard data:', response.status);
       }
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);

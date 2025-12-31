@@ -17,9 +17,10 @@ import {
   Menu,
   X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import NotificationPanel from '../../components/layout/NotificationPanel';
+import { api } from '../../lib/api';
 
 const navigation = [
   { name: 'Dashboard', href: '/supervisor/dashboard', icon: LayoutDashboard },
@@ -58,6 +59,32 @@ export default function SupervisorLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>(['Operators']);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Fetch unread notification count
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await api.get('/notifications/unread-count');
+        setUnreadCount(response.data.count || 0);
+      } catch (error) {
+        console.error('Failed to fetch unread notifications:', error);
+      }
+    };
+
+    fetchUnreadCount();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleNotificationClose = () => {
+    setShowNotifications(false);
+    // Refresh count when closing notifications
+    api.get('/notifications/unread-count').then(response => {
+      setUnreadCount(response.data.count || 0);
+    }).catch(console.error);
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -199,11 +226,15 @@ export default function SupervisorLayout() {
                   className="p-2 rounded-lg hover:bg-gray-100 relative"
                 >
                   <Bell size={20} />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
                 </button>
                 {showNotifications && (
                   <div className="absolute right-0 top-full mt-2 z-50">
-                    <NotificationPanel />
+                    <NotificationPanel onClose={handleNotificationClose} />
                   </div>
                 )}
               </div>

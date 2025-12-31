@@ -347,9 +347,202 @@ router.patch('/:id/assign', authorize('MANAGER', 'DIRECTOR', 'DEVELOPER'), async
   });
 }));
 
+// Get supervisor's own profile data
+router.get('/my-profile', authorize('SUPERVISOR', 'GENERAL_SUPERVISOR'), asyncHandler(async (req: any, res) => {
+  const userId = req.user.userId;
+  
+  try {
+    const supervisor = await Supervisor.findOne({ userId })
+      .populate('userId', 'firstName lastName email phone phoneNumber profilePhoto passportPhoto')
+      .populate('locationId', 'name address city state')
+      .populate('generalSupervisorId', 'firstName lastName email')
+      .lean();
+    
+    if (!supervisor) {
+      return res.status(404).json({ error: 'Supervisor profile not found' });
+    }
+    
+    // Extract user data from populated field
+    const user = supervisor.userId as any;
+    
+    res.json({
+      supervisor,
+      employeeId: supervisor.employeeId || '',
+      profilePhoto: user?.profilePhoto || user?.passportPhoto || supervisor.passportPhoto || null,
+      phone: supervisor.phone || user?.phone || user?.phoneNumber || '',
+      phoneNumber: supervisor.phoneNumber || user?.phoneNumber || user?.phone || '',
+      address: supervisor.address || user?.address || '',
+    });
+  } catch (error) {
+    console.error('Error fetching supervisor profile:', error);
+    res.status(500).json({ error: 'Failed to fetch supervisor profile' });
+  }
+}));
+
 // Supervisor dashboard (for supervisor users)
-router.get('/dashboard', authorize('SUPERVISOR', 'GENERAL_SUPERVISOR'), (req, res) => {
-  res.json({ message: 'Supervisor dashboard' });
-});
+router.get('/dashboard', authorize('SUPERVISOR', 'GENERAL_SUPERVISOR'), asyncHandler(async (req: any, res) => {
+  const userId = req.user.userId;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  try {
+    // Get the supervisor record
+    const supervisor = await Supervisor.findOne({ userId }).lean();
+    
+    if (!supervisor) {
+      return res.json({
+        stats: {
+          myOperators: 0,
+          presentToday: 0,
+          attendanceRate: 0,
+          myBits: 0,
+          openIncidents: 0,
+          pendingTasks: 0,
+        },
+        operators: [],
+        locations: [],
+        incidents: [],
+      });
+    }
+
+    const { Operator, Bit, Location, Attendance, IncidentReport } = require('../models');
+
+    // Get all operators under this supervisor
+    const operators = await Operator.find({ supervisorId: supervisor._id })
+      .populate('userId', 'firstName lastName profilePhoto phone')
+      .populate('locationId', 'locationName')
+      .limit(10)
+      .lean();
+
+    const operatorIds = operators.map(op => op._id);
+
+    // Get today's attendance
+    const attendanceRecords = await Attendance.find({
+      checkInTime: { $gte: today },
+      operatorId: { $in: operatorIds },
+    }).lean();
+
+    const presentOperatorIds = new Set(attendanceRecords.map(att => att.operatorId.toString()));
+
+    // Get bits/locations assigned
+    const bits = await Bit.find({ 
+      $or: [
+        { supervisorId: supervisor._id },
+        { locationId: supervisor.locationId }
+      ]
+    })
+    .populate('locationId', 'locationName city state')
+    .lean();
+
+    // Get open incidents
+    const openIncidents = await IncidentReport.find({
+      supervisorId: supervisor._id,
+      status: { $in: ['REPORTED', 'UNDER_REVIEW'] },
+    })
+    .populate({
+      path: 'operatorId',
+      populate: [
+        { path: 'userId', select: 'firstName lastName' },
+        { path: 'locationId', select: 'locationName' },
+      ],
+    })
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .lean();
+
+    // Calculate stats
+    const myOperators = operators.length;
+    const presentToday = presentOperatorIds.size;
+    const attendanceRate = myOperators > 0 ? Math.round((presentToday / myOperators) * 100) : 0;
+    const myBits = bits.length;
+    const openIncidentsCount = await IncidentReport.countDocuments({
+      supervisorId: supervisor._id,
+      status: { $in: ['REPORTED', 'UNDER_REVIEW'] },
+    });
+
+    // Format operators data
+    const formattedOperators = operators.map((op: any) => {
+      const isPresent = presentOperatorIds.has(op._id.toString());
+      const attendance = attendanceRecords.find(att => att.operatorId.toString() === op._id.toString());
+      
+      return {
+        id: op._id,
+        name: `${op.userId?.firstName || ''} ${op.userId?.lastName || ''}`.trim() || 'N/A',
+        photo: op.userId?.profilePhoto,
+        location: op.locationId?.locationName || 'N/A',
+        status: isPresent ? 'present' : 'absent',
+        checkInTime: attendance?.checkInTime ? new Date(attendance.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : undefined,
+      };
+    });
+
+    // Format locations data
+    const locationsWithStats = await Promise.all(
+      bits.map(async (bit: any) => {
+        const bitOperators = await Operator.countDocuments({
+          locationId: bit.locationId?._id,
+        });
+        
+        const bitPresent = await Attendance.countDocuments({
+          checkInTime: { $gte: today },
+          operatorId: { $in: await Operator.find({ locationId: bit.locationId?._id }).distinct('_id') },
+        });
+
+        const percentage = bitOperators > 0 ? (bitPresent / bitOperators) * 100 : 0;
+        let status: 'green' | 'yellow' | 'red' = 'green';
+        if (percentage < 50) status = 'red';
+        else if (percentage < 80) status = 'yellow';
+
+        return {
+          id: bit._id,
+          name: bit.locationId?.locationName || bit.bitName || 'N/A',
+          operatorsAssigned: bitOperators,
+          operatorsPresent: bitPresent,
+          status,
+        };
+      })
+    );
+
+    // Format incidents data
+    const formattedIncidents = openIncidents.map((inc: any) => ({
+      id: inc._id,
+      title: inc.title || 'Incident',
+      location: inc.operatorId?.locationId?.locationName || 'N/A',
+      severity: inc.severity?.toLowerCase() || 'medium',
+      time: formatRelativeTime(new Date(inc.createdAt)),
+      status: inc.status === 'REPORTED' ? 'open' : 'investigating',
+    }));
+
+    // Respond with dashboard data
+    res.json({
+      stats: {
+        myOperators,
+        presentToday,
+        attendanceRate,
+        myBits,
+        openIncidents: openIncidentsCount,
+        pendingTasks: openIncidentsCount,
+      },
+      operators: formattedOperators,
+      locations: locationsWithStats.slice(0, 10),
+      incidents: formattedIncidents,
+    });
+  } catch (error) {
+    logger.error('Supervisor dashboard error:', error);
+    res.status(500).json({ error: 'Failed to fetch dashboard data' });
+  }
+}));
+
+// Helper function
+function formatRelativeTime(date: Date): string {
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  return `${days}d ago`;
+}
 
 export default router;

@@ -20,7 +20,7 @@ import toast from 'react-hot-toast';
 export default function SettingsPage() {
   const { user, updateUser } = useAuthStore();
   const [activeTab, setActiveTab] = useState('profile');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -30,7 +30,11 @@ export default function SettingsPage() {
     lastName: '',
     email: '',
     phone: '',
+    phoneNumber: '',
   });
+
+  // Supervisor-specific data
+  const [supervisorData, setSupervisorData] = useState<any>(null);
 
   // Password state
   const [passwordData, setPasswordData] = useState({
@@ -54,23 +58,87 @@ export default function SettingsPage() {
     operatorUpdates: true,
   });
 
+  // Fetch complete profile data
   useEffect(() => {
-    if (user) {
-      setProfileData({
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        email: user.email || '',
-        phone: user.phone || '',
-      });
-    }
+    const fetchProfileData = async () => {
+      try {
+        setIsLoading(true);
+        // Fetch user profile
+        const userResponse = await api.get('/users/profile');
+        const userData = userResponse.data;
+        
+        console.log('👤 User Profile Data:', userData);
+
+        // Try to fetch supervisor-specific data
+        try {
+          const supervisorResponse = await api.get('/supervisors/my-profile');
+          const supData = supervisorResponse.data;
+          console.log('👨‍💼 Supervisor Data:', supData);
+          setSupervisorData(supData);
+          
+          // Merge data, prioritizing supervisor data
+          setProfileData({
+            firstName: userData.firstName || supData.userId?.firstName || '',
+            lastName: userData.lastName || supData.userId?.lastName || '',
+            email: userData.email || supData.userId?.email || '',
+            phone: userData.phone || userData.phoneNumber || supData.userId?.phone || supData.userId?.phoneNumber || '',
+            phoneNumber: userData.phoneNumber || userData.phone || supData.userId?.phoneNumber || supData.userId?.phone || '',
+          });
+        } catch (error) {
+          // If supervisor endpoint fails, just use user data
+          console.log('ℹ️ Using user data only');
+          setProfileData({
+            firstName: userData.firstName || '',
+            lastName: userData.lastName || '',
+            email: userData.email || '',
+            phone: userData.phone || userData.phoneNumber || '',
+            phoneNumber: userData.phoneNumber || userData.phone || '',
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        toast.error('Failed to load profile data');
+        // Fallback to user from auth store
+        if (user) {
+          setProfileData({
+            firstName: user.firstName || '',
+            lastName: user.lastName || '',
+            email: user.email || '',
+            phone: (user as any).phone || (user as any).phoneNumber || '',
+            phoneNumber: (user as any).phoneNumber || (user as any).phone || '',
+          });
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfileData();
   }, [user]);
 
   const handleProfileUpdate = async () => {
     setIsSaving(true);
     try {
-      const response = await api.put('/users/profile', profileData);
-      updateUser(response.data.user);
+      const updateData = {
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        phone: profileData.phone || profileData.phoneNumber,
+      };
+      
+      const response = await api.put('/users/profile', updateData);
+      updateUser(response.data.user || response.data);
       toast.success('Profile updated successfully');
+      
+      // Refetch data to ensure sync
+      const userResponse = await api.get('/users/profile');
+      const userData = userResponse.data;
+      setProfileData({
+        ...profileData,
+        firstName: userData.firstName || profileData.firstName,
+        lastName: userData.lastName || profileData.lastName,
+        phone: userData.phone || userData.phoneNumber || profileData.phone,
+        phoneNumber: userData.phoneNumber || userData.phone || profileData.phoneNumber,
+      });
     } catch (error: any) {
       console.error('Error updating profile:', error);
       toast.error(error.response?.data?.error || 'Failed to update profile');

@@ -96,19 +96,52 @@ export default function EnhancedSettingsPage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await api.get('/auth/me');
-        const userData = response.data.user;
-        setProfile({
-          firstName: userData.firstName || '',
-          lastName: userData.lastName || '',
-          email: userData.email || '',
-          phone: userData.phone || '',
-          address: userData.address || '',
-          profilePhoto: userData.profilePhoto || null,
-          employeeId: userData.employeeId || ''
-        });
+        console.log('🔄 Fetching supervisor profile...');
+        
+        // Try to get user profile first
+        const userResponse = await api.get('/users/profile');
+        console.log('👤 User Response:', userResponse.data);
+        const userData = userResponse.data.user || userResponse.data;
+        
+        // Try to get supervisor-specific data
+        let supervisorData = null;
+        try {
+          const supervisorResponse = await api.get('/supervisors/my-profile');
+          console.log('👨‍💼 Supervisor Response:', supervisorResponse.data);
+          supervisorData = supervisorResponse.data.supervisor || supervisorResponse.data;
+        } catch (err) {
+          console.log('ℹ️ No supervisor-specific data available');
+        }
+        
+        // Extract profile photo - check multiple possible locations
+        const profilePhoto = userData?.profilePhoto || 
+                            userData?.passportPhoto || 
+                            supervisorData?.passportPhoto || 
+                            (supervisorData?.userId as any)?.profilePhoto ||
+                            (supervisorData?.userId as any)?.passportPhoto ||
+                            null;
+        
+        // Extract employee ID from supervisor data
+        const employeeId = supervisorData?.employeeId || '';
+        
+        console.log('📸 Profile Photo:', profilePhoto);
+        console.log('🆔 Employee ID:', employeeId);
+        
+        // Merge data with priority to supervisor-specific fields
+        const profileData = {
+          firstName: userData?.firstName || '',
+          lastName: userData?.lastName || '',
+          email: userData?.email || '',
+          phone: supervisorData?.phone || supervisorData?.phoneNumber || userData?.phone || userData?.phoneNumber || '',
+          address: userData?.address || supervisorData?.address || '',
+          profilePhoto: profilePhoto,
+          employeeId: employeeId
+        };
+        
+        console.log('✅ Final Profile Data:', profileData);
+        setProfile(profileData);
       } catch (error) {
-        console.error('Error fetching profile:', error);
+        console.error('❌ Error fetching profile:', error);
         toast.error('Failed to load profile data');
       } finally {
         setLoading(false);

@@ -151,7 +151,7 @@ router.get('/profile', async (req: AuthRequest, res: Response) => {
     }
     
     const user = await User.findById(userId)
-      .select('id email firstName lastName phone role status profilePhoto passportPhoto createdAt')
+      .select('id email firstName lastName phone phoneNumber role status profilePhoto passportPhoto createdAt address')
       .lean();
 
     if (!user) {
