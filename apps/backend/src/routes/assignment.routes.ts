@@ -5,6 +5,7 @@ import { User } from '../models/User.model';
 import { Bit } from '../models/Bit.model';
 import { Secretary } from '../models/Secretary.model';
 import { Supervisor, SupervisorType, ApprovalStatus } from '../models/Supervisor.model';
+import { GuardAssignment } from '../models/GuardAssignment.model';
 
 const router = Router();
 
@@ -94,6 +95,7 @@ router.post(
  */
 router.get('/', authenticate, async (req: Request, res: Response) => {
   try {
+    console.log('📋 GET /api/assignments - Manager fetching assignments');
     const { bitId, operatorId, supervisorId, status, startDate, endDate } = req.query;
 
     const query: any = {};
@@ -104,7 +106,8 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
     if (startDate) query.startDate = { $gte: new Date(startDate as string) };
     if (endDate) query.endDate = { $lte: new Date(endDate as string) };
 
-    const GuardAssignment = require('../models/GuardAssignment.model').default;
+    console.log('🔍 Query:', query);
+
     const assignments = await GuardAssignment.find(query)
       .populate({
         path: 'operatorId',
@@ -118,16 +121,20 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
       })
       .sort({ createdAt: -1 });
 
+    console.log('✅ Found assignments:', assignments.length);
+
     res.json({
       success: true,
       count: assignments.length,
       assignments,
     });
   } catch (error: any) {
-    console.error('Error fetching assignments:', error);
+    console.error('❌ Error fetching assignments:', error);
+    console.error('Stack trace:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch assignments',
+      error: error.message,
     });
   }
 });
@@ -150,7 +157,6 @@ router.get(
 
       if (userRole === 'DIRECTOR' || userRole === 'DEVELOPER') {
         // Directors see all pending assignments
-        const GuardAssignment = require('../models/GuardAssignment.model').default;
         assignments = await GuardAssignment.find({ status: 'PENDING' })
           .populate({
             path: 'operatorId',
@@ -165,7 +171,6 @@ router.get(
           .sort({ createdAt: -1 });
       } else {
         // General Supervisors see only their supervisors' pending assignments
-        const Supervisor = require('../models/Supervisor.model').default;
         const gs = await Supervisor.findOne({ userId: user.id, supervisorType: 'GENERAL_SUPERVISOR' });
 
         if (!gs) {
@@ -200,17 +205,24 @@ router.get(
  */
 router.get('/:id', authenticate, async (req: Request, res: Response) => {
   try {
-    const GuardAssignment = require('../models/GuardAssignment.model').default;
+    console.log('📋 GET /api/assignments/:id - Fetching assignment:', req.params.id);
+    
     const assignment = await GuardAssignment.findById(req.params.id)
       .populate({
         path: 'operatorId',
-        populate: { path: 'userId' },
+        populate: { 
+          path: 'userId', 
+          select: 'firstName lastName email phone phoneNumber profilePhoto state' 
+        },
       })
       .populate('bitId')
       .populate('locationId')
       .populate({
         path: 'supervisorId',
-        populate: { path: 'userId' },
+        populate: { 
+          path: 'userId', 
+          select: 'firstName lastName email phone phoneNumber' 
+        },
       });
 
     if (!assignment) {
@@ -220,12 +232,21 @@ router.get('/:id', authenticate, async (req: Request, res: Response) => {
       });
     }
 
+    console.log('✅ Assignment found:', {
+      id: assignment._id,
+      operatorId: assignment.operatorId,
+      hasUserId: !!(assignment.operatorId as any)?.userId,
+      userPhone: (assignment.operatorId as any)?.userId?.phone,
+      userPhoneNumber: (assignment.operatorId as any)?.userId?.phoneNumber,
+      userState: (assignment.operatorId as any)?.userId?.state
+    });
+
     res.json({
       success: true,
       assignment,
     });
   } catch (error: any) {
-    console.error('Error fetching assignment:', error);
+    console.error('❌ Error fetching assignment:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch assignment',
@@ -336,7 +357,6 @@ router.post(
         });
       }
 
-      const GuardAssignment = require('../models/GuardAssignment.model').default;
       const currentAssignment = await GuardAssignment.findById(req.params.id);
 
       if (!currentAssignment) {

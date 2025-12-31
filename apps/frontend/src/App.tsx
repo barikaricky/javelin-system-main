@@ -153,6 +153,7 @@ import IDVerification from './pages/public/IDVerification';
 // Assignment Module imports
 import AssignGuardPage from './pages/manager/assignments/AssignGuardPage';
 import AssignmentsListPage from './pages/manager/assignments/AssignmentsListPage';
+import AssignmentDetailsPage from './pages/manager/assignments/AssignmentDetailsPage';
 import AssignOperatorPage from './pages/general-supervisor/assignments/AssignOperatorPage';
 import AssignmentApprovalsPage from './pages/general-supervisor/assignments/AssignmentApprovalsPage';
 import RequestAssignmentPage from './pages/supervisor/assignments/RequestAssignmentPage';
@@ -288,6 +289,7 @@ function App() {
         <Route path="salary" element={<SalaryView />} />
         <Route path="assignments" element={<AssignmentsListPage />} />
         <Route path="assignments/assign" element={<AssignGuardPage />} />
+        <Route path="assignments/:id" element={<AssignmentDetailsPage />} />
         <Route path="bit-expenses" element={<ManagerBitExpensesPage />} />
       </Route>
       

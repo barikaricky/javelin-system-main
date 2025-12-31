@@ -126,26 +126,31 @@ export default function AssignmentsListPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <Clock className="w-12 h-12 text-gray-400 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading assignments...</p>
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <div className="text-center animate-fade-in">
+          <div className="relative">
+            <Clock className="w-16 h-16 text-blue-600 animate-spin mx-auto mb-4" />
+            <div className="absolute inset-0 w-16 h-16 border-4 border-blue-200 rounded-full animate-pulse mx-auto"></div>
+          </div>
+          <p className="text-gray-600 font-medium">Loading assignments...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6 lg:p-8 space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 animate-slide-in-top">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Guard Assignments</h1>
-          <p className="text-gray-600 mt-1">Manage security personnel deployments to BITs</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+            Guard Assignments
+          </h1>
+          <p className="text-gray-600 mt-1 text-sm md:text-base">Manage security personnel deployments to BITs</p>
         </div>
         <button
           onClick={() => navigate('/manager/assignments/assign')}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          className="flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl w-full md:w-auto"
         >
           <Plus className="w-5 h-5 mr-2" />
           Assign Guard
@@ -153,58 +158,49 @@ export default function AssignmentsListPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm">Total Assignments</p>
-              <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 animate-slide-in-bottom">
+        {[
+          { label: 'Total Assignments', value: stats.total, icon: Users, color: 'blue', gradient: 'from-blue-500 to-blue-600' },
+          { label: 'Active', value: stats.active, icon: CheckCircle, color: 'green', gradient: 'from-green-500 to-green-600' },
+          { label: 'Pending', value: stats.pending, icon: Clock, color: 'yellow', gradient: 'from-yellow-500 to-yellow-600' },
+          { label: 'Ended', value: stats.ended, icon: AlertTriangle, color: 'gray', gradient: 'from-gray-500 to-gray-600' },
+        ].map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <div
+              key={stat.label}
+              className="bg-white rounded-xl shadow-md hover:shadow-xl p-4 md:p-5 transition-all duration-300 transform hover:-translate-y-1 cursor-pointer animate-scale-in"
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-xs md:text-sm font-medium">{stat.label}</p>
+                  <p className={`text-2xl md:text-3xl font-bold bg-gradient-to-r ${stat.gradient} bg-clip-text text-transparent mt-1`}>
+                    {stat.value}
+                  </p>
+                </div>
+                <div className={`bg-gradient-to-br ${stat.gradient} p-2 md:p-3 rounded-lg shadow-lg`}>
+                  <Icon className="w-6 h-6 md:w-8 md:h-8 text-white" />
+                </div>
+              </div>
             </div>
-            <Users className="w-10 h-10 text-blue-600" />
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm">Active</p>
-              <p className="text-2xl font-bold text-green-600">{stats.active}</p>
-            </div>
-            <CheckCircle className="w-10 h-10 text-green-600" />
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm">Pending Approval</p>
-              <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
-            </div>
-            <Clock className="w-10 h-10 text-yellow-600" />
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm">Ended</p>
-              <p className="text-2xl font-bold text-gray-600">{stats.ended}</p>
-            </div>
-            <AlertTriangle className="w-10 h-10 text-gray-600" />
-          </div>
-        </div>
+          );
+        })}
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="grid md:grid-cols-3 gap-4">
+      <div className="bg-white rounded-xl shadow-md p-4 md:p-6 animate-slide-in-left">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <div className="relative group">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-blue-600 transition-colors" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search by guard name, BIT name, or BIT code..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
               />
             </div>
           </div>
@@ -213,7 +209,7 @@ export default function AssignmentsListPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 bg-white"
             >
               <option value="ALL">All Status</option>
               <option value="ACTIVE">Active</option>
@@ -228,9 +224,9 @@ export default function AssignmentsListPage() {
           <button
             onClick={fetchAssignments}
             disabled={refreshing}
-            className="flex items-center px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition disabled:opacity-50"
+            className="flex items-center px-4 py-2 text-blue-600 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
           >
-            <RefreshCw className={`w-5 h-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-5 h-5 mr-2 transition-transform ${refreshing ? 'animate-spin' : ''}`} />
             Refresh
           </button>
         </div>
@@ -238,9 +234,11 @@ export default function AssignmentsListPage() {
 
       {/* Assignments List */}
       {filteredAssignments.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-12 text-center">
-          <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-800 mb-2">No assignments found</h3>
+        <div className="bg-white rounded-xl shadow-md p-8 md:p-12 text-center animate-fade-in">
+          <div className="inline-block p-4 bg-gray-100 rounded-full mb-4 animate-bounce">
+            <Users className="w-16 h-16 text-gray-400" />
+          </div>
+          <h3 className="text-lg md:text-xl font-semibold text-gray-800 mb-2">No assignments found</h3>
           <p className="text-gray-600 mb-6">
             {searchTerm || statusFilter !== 'ALL'
               ? 'Try adjusting your filters'
@@ -249,96 +247,153 @@ export default function AssignmentsListPage() {
           {!searchTerm && statusFilter === 'ALL' && (
             <button
               onClick={() => navigate('/manager/assignments/assign')}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 transform hover:scale-105 shadow-lg"
             >
               Assign First Guard
             </button>
           )}
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Guard
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  BIT
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Location
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Shift
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Start Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredAssignments.map((assignment) => (
-                <tr key={assignment._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden mr-3">
-                        {assignment.operatorId.userId.profilePhoto ? (
-                          <img
-                            src={assignment.operatorId.userId.profilePhoto}
-                            alt={assignment.operatorId.userId.firstName}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <Users className="w-full h-full p-2 text-gray-400" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {assignment.operatorId.userId.firstName} {assignment.operatorId.userId.lastName}
-                        </p>
-                        <p className="text-xs text-gray-500">{assignment.operatorId.employeeId}</p>
-                      </div>
+        <>
+          {/* Mobile Cards View */}
+          <div className="block lg:hidden space-y-4 animate-slide-in-right">
+            {filteredAssignments.map((assignment, index) => (
+              <div
+                key={assignment._id}
+                className="bg-white rounded-xl shadow-md hover:shadow-xl p-4 transition-all duration-300 transform hover:-translate-y-1 animate-scale-in"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center flex-1">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex-shrink-0 overflow-hidden mr-3 shadow-md">
+                      {assignment.operatorId.userId.profilePhoto ? (
+                        <img
+                          src={assignment.operatorId.userId.profilePhoto}
+                          alt={assignment.operatorId.userId.firstName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Users className="w-full h-full p-2 text-white" />
+                      )}
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="text-sm font-medium text-gray-900">{assignment.bitId.bitName}</p>
-                    <p className="text-xs text-gray-500">{assignment.bitId.bitCode}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="text-sm text-gray-900">{assignment.locationId.name}</p>
-                    <p className="text-xs text-gray-500">{assignment.locationId.state}</p>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-900">
-                      {assignment.shiftType.replace('_', ' ')}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-900">
-                      {new Date(assignment.startDate).toLocaleDateString()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(assignment.status)}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => navigate(`/manager/assignments/${assignment._id}`)}
-                      className="text-blue-600 hover:text-blue-900 mr-3"
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">
+                        {assignment.operatorId.userId.firstName} {assignment.operatorId.userId.lastName}
+                      </p>
+                      <p className="text-xs text-gray-500">{assignment.operatorId.employeeId}</p>
+                    </div>
+                  </div>
+                  {getStatusBadge(assignment.status)}
+                </div>
+                
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center text-gray-700">
+                    <MapPin className="w-4 h-4 mr-2 text-blue-600" />
+                    <span className="font-medium">{assignment.bitId.bitName}</span>
+                    <span className="text-gray-500 ml-1">({assignment.bitId.bitCode})</span>
+                  </div>
+                  <div className="flex items-center text-gray-700">
+                    <MapPin className="w-4 h-4 mr-2 text-green-600" />
+                    <span>{assignment.locationId.name}, {assignment.locationId.state}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-gray-600">
+                    <div className="flex items-center">
+                      <Clock className="w-4 h-4 mr-2 text-orange-600" />
+                      <span>{assignment.shiftType.replace('_', ' ')}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Calendar className="w-4 h-4 mr-2 text-purple-600" />
+                      <span>{new Date(assignment.startDate).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => navigate(`/manager/assignments/${assignment._id}`)}
+                  className="mt-4 w-full py-2 text-center text-blue-600 font-medium border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition-all duration-300"
+                >
+                  View Details
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden lg:block bg-white rounded-xl shadow-md overflow-hidden animate-slide-in-right">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                  <tr>
+                    {['Guard', 'BIT', 'Location', 'Shift', 'Start Date', 'Status', 'Actions'].map((header) => (
+                      <th
+                        key={header}
+                        className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
+                      >
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredAssignments.map((assignment, index) => (
+                    <tr
+                      key={assignment._id}
+                      className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent transition-all duration-300 animate-fade-in-row"
+                      style={{ animationDelay: `${index * 50}ms` }}
                     >
-                      View Details
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex-shrink-0 overflow-hidden mr-3 shadow-md">
+                            {assignment.operatorId.userId.profilePhoto ? (
+                              <img
+                                src={assignment.operatorId.userId.profilePhoto}
+                                alt={assignment.operatorId.userId.firstName}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <Users className="w-full h-full p-2 text-white" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {assignment.operatorId.userId.firstName} {assignment.operatorId.userId.lastName}
+                            </p>
+                            <p className="text-xs text-gray-500">{assignment.operatorId.employeeId}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-medium text-gray-900">{assignment.bitId.bitName}</p>
+                        <p className="text-xs text-gray-500">{assignment.bitId.bitCode}</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-sm text-gray-900">{assignment.locationId.name}</p>
+                        <p className="text-xs text-gray-500">{assignment.locationId.state}</p>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm text-gray-900">{assignment.shiftType.replace('_', ' ')}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm text-gray-900">
+                          {new Date(assignment.startDate).toLocaleDateString()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(assignment.status)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => navigate(`/manager/assignments/${assignment._id}`)}
+                          className="text-blue-600 hover:text-blue-900 font-medium transition-colors duration-300"
+                        >
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
