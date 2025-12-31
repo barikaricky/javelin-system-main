@@ -103,7 +103,7 @@ router.get(
 router.get('/operators', authorize('SECRETARY', 'DEVELOPER'), asyncHandler(async (req: any, res) => {
   try {
     const operators = await Operator.find()
-      .populate('userId', 'firstName lastName email phoneNumber profilePhoto')
+      .populate('userId', 'firstName lastName email phoneNumber profilePhoto status')
       .populate('locationId', 'locationName')
       .populate('supervisorId', 'firstName lastName')
       .sort({ createdAt: -1 })
@@ -129,6 +129,7 @@ router.get('/operators', authorize('SECRETARY', 'DEVELOPER'), asyncHandler(async
         const assignment = assignmentMap.get(op._id.toString());
         return {
           ...op,
+          status: op.userId?.status || op.approvalStatus || 'PENDING', // Use User status as primary
           bitId: assignment?.bitId || null,
           userId: {
             ...op.userId,
@@ -138,6 +139,7 @@ router.get('/operators', authorize('SECRETARY', 'DEVELOPER'), asyncHandler(async
             email: op.userId.email,
             phoneNumber: op.userId.phoneNumber,
             profilePhoto: op.userId.profilePhoto,
+            status: op.userId.status,
           },
         };
       }),

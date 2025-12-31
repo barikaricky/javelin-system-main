@@ -281,9 +281,10 @@ router.post('/:id/approve', authorize('MANAGER', 'GENERAL_SUPERVISOR', 'DEVELOPE
   const temporaryPassword = `Opr${Math.random().toString(36).substring(2, 10)}!`;
   const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
 
-  // Update operator salary
+  // Update operator salary and approval status
   await Operator.findByIdAndUpdate(operatorId, {
     salary: salary || 0,
+    approvalStatus: 'APPROVED',
   });
 
   // Update user status to ACTIVE and set monthly salary
