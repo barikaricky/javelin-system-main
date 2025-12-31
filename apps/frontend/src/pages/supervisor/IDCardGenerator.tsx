@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
-import { Download, Printer, User, CreditCard } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Download, Eye, Printer, QrCode, User } from 'lucide-react';
 import QRCode from 'qrcode';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { api, getImageUrl } from '../../lib/api';
 import { useAuthStore } from '../../stores/authStore';
-import { getImageUrl } from '../../lib/api';
 
 interface StaffMember {
   _id: string;
@@ -26,29 +26,31 @@ interface StaffMember {
 }
 
 const ROLE_COLORS = {
-  'SUPERVISOR': '#3B82F6',
-  'GENERAL_SUPERVISOR': '#059669',
-  'OPERATOR': '#EAB308',
-  'MANAGER': '#8B5CF6',
-  'DIRECTOR': '#DC2626',
-  'SECRETARY': '#06B6D4',
+  OPERATOR: { primary: '#3B82F6', secondary: '#3B82F6' }, // Blue
+  SUPERVISOR: { primary: '#EAB308', secondary: '#EAB308' }, // Yellow
+  GENERAL_SUPERVISOR: { primary: '#3B82F6', secondary: '#EAB308' }, // Blue + Yellow
+  MANAGER: { primary: '#3B82F6', secondary: '#000000' }, // Blue + Black
+  SECRETARY: { primary: '#3B82F6', secondary: '#3B82F6' }, // Blue
+  DIRECTOR: { primary: '#000000', secondary: '#EAB308' }, // Black + Yellow accent
 };
 
-export default function IDCardGenerator() {
+const IDCardGenerator: React.FC = () => {
   const { user } = useAuthStore();
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Set current logged-in user as the selected staff
     if (user) {
       console.log('👤 User data for ID card:', user);
-      console.log('📝 Employee ID:', (user as any).employeeId);
+      console.log('📝 Employee ID:', user.employeeId);
       console.log('📸 Profile Photo:', user.profilePhoto);
-      console.log('📸 Passport Photo:', (user as any).passportPhoto);
-      console.log('🔗 Photo URL:', getImageUrl(user.profilePhoto || (user as any).passportPhoto));
-      console.log('🎂 Date of Birth:', (user as any).dateOfBirth);
+      console.log('📸 Passport Photo:', user.passportPhoto);
+      console.log('🔗 Photo URL:', getImageUrl(user.profilePhoto || user.passportPhoto));
+      console.log('🎂 Date of Birth:', user.dateOfBirth);
       setSelectedStaff(user as StaffMember);
     }
   }, [user]);
@@ -99,475 +101,457 @@ export default function IDCardGenerator() {
   const getExpiryDate = (issueDate: string) => {
     const date = new Date(issueDate);
     date.setFullYear(date.getFullYear() + 1);
-    return formatDate(date.toISOString());
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   };
 
   const downloadAsPDF = async () => {
-    if (!cardRef.current || !selectedStaff) return;
+    if (!cardRef.current) return;
 
     try {
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 3,
-        backgroundColor: '#ffffff',
+      setLoading(true);
+      
+      // Get card elements
+      const frontCard = cardRef.current.querySelector('.card-front') as HTMLElement;
+      const backCard = cardRef.current.querySelector('.card-back') as HTMLElement;
+
+      // Capture front side at high resolution
+      const frontCanvas = await html2canvas(frontCard, {
+        scale: 4,
+        backgroundColor: null,
         logging: false,
-        useCORS: true
+        width: 322,
+        height: 203
       });
 
-      // CR80 standard: 85.60mm x 53.98mm
+      // Capture back side at high resolution
+      const backCanvas = await html2canvas(backCard, {
+        scale: 4,
+        backgroundColor: null,
+        logging: false,
+        width: 322,
+        height: 203
+      });
+
+      // Create PDF with exact CR80 dimensions (85.60 x 53.98 mm)
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
         format: [85.60, 53.98]
       });
 
-      const imgData = canvas.toDataURL('image/png');
-      pdf.addImage(imgData, 'PNG', 0, 0, 85.60, 53.98);
+      // Add front side - fill entire page
+      pdf.addImage(frontCanvas.toDataURL('image/png'), 'PNG', 0, 0, 85.60, 53.98);
       
-      pdf.save(`ID-Card-${selectedStaff.firstName}-${selectedStaff.lastName}.pdf`);
+      // Add new page for back side
+      pdf.addPage([85.60, 53.98], 'landscape');
+      pdf.addImage(backCanvas.toDataURL('image/png'), 'PNG', 0, 0, 85.60, 53.98);
+
+      // Save PDF
+      pdf.save(`ID-Card-${selectedStaff?.employeeId}.pdf`);
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('Failed to generate PDF:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const printCard = () => {
-    if (!cardRef.current) return;
-
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-
-    const cardHTML = cardRef.current.outerHTML;
-    
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Print ID Card</title>
-          <style>
-            @page {
-              size: 85.60mm 53.98mm;
-              margin: 0;
-            }
-            body {
-              margin: 0;
-              padding: 0;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              min-height: 100vh;
-            }
-            @media print {
-              body {
-                margin: 0;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          ${cardHTML}
-          <script>
-            window.onload = function() {
-              window.print();
-              window.onafterprint = function() {
-                window.close();
-              };
-            };
-          </script>
-        </body>
-      </html>
-    `);
-    
-    printWindow.document.close();
+    window.print();
   };
 
   if (!selectedStaff) {
     return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="text-center">
-          <CreditCard className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">Loading your ID card...</p>
+      <div className="p-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">ID Card Generator</h1>
+          <p className="text-sm text-gray-600 mt-1">Loading your ID card...</p>
         </div>
       </div>
     );
   }
 
+  const roleColors = getRoleColor(selectedStaff.role);
+  const serialNumber = `${selectedStaff.employeeId}-${Date.now().toString().slice(-6)}`;
+
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+    <div className="p-3 sm:p-6">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">ID Card Generator</h1>
-            <p className="text-gray-600 mt-1">Generate and download your professional ID card</p>
-          </div>
-          <CreditCard className="w-8 h-8 sm:w-10 sm:h-10 text-blue-600" />
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">My ID Card</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">
+            {selectedStaff.firstName} {selectedStaff.lastName} - {selectedStaff.role}
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <button
+            onClick={downloadAsPDF}
+            disabled={loading}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm sm:text-base"
+          >
+            <Download size={18} className="sm:w-5 sm:h-5" />
+            <span>{loading ? 'Generating...' : 'Download PDF'}</span>
+          </button>
+          <button
+            onClick={printCard}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm sm:text-base"
+          >
+            <Printer size={18} className="sm:w-5 sm:h-5" />
+            <span>Print</span>
+          </button>
         </div>
       </div>
 
-      {/* Card Preview and Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-        {/* ID Card Preview */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-8">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-6">Card Preview</h2>
-            
-            <div className="flex justify-center">
-              <div className="transform scale-75 sm:scale-85 md:scale-100 origin-center">
-                {/* ID Card - CR80 Standard: 85.60mm x 53.98mm = 322.68px x 203.62px at 3.76 px/mm */}
-                <div 
-                  ref={cardRef}
-                  style={{
-                    width: '322px',
-                    height: '203px',
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '8px',
-                    overflow: 'hidden',
-                    border: '1px solid #E5E7EB',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                    fontFamily: 'Arial, sans-serif',
-                    position: 'relative'
-                  }}
-                >
-                  {/* Header Section with Blue */}
-                  <div style={{
-                    background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
-                    height: '45px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '0 12px',
-                    borderBottom: '2px solid #EAB308'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{
-                        width: '28px',
-                        height: '28px',
-                        backgroundColor: '#FFFFFF',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#3B82F6' }}>J</span>
-                      </div>
-                      <div>
-                        <div style={{ 
-                          fontSize: '11px', 
-                          fontWeight: 'bold',
-                          color: '#FFFFFF',
-                          lineHeight: '1.2',
-                          letterSpacing: '0.5px'
-                        }}>JAVELIN SYSTEM</div>
-                        <div style={{ 
-                          fontSize: '7px', 
-                          color: '#DBEAFE',
-                          lineHeight: '1',
-                          letterSpacing: '0.3px'
-                        }}>Security Solutions</div>
-                      </div>
-                    </div>
-                    <div style={{
-                      backgroundColor: getRoleColor(selectedStaff.role),
-                      color: '#FFFFFF',
-                      padding: '3px 8px',
-                      borderRadius: '4px',
-                      fontSize: '8px',
-                      fontWeight: 'bold',
-                      letterSpacing: '0.3px',
-                      border: '1px solid rgba(255,255,255,0.3)'
-                    }}>
-                      {selectedStaff.role.replace(/_/g, ' ')}
-                    </div>
-                  </div>
-
-                  {/* Content Section */}
-                  <div style={{ 
-                    display: 'flex',
-                    padding: '10px 12px',
-                    gap: '10px',
-                    height: 'calc(100% - 45px)'
-                  }}>
-                    {/* Left: Photo and QR */}
-                    <div style={{ 
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px',
-                      alignItems: 'center'
-                    }}>
-                      {/* Photo */}
-                      <div style={{
-                        width: '80px',
-                        height: '100px',
-                        border: '3px solid #EAB308',
-                        borderRadius: '4px',
-                        overflow: 'hidden',
-                        background: '#E5E7EB',
-                        position: 'relative'
-                      }}>
-                        {/* Anti-copy pattern */}
-                        <div style={{
-                          position: 'absolute',
-                          width: '100%',
-                          height: '100%',
-                          background: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.03) 10px, rgba(0,0,0,0.03) 20px)',
-                          zIndex: 1
-                        }} />
-                        {selectedStaff.profilePhoto || selectedStaff.passportPhoto ? (
-                          <img 
-                            src={getImageUrl(selectedStaff.profilePhoto || selectedStaff.passportPhoto)} 
-                            alt="Staff"
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'cover',
-                              position: 'relative',
-                              zIndex: 2
-                            }}
-                          />
-                        ) : (
-                          <div style={{
-                            width: '100%',
-                            height: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            position: 'relative',
-                            zIndex: 2
-                          }}>
-                            <User size={40} color="#9CA3AF" />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* QR Code */}
-                      {qrCodeUrl && (
-                        <div style={{
-                          width: '45px',
-                          height: '45px',
-                          border: '1px solid #E5E7EB',
-                          borderRadius: '4px',
-                          overflow: 'hidden',
-                          backgroundColor: '#FFFFFF'
-                        }}>
-                          <img 
-                            src={qrCodeUrl} 
-                            alt="QR Code"
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'contain'
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Right: Details */}
-                    <div style={{ 
-                      flex: 1,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      paddingTop: '2px'
-                    }}>
-                      {/* Name */}
-                      <div>
-                        <div style={{
-                          fontSize: '13px',
-                          fontWeight: 'bold',
-                          color: '#111827',
-                          lineHeight: '1.2',
-                          marginBottom: '2px',
-                          letterSpacing: '0.3px'
-                        }}>
-                          {selectedStaff.firstName} {selectedStaff.lastName}
-                        </div>
-                        
-                        {/* ID */}
-                        <div style={{
-                          fontSize: '8px',
-                          color: '#6B7280',
-                          marginBottom: '6px',
-                          fontWeight: '600'
-                        }}>
-                          ID: {selectedStaff.employeeId || selectedStaff.id || selectedStaff._id}
-                        </div>
-
-                        {/* Details Grid */}
-                        <div style={{ 
-                          display: 'grid',
-                          gridTemplateColumns: '1fr',
-                          gap: '3px',
-                          marginBottom: '4px'
-                        }}>
-                          {/* State/LGA */}
-                          {(selectedStaff.state || selectedStaff.lga) && (
-                            <div style={{
-                              fontSize: '7.5px',
-                              color: '#374151',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '3px',
-                              marginBottom: '2px'
-                            }}>
-                              <span style={{ color: '#9CA3AF' }}>📍</span>
-                              <span style={{ fontWeight: '600' }}>
-                                {selectedStaff.state}{selectedStaff.lga && `, ${selectedStaff.lga}`}
-                              </span>
-                            </div>
-                          )}
-
-                          {selectedStaff.department && (
-                            <div style={{
-                              fontSize: '7.5px',
-                              color: '#374151',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '3px'
-                            }}>
-                              <span style={{ color: '#9CA3AF' }}>🏢</span>
-                              <span style={{ fontWeight: '600' }}>{selectedStaff.department}</span>
-                            </div>
-                          )}
-
-                          {selectedStaff.email && (
-                            <div style={{
-                              fontSize: '7px',
-                              color: '#6B7280',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '3px',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap'
-                            }}>
-                              <span>✉️</span>
-                              <span>{selectedStaff.email}</span>
-                            </div>
-                          )}
-
-                          {selectedStaff.phoneNumber && (
-                            <div style={{
-                              fontSize: '7.5px',
-                              color: '#6B7280',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '3px'
-                            }}>
-                              <span>📞</span>
-                              <span>{selectedStaff.phoneNumber}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Footer Info */}
-                      <div style={{
-                        borderTop: '1px solid #E5E7EB',
-                        paddingTop: '4px',
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 1fr',
-                        gap: '6px'
-                      }}>
-                        <div>
-                          <div style={{ fontSize: '6px', color: '#9CA3AF', marginBottom: '1px' }}>ISSUED</div>
-                          <div style={{ fontSize: '7.5px', color: '#374151', fontWeight: '600' }}>
-                            {formatDate(selectedStaff.createdAt)}
-                          </div>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '6px', color: '#9CA3AF', marginBottom: '1px' }}>EXPIRES</div>
-                          <div style={{ fontSize: '7.5px', color: '#374151', fontWeight: '600' }}>
-                            {getExpiryDate(selectedStaff.createdAt)}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+      {/* Card Preview */}
+      <div ref={cardRef} className="flex flex-col lg:flex-row gap-4 sm:gap-6 justify-center items-center">
+        {/* Front Side */}
+        <div className="w-full max-w-md lg:max-w-none flex justify-center">
+          <div 
+            className="card-front"
+            style={{
+              width: '322px', // 85.60mm * 3.76 (px/mm at 96dpi)
+              height: '203px', // 53.98mm * 3.76
+              background: 'linear-gradient(180deg, #1E3A8A 0%, #000000 100%)',
+              borderRadius: '11px',
+              position: 'relative',
+              fontFamily: "'Inter', 'Arial', sans-serif",
+              overflow: 'hidden'
+            }}
+          >
+            {/* Header Section */}
+            <div style={{
+              height: '45px',
+              background: '#1E3A8A',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '6px'
+            }}>
+              <div style={{
+                fontSize: '14px',
+                fontWeight: 'bold',
+                color: '#FFFFFF',
+                textTransform: 'uppercase',
+                letterSpacing: '1px'
+              }}>
+                JAVELIN SECURITY
               </div>
             </div>
 
-            {/* Mobile Responsive Note */}
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-              <p className="text-xs sm:text-sm text-blue-800">
-                <strong>Note:</strong> This ID card follows the CR80 standard (85.60mm × 53.98mm). 
-                The QR code links to a verification page showing staff details.
-              </p>
+            {/* Yellow Separator */}
+            <div style={{
+              height: '3px',
+              background: '#EAB308',
+              width: '100%'
+            }} />
+
+            {/* Photo Section */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              marginTop: '8px',
+              marginBottom: '6px'
+            }}>
+              <div style={{
+                width: '80px',
+                height: '100px',
+                border: '3px solid #EAB308',
+                borderRadius: '4px',
+                overflow: 'hidden',
+                background: '#E5E7EB',
+                position: 'relative'
+              }}>
+                {/* Anti-copy pattern */}
+                <div style={{
+                  position: 'absolute',
+                  width: '100%',
+                  height: '100%',
+                  background: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.03) 10px, rgba(0,0,0,0.03) 20px)',
+                  zIndex: 1
+                }} />
+                {selectedStaff.profilePhoto || selectedStaff.passportPhoto ? (
+                  <img 
+                    src={getImageUrl(selectedStaff.profilePhoto || selectedStaff.passportPhoto)} 
+                    alt="Staff"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      position: 'relative',
+                      zIndex: 2
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 2,
+                    position: 'relative'
+                  }}>
+                    <User size={45} color="#9CA3AF" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Staff Information */}
+            <div style={{ padding: '0 10px', textAlign: 'center', marginTop: '4px' }}>
+              {/* Full Name - Always visible */}
+              <div style={{
+                fontSize: '12px',
+                fontWeight: 'bold',
+                color: '#FFFFFF',
+                marginBottom: '3px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.4px',
+                lineHeight: '1.1'
+              }}>
+                {selectedStaff.firstName} {selectedStaff.lastName}
+              </div>
+              
+              {/* Employee ID */}
+              <div style={{
+                fontSize: '10px',
+                color: '#EAB308',
+                marginBottom: '3px',
+                fontWeight: '700',
+                letterSpacing: '0.3px'
+              }}>
+                ID: {selectedStaff.employeeId || selectedStaff.id || selectedStaff._id}
+              </div>
+
+              {/* Role */}
+              <div style={{
+                fontSize: '9px',
+                color: '#EAB308',
+                textTransform: 'uppercase',
+                marginBottom: '2px',
+                fontWeight: '600'
+              }}>
+                {selectedStaff.role.replace('_', ' ')}
+              </div>
+
+              {/* State/Location */}
+              {selectedStaff.state && (
+                <div style={{
+                  fontSize: '8px',
+                  color: '#FFFFFF',
+                  opacity: 0.9,
+                  marginBottom: '2px'
+                }}>
+                  {selectedStaff.state}{selectedStaff.lga ? `, ${selectedStaff.lga}` : ''}
+                </div>
+              )}
+
+              {/* Department */}
+              {selectedStaff.department && (
+                <div style={{
+                  fontSize: '8px',
+                  color: '#FFFFFF',
+                  opacity: 0.9
+                }}>
+                  {selectedStaff.department}
+                </div>
+              )}
+            </div>
+
+            {/* Role Identifier Strip */}
+            <div style={{
+              position: 'absolute',
+              right: 0,
+              top: '56px',
+              width: '8px',
+              height: '100px',
+              background: roleColors.primary
+            }} />
+
+            {/* Validity Section */}
+            <div style={{
+              position: 'absolute',
+              bottom: '8px',
+              left: '12px',
+              right: '12px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontSize: '8px'
+            }}>
+              <div>
+                <div style={{ color: '#FFFFFF', opacity: 0.8 }}>ISSUED</div>
+                <div style={{ color: '#EAB308', fontWeight: '600' }}>{formatDate(selectedStaff.createdAt)}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ color: '#FFFFFF', opacity: 0.8 }}>EXPIRES</div>
+                <div style={{ color: '#EAB308', fontWeight: '600' }}>{getExpiryDate(selectedStaff.createdAt)}</div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Actions Panel */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl shadow-lg p-6 sticky top-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
-            
-            <div className="space-y-3">
-              <button
-                onClick={downloadAsPDF}
-                className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg transition-colors duration-200"
-              >
-                <Download size={18} />
-                <span className="font-medium">Download as PDF</span>
-              </button>
-
-              <button
-                onClick={printCard}
-                className="w-full flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-lg transition-colors duration-200"
-              >
-                <Printer size={18} />
-                <span className="font-medium">Print Card</span>
-              </button>
+        {/* Back Side */}
+        <div className="w-full max-w-md lg:max-w-none flex justify-center">
+          <div 
+            className="card-back"
+            style={{
+              width: '322px',
+              height: '203px',
+              background: '#000000',
+              borderRadius: '11px',
+              position: 'relative',
+              fontFamily: "'Inter', 'Arial', sans-serif",
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '12px'
+            }}
+          >
+            {/* QR Code Section */}
+            <div style={{
+              background: '#FFFFFF',
+              padding: '8px',
+              borderRadius: '4px',
+              marginBottom: '12px'
+            }}>
+              {qrCodeUrl && (
+                <img 
+                  src={qrCodeUrl} 
+                  alt="QR Code"
+                  style={{
+                    width: '90px',
+                    height: '90px',
+                    display: 'block'
+                  }}
+                />
+              )}
             </div>
 
-            {/* Card Details */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <h4 className="text-sm font-semibold text-gray-900 mb-3">Card Details</h4>
-              <dl className="space-y-2 text-sm">
-                <div>
-                  <dt className="text-gray-600">Standard</dt>
-                  <dd className="font-medium text-gray-900">CR80 (85.60 × 53.98 mm)</dd>
-                </div>
-                <div>
-                  <dt className="text-gray-600">Thickness</dt>
-                  <dd className="font-medium text-gray-900">0.76mm (30mil)</dd>
-                </div>
-                <div>
-                  <dt className="text-gray-600">Validity</dt>
-                  <dd className="font-medium text-gray-900">1 Year</dd>
-                </div>
-                <div>
-                  <dt className="text-gray-600">QR Code</dt>
-                  <dd className="font-medium text-gray-900">Verification Enabled</dd>
-                </div>
-              </dl>
+            {/* Terms & Security Text */}
+            <div style={{
+              fontSize: '7px',
+              color: '#FFFFFF',
+              textAlign: 'center',
+              lineHeight: '1.4',
+              marginBottom: '12px',
+              opacity: 0.9
+            }}>
+              <div>This ID card remains the property of the company.</div>
+              <div>Unauthorized use is prohibited.</div>
+              <div>If found, return to the company.</div>
             </div>
 
-            {/* Features */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <h4 className="text-sm font-semibold text-gray-900 mb-3">Features</h4>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 mt-0.5">✓</span>
-                  <span>Professional CR80 standard format</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 mt-0.5">✓</span>
-                  <span>QR code for instant verification</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 mt-0.5">✓</span>
-                  <span>High-quality PDF export</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 mt-0.5">✓</span>
-                  <span>Print-ready format</span>
-                </li>
-              </ul>
+            {/* Signature Strip */}
+            <div style={{
+              width: '100%',
+              height: '30px',
+              background: 'rgba(255,255,255,0.95)',
+              borderRadius: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative',
+              marginBottom: '8px',
+              backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 5px, rgba(0,0,0,0.02) 5px, rgba(0,0,0,0.02) 10px)'
+            }}>
+              <div style={{
+                fontSize: '8px',
+                color: '#666666',
+                fontWeight: '500'
+              }}>
+                AUTHORIZED SIGNATURE
+              </div>
+            </div>
+
+            {/* Serial Number */}
+            <div style={{
+              fontSize: '7px',
+              color: '#EAB308',
+              fontWeight: '600',
+              letterSpacing: '0.5px'
+            }}>
+              SN: {serialNumber}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Specifications Info */}
+      <div className="mt-6 bg-white rounded-lg shadow p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Card Specifications</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 text-xs sm:text-sm">
+          <div>
+            <p className="font-medium text-gray-700">Physical Size</p>
+            <p className="text-gray-600">CR80 Standard: 85.60 × 53.98 mm</p>
+          </div>
+          <div>
+            <p className="font-medium text-gray-700">Material</p>
+            <p className="text-gray-600">Matte PVC, 0.76mm thickness</p>
+          </div>
+          <div>
+            <p className="font-medium text-gray-700">Orientation</p>
+            <p className="text-gray-600">Vertical (Portrait)</p>
+          </div>
+          <div>
+            <p className="font-medium text-gray-700">QR Code</p>
+            <p className="text-gray-600">22mm × 22mm with 2mm quiet zone</p>
+          </div>
+          <div>
+            <p className="font-medium text-gray-700">Validity</p>
+            <p className="text-gray-600">1 Year from issue date</p>
+          </div>
+          <div>
+            <p className="font-medium text-gray-700">Security Features</p>
+            <p className="text-gray-600">QR verification, role colors, anti-copy pattern</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Print Styles */}
+      <style>{`
+        /* Mobile scaling for ID cards */}
+        @media (max-width: 640px) {
+          .card-front, .card-back {
+            transform: scale(0.85);
+            transform-origin: center;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .card-front, .card-back {
+            transform: scale(0.75);
+            transform-origin: center;
+          }
+        }
+        
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          .card-front, .card-back, .card-front *, .card-back * {
+            visibility: visible;
+          }
+          .card-front, .card-back {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 85.60mm !important;
+            height: 53.98mm !important;
+          }
+          .card-back {
+            page-break-before: always;
+          }
+        }
+      `}</style>
     </div>
   );
-}
+};
+
+export default IDCardGenerator;

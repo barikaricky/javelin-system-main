@@ -92,6 +92,40 @@ export default function EnhancedSettingsPage() {
     dateFormat: 'MM/DD/YYYY'
   });
 
+  // Load preferences from localStorage on mount
+  useEffect(() => {
+    const savedPreferences = localStorage.getItem('userPreferences');
+    if (savedPreferences) {
+      try {
+        const parsed = JSON.parse(savedPreferences);
+        setPreferences(parsed);
+        // Apply theme immediately
+        if (parsed.theme === 'dark') {
+          document.body.classList.add('bg-gray-900');
+          document.body.classList.remove('bg-gray-50');
+        } else {
+          document.body.classList.add('bg-gray-50');
+          document.body.classList.remove('bg-gray-900');
+        }
+      } catch (error) {
+        console.error('Error loading preferences:', error);
+      }
+    }
+  }, []);
+
+  // Load notifications from localStorage on mount
+  useEffect(() => {
+    const savedNotifications = localStorage.getItem('notificationSettings');
+    if (savedNotifications) {
+      try {
+        const parsed = JSON.parse(savedNotifications);
+        setNotifications(parsed);
+      } catch (error) {
+        console.error('Error loading notification settings:', error);
+      }
+    }
+  }, []);
+
   // Fetch user profile data
   useEffect(() => {
     const fetchProfile = async () => {
@@ -154,16 +188,46 @@ export default function EnhancedSettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.put('/users/profile', {
-        firstName: profile.firstName,
-        lastName: profile.lastName,
-        phone: profile.phone,
-        address: profile.address
-      });
-      toast.success('Profile updated successfully!');
+      // Save profile if on profile tab
+      if (activeTab === 'profile') {
+        await api.put('/users/profile', {
+          firstName: profile.firstName,
+          lastName: profile.lastName,
+          phone: profile.phone,
+          address: profile.address
+        });
+        toast.success('Profile updated successfully!');
+      }
+      
+      // Save notifications if on notifications tab
+      if (activeTab === 'notifications') {
+        localStorage.setItem('notificationSettings', JSON.stringify(notifications));
+        toast.success('Notification settings saved successfully!');
+      }
+      
+      // Save preferences if on preferences tab
+      if (activeTab === 'preferences') {
+        localStorage.setItem('userPreferences', JSON.stringify(preferences));
+        
+        // Apply theme change immediately
+        if (preferences.theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+        
+        // Save to backend if endpoint exists
+        try {
+          await api.put('/users/preferences', preferences);
+        } catch (error) {
+          console.log('Backend preferences endpoint not available, using localStorage only');
+        }
+        
+        toast.success('Preferences saved successfully!');
+      }
     } catch (error: any) {
-      console.error('Error updating profile:', error);
-      toast.error(error.response?.data?.message || 'Failed to update profile');
+      console.error('Error updating settings:', error);
+      toast.error(error.response?.data?.message || 'Failed to update settings');
     } finally {
       setSaving(false);
     }
@@ -202,6 +266,52 @@ export default function EnhancedSettingsPage() {
     }
   };
 
+  const handleThemeChange = (theme: 'light' | 'dark') => {
+    const newPreferences = { ...preferences, theme };
+    setPreferences(newPreferences);
+    
+    // Apply theme immediately to body
+    if (theme === 'dark') {
+      document.body.classList.add('bg-gray-900');
+      document.body.classList.remove('bg-gray-50');
+    } else {
+      document.body.classList.add('bg-gray-50');
+      document.body.classList.remove('bg-gray-900');
+    }
+    
+    // Save to localStorage immediately for instant persistence
+    localStorage.setItem('userPreferences', JSON.stringify(newPreferences));
+    toast.success(`Theme changed to ${theme} mode`);
+  };
+
+  const handleLanguageChange = (language: string) => {
+    const newPreferences = { ...preferences, language };
+    setPreferences(newPreferences);
+    localStorage.setItem('userPreferences', JSON.stringify(newPreferences));
+    toast.success('Language preference updated');
+  };
+
+  const handleTimezoneChange = (timezone: string) => {
+    const newPreferences = { ...preferences, timezone };
+    setPreferences(newPreferences);
+    localStorage.setItem('userPreferences', JSON.stringify(newPreferences));
+    toast.success('Timezone preference updated');
+  };
+
+  const handleDateFormatChange = (dateFormat: string) => {
+    const newPreferences = { ...preferences, dateFormat };
+    setPreferences(newPreferences);
+    localStorage.setItem('userPreferences', JSON.stringify(newPreferences));
+    toast.success('Date format preference updated');
+  };
+
+  const handleNotificationToggle = (key: keyof NotificationSettings, value: boolean) => {
+    const newNotifications = { ...notifications, [key]: value };
+    setNotifications(newNotifications);
+    localStorage.setItem('notificationSettings', JSON.stringify(newNotifications));
+    toast.success(`${value ? 'Enabled' : 'Disabled'} ${key.replace(/([A-Z])/g, ' $1').toLowerCase()}`);
+  };
+
   const tabs = [
     { key: 'profile', label: 'Profile', icon: User },
     { key: 'id-card', label: 'ID Card', icon: CreditCard },
@@ -219,28 +329,61 @@ export default function EnhancedSettingsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div 
+      className="p-6 space-y-6 transition-colors duration-200 min-h-screen"
+      style={{
+        backgroundColor: preferences.theme === 'dark' ? '#111827' : '#F9FAFB',
+        color: preferences.theme === 'dark' ? '#F3F4F6' : '#111827'
+      }}
+    >
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-600">Manage your account settings and preferences</p>
+        <h1 
+          className="text-2xl font-bold"
+          style={{ color: preferences.theme === 'dark' ? '#FFFFFF' : '#111827' }}
+        >
+          Settings
+        </h1>
+        <p style={{ color: preferences.theme === 'dark' ? '#9CA3AF' : '#6B7280' }}>
+          Manage your account settings and preferences
+        </p>
       </div>
 
       {/* Settings Content */}
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Sidebar */}
         <div className="lg:w-64">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-2">
+          <div 
+            className="rounded-xl shadow-sm border p-2"
+            style={{
+              backgroundColor: preferences.theme === 'dark' ? '#1F2937' : '#FFFFFF',
+              borderColor: preferences.theme === 'dark' ? '#374151' : '#E5E7EB'
+            }}
+          >
             <nav className="space-y-1">
               {tabs.map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key as any)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                    activeTab === tab.key
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-gray-600 hover:bg-gray-50'
-                  }`}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors"
+                  style={{
+                    backgroundColor: activeTab === tab.key 
+                      ? (preferences.theme === 'dark' ? '#1E3A8A' : '#EFF6FF')
+                      : 'transparent',
+                    color: activeTab === tab.key
+                      ? (preferences.theme === 'dark' ? '#93C5FD' : '#2563EB')
+                      : (preferences.theme === 'dark' ? '#D1D5DB' : '#4B5563')
+                  }}
+                  onMouseEnter={(e) => {
+                    if (activeTab !== tab.key) {
+                      e.currentTarget.style.backgroundColor = preferences.theme === 'dark' ? '#374151' : '#F9FAFB';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (activeTab !== tab.key) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
                 >
                   <tab.icon size={18} />
                   {tab.label}
@@ -252,13 +395,29 @@ export default function EnhancedSettingsPage() {
 
         {/* Main Content */}
         <div className="flex-1">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div 
+            className="rounded-xl shadow-sm border p-6"
+            style={{
+              backgroundColor: preferences.theme === 'dark' ? '#1F2937' : '#FFFFFF',
+              borderColor: preferences.theme === 'dark' ? '#374151' : '#E5E7EB'
+            }}
+          >
             {/* Profile Tab */}
             {activeTab === 'profile' && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Profile Information</h2>
-                  <p className="text-sm text-gray-500">Update your personal information</p>
+                  <h2 
+                    className="text-lg font-semibold"
+                    style={{ color: preferences.theme === 'dark' ? '#FFFFFF' : '#111827' }}
+                  >
+                    Profile Information
+                  </h2>
+                  <p 
+                    className="text-sm"
+                    style={{ color: preferences.theme === 'dark' ? '#9CA3AF' : '#6B7280' }}
+                  >
+                    Update your personal information
+                  </p>
                 </div>
 
                 {/* Profile Photo */}
@@ -604,23 +763,28 @@ export default function EnhancedSettingsPage() {
 
                 <div className="space-y-4">
                   {[
-                    { key: 'emailNotifications', label: 'Email Notifications', description: 'Receive notifications via email' },
-                    { key: 'pushNotifications', label: 'Push Notifications', description: 'Receive push notifications on your device' },
-                    { key: 'incidentAlerts', label: 'Incident Alerts', description: 'Get notified about new incidents immediately' },
-                    { key: 'attendanceAlerts', label: 'Attendance Alerts', description: 'Get notified about attendance issues' },
-                    { key: 'systemUpdates', label: 'System Updates', description: 'Receive updates about system changes' },
-                    { key: 'weeklyReports', label: 'Weekly Reports', description: 'Receive weekly summary reports' }
+                    { key: 'emailNotifications', label: 'Email Notifications', description: 'Receive notifications via email', icon: Mail },
+                    { key: 'pushNotifications', label: 'Push Notifications', description: 'Receive push notifications on your device', icon: Bell },
+                    { key: 'incidentAlerts', label: 'Incident Alerts', description: 'Get notified about new incidents immediately', icon: AlertCircle },
+                    { key: 'attendanceAlerts', label: 'Attendance Alerts', description: 'Get notified about attendance issues', icon: CheckCircle },
+                    { key: 'systemUpdates', label: 'System Updates', description: 'Receive updates about system changes', icon: Settings },
+                    { key: 'weeklyReports', label: 'Weekly Reports', description: 'Receive weekly summary reports', icon: Mail }
                   ].map((setting) => (
-                    <div key={setting.key} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                      <div>
-                        <p className="font-medium text-gray-900">{setting.label}</p>
-                        <p className="text-sm text-gray-500">{setting.description}</p>
+                    <div key={setting.key} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                          <setting.icon className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{setting.label}</p>
+                          <p className="text-sm text-gray-500">{setting.description}</p>
+                        </div>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input
                           type="checkbox"
                           checked={notifications[setting.key as keyof NotificationSettings]}
-                          onChange={(e) => setNotifications({ ...notifications, [setting.key]: e.target.checked })}
+                          onChange={(e) => handleNotificationToggle(setting.key as keyof NotificationSettings, e.target.checked)}
                           className="sr-only peer"
                         />
                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -629,22 +793,17 @@ export default function EnhancedSettingsPage() {
                   ))}
                 </div>
 
-                {/* Save Button */}
-                <div className="flex justify-end">
-                  <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                  >
-                    {saving ? (
-                      <>Saving...</>
-                    ) : (
-                      <>
-                        <Save size={18} />
-                        Save Settings
-                      </>
-                    )}
-                  </button>
+                {/* Info Box */}
+                <div className="bg-green-50 border border-green-100 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-green-900 mb-1">Auto-Save Enabled</h4>
+                      <p className="text-sm text-green-700">
+                        Your notification preferences are saved automatically as you toggle them. Changes take effect immediately!
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -663,24 +822,27 @@ export default function EnhancedSettingsPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-3">Theme</label>
                     <div className="flex gap-4">
                       <button
-                        onClick={() => setPreferences({ ...preferences, theme: 'light' })}
+                        onClick={() => handleThemeChange('light')}
                         className={`flex items-center gap-3 px-4 py-3 border-2 rounded-lg transition-colors ${
-                          preferences.theme === 'light' ? 'border-blue-600 bg-blue-50' : 'border-gray-200'
+                          preferences.theme === 'light' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
                         <Sun size={20} className={preferences.theme === 'light' ? 'text-blue-600' : 'text-gray-400'} />
                         <span className={preferences.theme === 'light' ? 'text-blue-600 font-medium' : 'text-gray-600'}>Light</span>
                       </button>
                       <button
-                        onClick={() => setPreferences({ ...preferences, theme: 'dark' })}
+                        onClick={() => handleThemeChange('dark')}
                         className={`flex items-center gap-3 px-4 py-3 border-2 rounded-lg transition-colors ${
-                          preferences.theme === 'dark' ? 'border-blue-600 bg-blue-50' : 'border-gray-200'
+                          preferences.theme === 'dark' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
                         <Moon size={20} className={preferences.theme === 'dark' ? 'text-blue-600' : 'text-gray-400'} />
                         <span className={preferences.theme === 'dark' ? 'text-blue-600 font-medium' : 'text-gray-600'}>Dark</span>
                       </button>
                     </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      {preferences.theme === 'light' ? '☀️ Light mode is active' : '🌙 Dark mode is active'} - Changes apply instantly
+                    </p>
                   </div>
 
                   {/* Language */}
@@ -690,7 +852,7 @@ export default function EnhancedSettingsPage() {
                       <Globe size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                       <select
                         value={preferences.language}
-                        onChange={(e) => setPreferences({ ...preferences, language: e.target.value })}
+                        onChange={(e) => handleLanguageChange(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                       >
                         <option value="en">English</option>
@@ -706,13 +868,18 @@ export default function EnhancedSettingsPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
                     <select
                       value={preferences.timezone}
-                      onChange={(e) => setPreferences({ ...preferences, timezone: e.target.value })}
+                      onChange={(e) => handleTimezoneChange(e.target.value)}
                       className="w-full max-w-xs px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     >
                       <option value="America/New_York">Eastern Time (ET)</option>
                       <option value="America/Chicago">Central Time (CT)</option>
                       <option value="America/Denver">Mountain Time (MT)</option>
                       <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                      <option value="Europe/London">London (GMT)</option>
+                      <option value="Europe/Paris">Paris (CET)</option>
+                      <option value="Asia/Tokyo">Tokyo (JST)</option>
+                      <option value="Asia/Dubai">Dubai (GST)</option>
+                      <option value="Australia/Sydney">Sydney (AEDT)</option>
                     </select>
                   </div>
 
@@ -721,32 +888,34 @@ export default function EnhancedSettingsPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Date Format</label>
                     <select
                       value={preferences.dateFormat}
-                      onChange={(e) => setPreferences({ ...preferences, dateFormat: e.target.value })}
+                      onChange={(e) => handleDateFormatChange(e.target.value)}
                       className="w-full max-w-xs px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     >
-                      <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                      <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                      <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                      <option value="MM/DD/YYYY">MM/DD/YYYY (12/31/2025)</option>
+                      <option value="DD/MM/YYYY">DD/MM/YYYY (31/12/2025)</option>
+                      <option value="YYYY-MM-DD">YYYY-MM-DD (2025-12-31)</option>
                     </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Preview: {new Date().toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: preferences.dateFormat.startsWith('MM') ? '2-digit' : preferences.dateFormat.startsWith('DD') ? '2-digit' : 'numeric',
+                        day: '2-digit'
+                      })}
+                    </p>
                   </div>
-                </div>
 
-                {/* Save Button */}
-                <div className="flex justify-end">
-                  <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                  >
-                    {saving ? (
-                      <>Saving...</>
-                    ) : (
-                      <>
-                        <Save size={18} />
-                        Save Preferences
-                      </>
-                    )}
-                  </button>
+                  {/* Info Box */}
+                  <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <Settings className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="font-medium text-blue-900 mb-1">Preferences Auto-Save</h4>
+                        <p className="text-sm text-blue-700">
+                          Your preferences are automatically saved as you change them. No need to click a save button!
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
