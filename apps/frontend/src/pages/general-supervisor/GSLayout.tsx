@@ -116,6 +116,15 @@ const menuItems: MenuItem[] = [
     ]
   },
   { 
+    name: 'Security Reports', 
+    icon: FileText,
+    children: [
+      { name: 'All Reports', icon: FileText, path: '/general-supervisor/reports' },
+      { name: 'Create Report', icon: Send, path: '/general-supervisor/reports/create' },
+      { name: 'Analytics', icon: BarChart3, path: '/general-supervisor/reports/analytics' },
+    ]
+  },
+  { 
     name: 'Reports', 
     icon: FileText,
     children: [

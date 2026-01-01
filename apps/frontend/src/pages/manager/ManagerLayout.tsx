@@ -160,6 +160,34 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
+    id: 'reports',
+    label: 'Security Reports',
+    icon: FileText,
+    children: [
+      {
+        id: 'all-reports',
+        label: 'All Reports',
+        icon: FileText,
+        path: '/manager/reports',
+        badge: 'View',
+      },
+      {
+        id: 'create-report',
+        label: 'Create Report',
+        icon: UserPlus,
+        path: '/manager/reports/create',
+        badge: 'New',
+      },
+      {
+        id: 'reports-analytics',
+        label: 'Analytics',
+        icon: BarChart3,
+        path: '/manager/reports/analytics',
+        badge: 'View',
+      },
+    ],
+  },
+  {
     id: 'monitoring',
     label: 'Monitoring & Reports',
     icon: BarChart3,

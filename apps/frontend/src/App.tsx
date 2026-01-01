@@ -35,6 +35,12 @@ import DirectorCommunicationPage from './pages/director/communication/Communicat
 import DirectorBitExpensesPage from './pages/director/BitExpensesPage';
 import DirectorNotificationsPage from './pages/director/NotificationsPage';
 import { ReportsListPage, CreateReportPage, ReportDetailsPage, EditReportPage, ReportsAnalyticsPage } from './pages/director/reports';
+import { 
+  ReportsListPage as ManagerReportsListPage, 
+  CreateReportPage as ManagerCreateReportPage, 
+  ReportDetailsPage as ManagerReportDetailsPage, 
+  ReportsAnalyticsPage as ManagerReportsAnalyticsPage 
+} from './pages/manager/reports';
 
 // Manager Dashboard imports
 import ManagerLayout from './pages/manager/ManagerLayout';
@@ -104,6 +110,14 @@ import GSOperatorApprovalPage from './pages/general-supervisor/operators/Operato
 import GSOperatorProfile from './pages/general-supervisor/operators/OperatorProfile';
 import GSEnhancedCommunicationPage from './pages/general-supervisor/communication/EnhancedCommunicationPage';
 import { GSOnDutyPage } from './pages/general-supervisor/attendance';
+
+// General Supervisor Reports Module
+import {
+  ReportsListPage as GSReportsListPage,
+  CreateReportPage as GSCreateReportPage,
+  ReportDetailsPage as GSReportDetailsPage,
+  ReportsAnalyticsPage as GSReportsAnalyticsPage
+} from './pages/general-supervisor/reports';
 
 
 // Secretary imports
@@ -304,6 +318,10 @@ function App() {
         <Route path="assignments/assign" element={<AssignGuardPage />} />
         <Route path="assignments/:id" element={<AssignmentDetailsPage />} />
         <Route path="bit-expenses" element={<ManagerBitExpensesPage />} />
+        <Route path="reports" element={<ManagerReportsListPage />} />
+        <Route path="reports/analytics" element={<ManagerReportsAnalyticsPage />} />
+        <Route path="reports/create" element={<ManagerCreateReportPage />} />
+        <Route path="reports/:id" element={<ManagerReportDetailsPage />} />
       </Route>
       
       {/* Supervisor Routes */}
@@ -344,7 +362,10 @@ function App() {
         <Route path="activity-logs" element={<GSActivityLogsPage />} />
         <Route path="communication" element={<GSCommunicationPage />} />
         <Route path="communication/enhanced" element={<GSEnhancedCommunicationPage />} />
-        <Route path="reports" element={<GSReportsPage />} />
+        <Route path="reports" element={<GSReportsListPage />} />
+        <Route path="reports/create" element={<GSCreateReportPage />} />
+        <Route path="reports/analytics" element={<GSReportsAnalyticsPage />} />
+        <Route path="reports/:id" element={<GSReportDetailsPage />} />
         <Route path="id-card" element={<GSIDCardPage />} />
         <Route path="id-cards" element={<GSIDCardGenerator />} />
         <Route path="settings" element={<GSEnhancedSettingsPage />} />
