@@ -6,7 +6,7 @@ export interface IReport extends Document {
   status: 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'REVISION_REQUIRED' | 'REJECTED';
   
   // Required Links
-  supervisorId: mongoose.Types.ObjectId;
+  supervisorId?: mongoose.Types.ObjectId; // Optional for Directors
   bitId: mongoose.Types.ObjectId;
   locationId: mongoose.Types.ObjectId;
   
@@ -97,7 +97,7 @@ const ReportSchema: Schema = new Schema(
     supervisorId: {
       type: Schema.Types.ObjectId,
       ref: 'Supervisor',
-      required: [true, 'Supervisor is required'],
+      required: false, // Optional - Directors can create reports without assigning to a supervisor
     },
     
     bitId: {

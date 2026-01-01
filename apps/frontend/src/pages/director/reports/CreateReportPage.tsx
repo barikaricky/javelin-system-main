@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../../lib/api';
 import { toast } from 'react-hot-toast';
+import { useAuthStore } from '../../../stores/authStore';
 
 // Report Types
 const REPORT_TYPES = [
@@ -64,6 +65,7 @@ interface Supervisor {
 
 export default function CreateReportPage() {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -270,6 +272,17 @@ export default function CreateReportPage() {
     try {
       setSaving(true);
       
+      // Debug logging
+      const token = localStorage.getItem('token');
+      console.log('🔐 Creating report with:', {
+        hasToken: !!token,
+        tokenLength: token?.length,
+        userRole: user?.role,
+        userEmail: user?.email,
+        isDraft,
+        status: isDraft ? 'DRAFT' : 'PENDING_REVIEW',
+      });
+      
       // Create FormData
       const submitData = new FormData();
       submitData.append('title', formData.title);
@@ -306,7 +319,7 @@ export default function CreateReportPage() {
         },
       });
       
-      toast.success(isDraft ? 'Report saved as draft' : 'Report submitted for review');
+      toast.success(isDraft ? 'Report saved as draft' : 'Report submitted and approved');
       navigate('/director/reports');
     } catch (error: any) {
       console.error('Failed to create report:', error);
@@ -781,8 +794,8 @@ export default function CreateReportPage() {
                 </>
               ) : (
                 <>
-                  <Send className="w-5 h-5" />
-                  Submit for Review
+                  <Check className="w-5 h-5" />
+                  Submit & Approve
                 </>
               )}
             </button>
@@ -793,10 +806,10 @@ export default function CreateReportPage() {
             <div className="flex gap-3">
               <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-blue-900">
-                <p className="font-semibold mb-1">Important Notes:</p>
+                <p className="font-semibold mb-1">Director Privileges:</p>
                 <ul className="list-disc list-inside space-y-1 text-blue-800">
-                  <li>All reports are treated as formal security documents</li>
-                  <li>Evidence cannot be removed after approval</li>
+                  <li>Your reports are automatically approved upon submission</li>
+                  <li>No review process required for Director-created reports</li>
                   <li>Reports become read-only once approved</li>
                   <li>All actions are logged for audit purposes</li>
                 </ul>

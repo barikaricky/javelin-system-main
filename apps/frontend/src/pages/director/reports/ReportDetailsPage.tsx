@@ -21,6 +21,8 @@ import {
   MessageSquare,
   Eye,
   History,
+  X,
+  ChevronDown,
 } from 'lucide-react';
 import { api, getImageUrl } from '../../../lib/api';
 import { toast } from 'react-hot-toast';
@@ -60,7 +62,7 @@ interface Report {
     city: string;
     state: string;
   };
-  supervisorId: {
+  supervisorId?: {
     userId: {
       firstName: string;
       lastName: string;
@@ -94,14 +96,14 @@ interface Report {
   tags?: string[];
   auditLog: Array<{
     action: string;
-    performedBy: {
+    performedBy?: {
       firstName: string;
       lastName: string;
     };
     performedAt: string;
     details?: string;
   }>;
-  createdBy: {
+  createdBy?: {
     firstName: string;
     lastName: string;
   };
@@ -371,7 +373,9 @@ export default function ReportDetailsPage() {
               <div>
                 <p className="text-xs text-gray-500">Supervisor</p>
                 <p className="font-semibold text-gray-900">
-                  {report.supervisorId.userId.firstName} {report.supervisorId.userId.lastName}
+                  {report.supervisorId?.userId?.firstName 
+                    ? `${report.supervisorId.userId.firstName} ${report.supervisorId.userId.lastName}`
+                    : 'N/A'}
                 </p>
               </div>
             </div>
@@ -426,12 +430,12 @@ export default function ReportDetailsPage() {
         </div>
 
         {/* Evidence Section */}
-        {(report.images.length > 0 || report.audioRecordings.length > 0 || report.attachedFiles.length > 0) && (
+        {((report.images?.length || 0) > 0 || (report.audioRecordings?.length || 0) > 0 || (report.attachedFiles?.length || 0) > 0) && (
           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 mb-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Evidence & Attachments</h2>
 
             {/* Images */}
-            {report.images.length > 0 && (
+            {report.images && report.images.length > 0 && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                   <ImageIcon className="w-5 h-5 text-purple-600" />
@@ -460,7 +464,7 @@ export default function ReportDetailsPage() {
             )}
 
             {/* Audio Recordings */}
-            {report.audioRecordings.length > 0 && (
+            {report.audioRecordings && report.audioRecordings.length > 0 && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                   <Mic className="w-5 h-5 text-blue-600" />
@@ -491,7 +495,7 @@ export default function ReportDetailsPage() {
             )}
 
             {/* Attached Files */}
-            {report.attachedFiles.length > 0 && (
+            {report.attachedFiles && report.attachedFiles.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                   <Paperclip className="w-5 h-5 text-green-600" />
@@ -569,7 +573,7 @@ export default function ReportDetailsPage() {
                       <span className="text-sm text-gray-500">{formatDateTime(log.performedAt)}</span>
                     </div>
                     <p className="text-sm text-gray-600">
-                      By: {log.performedBy.firstName} {log.performedBy.lastName}
+                      By: {log.performedBy?.firstName || 'System'} {log.performedBy?.lastName || ''}
                     </p>
                     {log.details && (
                       <p className="text-sm text-gray-700 mt-1 italic">{log.details}</p>
@@ -584,7 +588,9 @@ export default function ReportDetailsPage() {
         {/* Report Metadata Footer */}
         <div className="mt-6 bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <div>Created by: {report.createdBy.firstName} {report.createdBy.lastName} on {formatDateTime(report.createdAt)}</div>
+            <div>
+              Created by: {report.createdBy?.firstName || 'Unknown'} {report.createdBy?.lastName || ''} on {formatDateTime(report.createdAt)}
+            </div>
             {report.approvedBy && report.approvedAt && (
               <div>Approved by: {report.approvedBy.firstName} {report.approvedBy.lastName} on {formatDateTime(report.approvedAt)}</div>
             )}

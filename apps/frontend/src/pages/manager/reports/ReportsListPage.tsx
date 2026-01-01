@@ -8,7 +8,6 @@ import {
   Download,
   Eye,
   Edit,
-  Trash2,
   AlertCircle,
   Clock,
   CheckCircle,
@@ -25,7 +24,6 @@ import {
   Users,
   Package,
   ClipboardList,
-  Settings,
   BarChart3,
 } from 'lucide-react';
 import { api } from '../../../lib/api';
@@ -81,7 +79,7 @@ interface Report {
   hasFiles: boolean;
 }
 
-export default function DirectorReportsListPage() {
+export default function ManagerReportsListPage() {
   const navigate = useNavigate();
   const [reports, setReports] = useState<Report[]>([]);
   const [filteredReports, setFilteredReports] = useState<Report[]>([]);
@@ -189,21 +187,6 @@ export default function DirectorReportsListPage() {
     });
   };
 
-  const handleDelete = async (reportId: string, reportTitle: string) => {
-    if (!window.confirm(`Are you sure you want to delete "${reportTitle}"? This action cannot be undone.`)) {
-      return;
-    }
-
-    try {
-      await api.delete(`/reports/${reportId}`);
-      toast.success('Report deleted successfully');
-      fetchReports();
-    } catch (error: any) {
-      console.error('❌ Failed to delete report:', error);
-      toast.error(error.response?.data?.message || 'Failed to delete report');
-    }
-  };
-
   const exportReport = async (reportId: string, reportTitle: string) => {
     try {
       toast.loading('Generating PDF...');
@@ -271,10 +254,10 @@ export default function DirectorReportsListPage() {
                 <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
                   <FileText className="w-8 h-8 text-white" />
                 </div>
-                Reports Module
+                Security Reports
               </h1>
               <p className="text-gray-600 mt-2">
-                Official operational record system - Single source of truth
+                Manage and review operational security reports
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -287,14 +270,14 @@ export default function DirectorReportsListPage() {
                 Refresh
               </button>
               <Link
-                to="/director/reports/analytics"
+                to="/manager/reports/analytics"
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all flex items-center gap-2 shadow-sm"
               >
                 <BarChart3 className="w-4 h-4" />
                 Analytics
               </Link>
               <Link
-                to="/director/reports/create"
+                to="/manager/reports/create"
                 className="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all flex items-center gap-2 shadow-lg font-medium"
               >
                 <Plus className="w-5 h-5" />
@@ -464,7 +447,7 @@ export default function DirectorReportsListPage() {
             </p>
             {reports.length === 0 ? (
               <Link
-                to="/director/reports/create"
+                to="/manager/reports/create"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium"
               >
                 <Plus className="w-5 h-5" />
@@ -577,26 +560,20 @@ export default function DirectorReportsListPage() {
                           <Download className="w-4 h-4" />
                         </button>
                         <Link
-                          to={`/director/reports/${report._id}`}
+                          to={`/manager/reports/${report._id}`}
                           className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-all"
                           title="View Details"
                         >
                           <Eye className="w-4 h-4" />
                         </Link>
                         <Link
-                          to={`/director/reports/${report._id}/edit`}
+                          to={`/manager/reports/${report._id}/edit`}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                           title="Edit Report"
                         >
                           <Edit className="w-4 h-4" />
                         </Link>
-                        <button
-                          onClick={() => handleDelete(report._id, report.title)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                          title="Delete Report"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {/* Manager CANNOT delete reports - removed delete button */}
                       </div>
                     </div>
                   </div>

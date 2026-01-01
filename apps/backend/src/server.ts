@@ -42,6 +42,8 @@ import idVerificationRoutes from './routes/id-verification.routes';
 import assignmentRoutes from './routes/assignment.routes';
 import bitExpenseRoutes from './routes/bit-expense.routes';
 import reportRoutes from './routes/report.routes';
+import reportAnalyticsRoutes from './routes/report-analytics.routes';
+import notificationsRoutes from './routes/notifications.routes';
 // import emergencyAlertRoutes from './routes/emergencyAlert.routes';
 
 const app = express();
@@ -184,7 +186,9 @@ app.use('/api/documents', companyDocumentRoutes);
 app.use('/api/verify-id', idVerificationRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/bit-expenses', bitExpenseRoutes);
+app.use('/api/reports', reportAnalyticsRoutes); // Register analytics routes BEFORE generic report routes
 app.use('/api/reports', reportRoutes);
+app.use('/api/notifications', notificationsRoutes);
 // app.use('/api/emergency-alerts', emergencyAlertRoutes);
 
 // Health check

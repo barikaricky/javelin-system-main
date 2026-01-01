@@ -51,6 +51,15 @@ export const authorize = (...allowedRoles: string[]) => {
         throw new AppError('Authentication required', 401);
       }
 
+      // Debug logging
+      console.log('🔐 Authorization Check:', {
+        userRole: req.user.role,
+        roleType: typeof req.user.role,
+        allowedRoles,
+        includes: allowedRoles.includes(req.user.role),
+        path: req.path,
+      });
+
       if (!allowedRoles.includes(req.user.role)) {
         logger.warn('Unauthorized access attempt', {
           userId: req.user.userId,

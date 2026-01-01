@@ -29,15 +29,25 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
   fileFilter: (req, file, cb) => {
+    console.log('📁 File validation:', {
+      fieldname: file.fieldname,
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+    });
+    
     // Allow images, audio, and documents
-    const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|mp3|wav|m4a|ogg/;
+    const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|mp3|wav|m4a|ogg|webm|mpeg/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
     
-    if (extname && mimetype) {
+    // Accept if either extension OR mimetype matches (more lenient)
+    if (extname || mimetype) {
+      console.log('✅ File accepted');
       return cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only images, audio, and documents allowed.'));
+      console.log('❌ File rejected:', { extname, mimetype });
+      cb(new Error(`Invalid file type: ${file.mimetype}. Only images, audio, and documents allowed.`));
     }
   },
 });
@@ -145,12 +155,28 @@ router.get('/:id', authenticate, asyncHandler(async (req: any, res) => {
   });
 }));
 
-// Create new report
-router.post('/', authenticate, authorize(['DIRECTOR', 'GENERAL_SUPERVISOR', 'SUPERVISOR']), upload.fields([
+// Debug middleware for POST /
+router.post('/', (req, res, next) => {
+  console.log('🔍 POST / reports - Request received');
+  console.log('📦 Content-Type:', req.headers['content-type']);
+  console.log('👤 Has authorization:', !!req.headers.authorization);
+  next();
+}, authenticate, (req: any, res, next) => {
+  console.log('✅ Authentication passed');
+  console.log('👤 User:', req.user);
+  next();
+}, authorize('DIRECTOR', 'GENERAL_SUPERVISOR', 'SUPERVISOR'), (req, res, next) => {
+  console.log('✅ Authorization passed');
+  next();
+}, upload.fields([
   { name: 'images', maxCount: 10 },
   { name: 'audio', maxCount: 5 },
   { name: 'files', maxCount: 5 }
-]), asyncHandler(async (req: any, res) => {
+]), (req, res, next) => {
+  console.log('✅ Upload middleware passed');
+  next();
+}, asyncHandler(async (req: any, res) => {
+  console.log('✅ Reached handler');
   const {
     title,
     reportType,
@@ -187,6 +213,36 @@ router.post('/', authenticate, authorize(['DIRECTOR', 'GENERAL_SUPERVISOR', 'SUP
     uploadedAt: new Date(),
   })) || [];
   
+  // Directors auto-approve their reports
+  const isDirector = req.user.role === 'DIRECTOR';
+  const reportStatus = status || 'DRAFT';
+  const finalStatus = isDirector && reportStatus !== 'DRAFT' ? 'APPROVED' : reportStatus;
+  
+  // Build audit log
+  const auditLog: any[] = [{
+    action: 'CREATED',
+    performedBy: req.user.userId,
+    performedAt: new Date(),
+    ipAddress: req.ip,
+  }];
+  
+  // If director is submitting (not draft), auto-approve
+  if (isDirector && finalStatus === 'APPROVED') {
+    auditLog.push({
+      action: 'SUBMITTED',
+      performedBy: req.user.userId,
+      performedAt: new Date(),
+      ipAddress: req.ip,
+    });
+    auditLog.push({
+      action: 'APPROVED',
+      performedBy: req.user.userId,
+      performedAt: new Date(),
+      ipAddress: req.ip,
+      details: 'Auto-approved by Director',
+    });
+  }
+  
   // Create report
   const report = await Report.create({
     title,
@@ -203,21 +259,28 @@ router.post('/', authenticate, authorize(['DIRECTOR', 'GENERAL_SUPERVISOR', 'SUP
     attachedFiles,
     priority: priority || 'MEDIUM',
     tags: tags ? JSON.parse(tags) : [],
-    status: status || 'DRAFT',
+    status: finalStatus,
     createdBy: req.user.userId,
-    auditLog: [{
-      action: 'CREATED',
-      performedBy: req.user.userId,
-      performedAt: new Date(),
-      ipAddress: req.ip,
-    }],
+    submittedAt: isDirector && finalStatus === 'APPROVED' ? new Date() : undefined,
+    submittedBy: isDirector && finalStatus === 'APPROVED' ? req.user.userId : undefined,
+    approvedAt: isDirector && finalStatus === 'APPROVED' ? new Date() : undefined,
+    approvedBy: isDirector && finalStatus === 'APPROVED' ? req.user.userId : undefined,
+    auditLog,
   });
   
   const populatedReport = await Report.findById(report._id)
-    .populate('supervisorId')
-    .populate('bitId')
-    .populate('locationId')
-    .populate('createdBy');
+    .populate({
+      path: 'supervisorId',
+      populate: { path: 'userId', select: 'firstName lastName email phone' }
+    })
+    .populate('bitId', 'bitName bitCode')
+    .populate('locationId', 'locationName address city state')
+    .populate('createdBy', 'firstName lastName email')
+    .populate('approvedBy', 'firstName lastName email')
+    .populate({
+      path: 'auditLog.performedBy',
+      select: 'firstName lastName email'
+    });
   
   res.status(201).json({
     success: true,
@@ -348,7 +411,7 @@ router.post('/:id/submit', authenticate, asyncHandler(async (req: any, res) => {
 }));
 
 // Approve report
-router.post('/:id/approve', authenticate, authorize(['DIRECTOR', 'GENERAL_SUPERVISOR']), asyncHandler(async (req: any, res) => {
+router.post('/:id/approve', authenticate, authorize('DIRECTOR', 'GENERAL_SUPERVISOR'), asyncHandler(async (req: any, res) => {
   const report = await Report.findById(req.params.id);
   
   if (!report) {
@@ -371,7 +434,7 @@ router.post('/:id/approve', authenticate, authorize(['DIRECTOR', 'GENERAL_SUPERV
 }));
 
 // Request revision
-router.post('/:id/revision', authenticate, authorize(['DIRECTOR', 'GENERAL_SUPERVISOR']), asyncHandler(async (req: any, res) => {
+router.post('/:id/revision', authenticate, authorize('DIRECTOR', 'GENERAL_SUPERVISOR'), asyncHandler(async (req: any, res) => {
   const { notes } = req.body;
   const report = await Report.findById(req.params.id);
   
@@ -394,7 +457,7 @@ router.post('/:id/revision', authenticate, authorize(['DIRECTOR', 'GENERAL_SUPER
 }));
 
 // Reject report
-router.post('/:id/reject', authenticate, authorize(['DIRECTOR', 'GENERAL_SUPERVISOR']), asyncHandler(async (req: any, res) => {
+router.post('/:id/reject', authenticate, authorize('DIRECTOR', 'GENERAL_SUPERVISOR'), asyncHandler(async (req: any, res) => {
   const { reason } = req.body;
   const report = await Report.findById(req.params.id);
   
@@ -417,7 +480,7 @@ router.post('/:id/reject', authenticate, authorize(['DIRECTOR', 'GENERAL_SUPERVI
 }));
 
 // Delete report (Directors only)
-router.delete('/:id', authenticate, authorize(['DIRECTOR']), asyncHandler(async (req: any, res) => {
+router.delete('/:id', authenticate, authorize('DIRECTOR'), asyncHandler(async (req: any, res) => {
   const report = await Report.findById(req.params.id);
   
   if (!report) {

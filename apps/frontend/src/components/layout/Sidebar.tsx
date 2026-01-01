@@ -144,6 +144,15 @@ const directorMenuItems: MenuItem[] = [
     ]
   },
   { 
+    name: 'Security Reports', 
+    icon: Shield,
+    children: [
+      { name: 'All Reports', icon: FileText, path: '/director/reports' },
+      { name: 'Create Report', icon: PlusCircle, path: '/director/reports/create' },
+      { name: 'Analytics', icon: BarChart3, path: '/director/reports/analytics' },
+    ]
+  },
+  { 
     name: 'Reports & Analytics', 
     icon: TrendingUp,
     children: [

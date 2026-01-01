@@ -34,7 +34,7 @@ import MessagingPage from './pages/director/messaging/MessagingPage';
 import DirectorCommunicationPage from './pages/director/communication/CommunicationPage';
 import DirectorBitExpensesPage from './pages/director/BitExpensesPage';
 import DirectorNotificationsPage from './pages/director/NotificationsPage';
-import { ReportsListPage, CreateReportPage } from './pages/director/reports';
+import { ReportsListPage, CreateReportPage, ReportDetailsPage, EditReportPage, ReportsAnalyticsPage } from './pages/director/reports';
 
 // Manager Dashboard imports
 import ManagerLayout from './pages/manager/ManagerLayout';
@@ -358,7 +358,10 @@ function App() {
       <Route path="/director/dashboard" element={<DirectorLayout><DirectorDashboard /></DirectorLayout>} />
       <Route path="/director/attendance" element={<DirectorLayout><OnDutyPage /></DirectorLayout>} />
       <Route path="/director/reports" element={<DirectorLayout><ReportsListPage /></DirectorLayout>} />
+      <Route path="/director/reports/analytics" element={<DirectorLayout><ReportsAnalyticsPage /></DirectorLayout>} />
       <Route path="/director/reports/create" element={<DirectorLayout><CreateReportPage /></DirectorLayout>} />
+      <Route path="/director/reports/:id" element={<DirectorLayout><ReportDetailsPage /></DirectorLayout>} />
+      <Route path="/director/reports/:id/edit" element={<DirectorLayout><EditReportPage /></DirectorLayout>} />
       <Route path="/director/financial-overview" element={<DirectorLayout><FinancialOverview /></DirectorLayout>} />
       <Route path="/director/daily-logs" element={<DirectorLayout><DailyLogs /></DirectorLayout>} />
       <Route path="/director/monthly-logs" element={<DirectorLayout><MonthlyLogs /></DirectorLayout>} />

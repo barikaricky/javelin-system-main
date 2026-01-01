@@ -32,6 +32,7 @@ import {
   MapPin,
   Building2,
   Shield,
+  FileText,
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { getImageUrl } from '../lib/api';
@@ -103,6 +104,15 @@ const menuItems: MenuItem[] = [
       { name: 'Create Poll', icon: PlusCircle, path: '/director/polls/create' },
       { name: 'Active Polls', icon: Activity, path: '/director/polls/active' },
       { name: 'Poll Results', icon: PieChart, path: '/director/polls/results' },
+    ]
+  },
+  { 
+    name: 'Security Reports', 
+    icon: Shield,
+    children: [
+      { name: 'All Reports', icon: FileText, path: '/director/reports' },
+      { name: 'Create Report', icon: PlusCircle, path: '/director/reports/create' },
+      { name: 'Analytics', icon: BarChart3, path: '/director/reports/analytics' },
     ]
   },
   { 
