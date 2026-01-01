@@ -1037,4 +1037,225 @@ router.patch('/profile', asyncHandler(async (req: any, res) => {
   res.json(user);
 }));
 
+// Get supervisors under this GS
+router.get('/supervisors', asyncHandler(async (req: any, res) => {
+  const userId = req.user.userId;
+  
+  // Get the GS's supervisor record
+  const gs = await Supervisor.findOne({
+    userId,
+    supervisorType: 'GENERAL_SUPERVISOR',
+  }).lean();
+
+  if (!gs) {
+    return res.json({ supervisors: [] });
+  }
+
+  const supervisors = await Supervisor.find({
+    generalSupervisorId: gs._id,
+    approvalStatus: 'APPROVED',
+  })
+  .populate('userId', 'firstName lastName email phone')
+  .lean();
+
+  res.json({ supervisors });
+}));
+
+// Register Operator (General Supervisor)
+router.post('/operators/register', asyncHandler(async (req: any, res) => {
+  const bcrypt = require('bcryptjs');
+  const { sendOperatorWelcomeEmail } = require('../services/email.service');
+  const { GuardAssignment } = require('../models/GuardAssignment.model');
+  
+  const {
+    firstName,
+    lastName,
+    email,
+    phone,
+    gender,
+    dateOfBirth,
+    address,
+    state,
+    lga,
+    locationId,
+    bitId,
+    supervisorId,
+    shiftType,
+    guarantor1Name,
+    guarantor1Phone,
+    guarantor1Address,
+    guarantor1Photo,
+    guarantor2Name,
+    guarantor2Phone,
+    guarantor2Address,
+    guarantor2Photo,
+    previousExperience,
+    medicalFitness,
+    applicantPhoto,
+    ninNumber,
+    ninDocument,
+  } = req.body;
+
+  const gsUserId = req.user.userId;
+  const gsUser = await User.findById(gsUserId);
+
+  // Check if email already exists
+  const existingUser = await User.findOne({ email: email.toLowerCase() });
+  if (existingUser) {
+    res.status(400).json({ error: 'A user with this email already exists' });
+    return;
+  }
+
+  // Check if phone already exists
+  if (phone) {
+    const existingPhone = await User.findOne({ phone });
+    if (existingPhone) {
+      res.status(400).json({ error: 'A user with this phone number already exists' });
+      return;
+    }
+  }
+
+  // Generate employee ID
+  const timestamp = Date.now().toString().slice(-8);
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  const employeeId = `OPR-${timestamp}-${random}`;
+
+  // Generate temporary password
+  const temporaryPassword = `Opr${Math.random().toString(36).substring(2, 10)}!`;
+  const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+
+  // Create user with ACTIVE status
+  const newUser = new User({
+    email: email.toLowerCase(),
+    phone: phone || undefined,
+    passwordHash: hashedPassword,
+    role: 'OPERATOR',
+    status: 'ACTIVE',
+    firstName,
+    lastName,
+    gender: gender || undefined,
+    dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+    address: address || undefined,
+    state: state || undefined,
+    lga: lga || undefined,
+    employeeId,
+    passportPhoto: applicantPhoto || undefined,
+    accountName: `${firstName} ${lastName}`,
+    createdById: gsUserId,
+  });
+
+  await newUser.save();
+
+  // Create operator record
+  const newOperator = new Operator({
+    userId: newUser._id,
+    employeeId,
+    locationId: locationId || undefined,
+    supervisorId: supervisorId || undefined,
+    shiftType: shiftType || 'DAY',
+    passportPhoto: applicantPhoto || undefined,
+    nationalId: ninNumber || undefined,
+    documents: ninDocument ? [ninDocument] : [],
+    guarantors: [
+      {
+        name: guarantor1Name,
+        phone: guarantor1Phone,
+        address: guarantor1Address,
+        photo: guarantor1Photo,
+      },
+      {
+        name: guarantor2Name,
+        phone: guarantor2Phone,
+        address: guarantor2Address,
+        photo: guarantor2Photo,
+      },
+    ],
+    previousExperience: previousExperience || undefined,
+    medicalFitness: medicalFitness || false,
+    approvalStatus: 'APPROVED',
+    salary: 0,
+    startDate: new Date(),
+  });
+
+  await newOperator.save();
+
+  // Create GuardAssignment if BIT, location, and supervisor are specified
+  let guardAssignment = null;
+  if (bitId && bitId !== '' && locationId && locationId !== '' && supervisorId && supervisorId !== '') {
+    try {
+      guardAssignment = new GuardAssignment({
+        operatorId: newOperator._id,
+        bitId,
+        locationId,
+        supervisorId,
+        assignmentType: 'PERMANENT',
+        shiftType: shiftType || 'DAY',
+        startDate: new Date(),
+        status: 'ACTIVE',
+        assignedBy: {
+          userId: gsUserId,
+          role: 'GENERAL_SUPERVISOR',
+          name: `${gsUser?.firstName || ''} ${gsUser?.lastName || ''}`.trim() || 'General Supervisor',
+        },
+        approvedBy: {
+          userId: gsUserId,
+          role: 'GENERAL_SUPERVISOR',
+          name: `${gsUser?.firstName || ''} ${gsUser?.lastName || ''}`.trim() || 'General Supervisor',
+        },
+        approvedAt: new Date(),
+      });
+
+      await guardAssignment.save();
+    } catch (assignmentError) {
+      console.error('❌ Failed to create GuardAssignment:', assignmentError);
+    }
+  }
+
+  // Get location details for SMS/Email
+  let locationName = 'Unassigned';
+  if (locationId) {
+    try {
+      const location = await Location.findById(locationId);
+      if (location) {
+        locationName = location.locationName || location.name || 'Assigned Location';
+      }
+    } catch (error) {
+      logger.warn('Could not fetch location details:', error);
+    }
+  }
+
+  // Send welcome email
+  if (email) {
+    sendOperatorWelcomeEmail({
+      email: email,
+      firstName,
+      lastName,
+      employeeId,
+      locationName,
+      temporaryPassword,
+    }).catch((error: any) => {
+      logger.error('❌ Failed to send welcome email:', error);
+    });
+  }
+
+  res.status(201).json({
+    success: true,
+    message: 'Operator registered successfully.',
+    operator: {
+      id: newOperator._id,
+      userId: newUser._id,
+      fullName: `${firstName} ${lastName}`,
+      email: newUser.email,
+      phone: phone,
+      employeeId,
+      locationName,
+      approvalStatus: 'APPROVED',
+      status: 'ACTIVE',
+      temporaryPassword,
+      assignmentCreated: !!guardAssignment,
+      assignmentId: guardAssignment?._id,
+    },
+  });
+}));
+
 export default router;

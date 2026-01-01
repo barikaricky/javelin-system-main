@@ -208,6 +208,38 @@ router.get('/', authorize('MANAGER', 'DIRECTOR', 'DEVELOPER', 'SECRETARY'), asyn
   res.json(supervisors);
 }));
 
+// Get supervisor's own profile data (MUST be before /:id route)
+router.get('/my-profile', authorize('SUPERVISOR', 'GENERAL_SUPERVISOR'), asyncHandler(async (req: any, res) => {
+  const userId = req.user.userId;
+  
+  try {
+    const supervisor = await Supervisor.findOne({ userId })
+      .populate('userId', 'firstName lastName email phone phoneNumber profilePhoto passportPhoto')
+      .populate('locationId', 'name address city state')
+      .populate('generalSupervisorId', 'firstName lastName email')
+      .lean();
+    
+    if (!supervisor) {
+      return res.status(404).json({ error: 'Supervisor profile not found' });
+    }
+    
+    // Extract user data from populated field
+    const user = supervisor.userId as any;
+    
+    res.json({
+      supervisor,
+      employeeId: supervisor.employeeId || '',
+      profilePhoto: user?.profilePhoto || user?.passportPhoto || supervisor.passportPhoto || null,
+      phone: supervisor.phone || user?.phone || user?.phoneNumber || '',
+      phoneNumber: supervisor.phoneNumber || user?.phoneNumber || user?.phone || '',
+      address: supervisor.address || user?.address || '',
+    });
+  } catch (error) {
+    console.error('Error fetching supervisor profile:', error);
+    res.status(500).json({ error: 'Failed to fetch supervisor profile' });
+  }
+}));
+
 // Get supervisor by ID
 router.get('/:id', authorize('MANAGER', 'DIRECTOR', 'DEVELOPER', 'SUPERVISOR', 'GENERAL_SUPERVISOR'), asyncHandler(async (req, res) => {
   const supervisor = await getSupervisorById(req.params.id);
@@ -345,38 +377,6 @@ router.patch('/:id/assign', authorize('MANAGER', 'DIRECTOR', 'DEVELOPER'), async
     message: 'Supervisor assignment updated',
     supervisor: result,
   });
-}));
-
-// Get supervisor's own profile data
-router.get('/my-profile', authorize('SUPERVISOR', 'GENERAL_SUPERVISOR'), asyncHandler(async (req: any, res) => {
-  const userId = req.user.userId;
-  
-  try {
-    const supervisor = await Supervisor.findOne({ userId })
-      .populate('userId', 'firstName lastName email phone phoneNumber profilePhoto passportPhoto')
-      .populate('locationId', 'name address city state')
-      .populate('generalSupervisorId', 'firstName lastName email')
-      .lean();
-    
-    if (!supervisor) {
-      return res.status(404).json({ error: 'Supervisor profile not found' });
-    }
-    
-    // Extract user data from populated field
-    const user = supervisor.userId as any;
-    
-    res.json({
-      supervisor,
-      employeeId: supervisor.employeeId || '',
-      profilePhoto: user?.profilePhoto || user?.passportPhoto || supervisor.passportPhoto || null,
-      phone: supervisor.phone || user?.phone || user?.phoneNumber || '',
-      phoneNumber: supervisor.phoneNumber || user?.phoneNumber || user?.phone || '',
-      address: supervisor.address || user?.address || '',
-    });
-  } catch (error) {
-    console.error('Error fetching supervisor profile:', error);
-    res.status(500).json({ error: 'Failed to fetch supervisor profile' });
-  }
 }));
 
 // Supervisor dashboard (for supervisor users)

@@ -13,9 +13,14 @@ export { default as SupervisorProfile } from './supervisors/SupervisorProfile';
 // Operators
 export { default as GSOperatorsList } from './operators/OperatorsList';
 export { default as GSOperatorApprovalPage } from './operators/OperatorApprovalPage';
+export { default as GSRegisterOperatorPage } from './operators/RegisterOperatorPage';
+
+// Assignments
+export { default as GSAssignmentRequestsPage } from './assignments/AssignmentRequestsPage';
 
 // Locations
 export { default as GSLocationsList } from './locations/LocationsList';
+export { default as GSAssignLocationPage } from './locations/AssignLocationPage';
 
 // Attendance
 export { default as GSAttendancePage } from './attendance/AttendancePage';

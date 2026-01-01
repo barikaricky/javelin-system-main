@@ -347,7 +347,7 @@ router.get('/my-operators', authorize('SUPERVISOR', 'GENERAL_SUPERVISOR'), async
   }
 
   const operators = await Operator.find({ supervisorId: supervisor._id })
-    .populate('userId', 'email firstName lastName phone status profilePhoto employeeId')
+    .populate('userId', 'email firstName lastName phone status passportPhoto profilePhoto employeeId')
     .populate('locationId', 'name address')
     .sort({ createdAt: -1 })
     .lean();

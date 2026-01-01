@@ -77,6 +77,49 @@ router.get('/dashboard/stats', async (req: Request & { user?: any }, res, next) 
       startOfMonth: startOfMonth.toISOString(),
     });
 
+    // Fetch operators and supervisors currently on duty (with active assignments)
+    const { GuardAssignment } = require('../models/GuardAssignment.model');
+    
+    // Debug: Check total assignments
+    const totalAssignments = await GuardAssignment.countDocuments();
+    const activeAssignments = await GuardAssignment.countDocuments({ status: 'ACTIVE' });
+    console.log('📊 Assignment counts:', { totalAssignments, activeAssignments });
+    
+    const onDutyOperators = await GuardAssignment.find({
+      status: 'ACTIVE'
+    })
+      .populate({
+        path: 'operatorId',
+        populate: { 
+          path: 'userId', 
+          select: 'firstName lastName email phone phoneNumber profilePhoto passportPhoto status' 
+        }
+      })
+      .populate({
+        path: 'supervisorId',
+        populate: { 
+          path: 'userId', 
+          select: 'firstName lastName email phone profilePhoto passportPhoto' 
+        }
+      })
+      .populate('bitId', 'bitName bitCode')
+      .populate('locationId', 'locationName address city state')
+      .sort({ startDate: -1 })
+      .limit(50)
+      .lean();
+
+    console.log('👮 On Duty Personnel Found:', onDutyOperators.length);
+    
+    // Debug first on-duty person structure
+    if (onDutyOperators.length > 0) {
+      console.log('📋 First on-duty person sample:', {
+        hasOperator: !!onDutyOperators[0].operatorId,
+        hasUserId: !!(onDutyOperators[0].operatorId as any)?.userId,
+        status: onDutyOperators[0].status,
+        shift: onDutyOperators[0].shiftType
+      });
+    }
+
     // Fetch all stats in parallel using Mongoose
     const [
       totalManagers,
@@ -226,7 +269,6 @@ router.get('/dashboard/stats', async (req: Request & { user?: any }, res, next) 
     );
 
     // Calculate understaffed BITs (BITs where assigned operators < required numberOfOperators)
-    const { GuardAssignment } = require('../models/GuardAssignment.model');
     const allBits = await Bit.find({ isActive: true }).lean();
     let understaffedLocations = 0;
     
@@ -321,7 +363,7 @@ router.get('/dashboard/stats', async (req: Request & { user?: any }, res, next) 
 
     const statsResult = {
       totalPersonnel,
-      guardsOnDuty: todayAttendance,
+      guardsOnDuty: onDutyOperators.length,
       activeManagers: totalManagers,
       generalSupervisors: totalGeneralSupervisors,
       supervisors: totalSupervisors,
@@ -354,6 +396,7 @@ router.get('/dashboard/stats', async (req: Request & { user?: any }, res, next) 
       topSupervisors: mappedTopSupervisors,
       alerts,
       notifications: [],
+      onDutyPersonnel: onDutyOperators,
     });
   } catch (error) {
     console.error('❌ Error fetching dashboard stats:', error);

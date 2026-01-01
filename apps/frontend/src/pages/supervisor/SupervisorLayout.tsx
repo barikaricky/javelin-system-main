@@ -16,6 +16,7 @@ import {
   UserPlus,
   Menu,
   X,
+  Clock,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
@@ -32,8 +33,7 @@ const navigation = [
       { name: 'My Operators', href: '/supervisor/operators/my-operators', icon: Users },
       { name: 'Operator List', href: '/supervisor/operators', icon: Users },
       { name: 'Request Assignment', href: '/supervisor/assignments/request', icon: MapPin },
-      { name: 'Pending Assignments', href: '/supervisor/assignments/pending', icon: ClipboardCheck },
-      { name: 'Registration Status', href: '/supervisor/operators/status', icon: ClipboardCheck },
+      { name: 'Pending Assignments', href: '/supervisor/assignments/pending', icon: Clock },
     ],
   },
   {

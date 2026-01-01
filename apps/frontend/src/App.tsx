@@ -7,6 +7,7 @@ import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import BottomBar from './components/BottomBar';
 import DirectorDashboard from './pages/director/Dashboard';
+import { OnDutyPage } from './pages/director/attendance';
 import WorkersPage from './pages/director/WorkersPage';
 import ExpensesPage from './pages/director/ExpensesPage';
 import SettingsPage from './pages/director/SettingsPage';
@@ -82,6 +83,7 @@ import {
   SupervisorProfile,
   GSOperatorsList,
   GSLocationsList,
+  GSAssignLocationPage,
   GSAttendancePage,
   GSIncidentsPage,
   GSActivityLogsPage,
@@ -89,7 +91,9 @@ import {
   GSReportsPage,
   GSIDCardPage,
   GSIDCardGenerator,
-  GSEnhancedSettingsPage
+  GSEnhancedSettingsPage,
+  GSRegisterOperatorPage,
+  GSAssignmentRequestsPage
 } from './pages/general-supervisor';
 
 // GS Supervisor Registration Page
@@ -157,6 +161,10 @@ import AssignmentDetailsPage from './pages/manager/assignments/AssignmentDetails
 import AssignOperatorPage from './pages/general-supervisor/assignments/AssignOperatorPage';
 import AssignmentApprovalsPage from './pages/general-supervisor/assignments/AssignmentApprovalsPage';
 import RequestAssignmentPage from './pages/supervisor/assignments/RequestAssignmentPage';
+import PendingAssignmentsPage from './pages/supervisor/assignments/PendingAssignmentsPage';
+
+// Bits imports
+import MyBitsPage from './pages/supervisor/bits/MyBitsPage';
 
 // Director Layout wrapper component
 function DirectorLayout({ children }: { children: React.ReactNode }) {
@@ -304,6 +312,8 @@ function App() {
         <Route path="id-cards" element={<SupervisorIDCardGenerator />} />
         <Route path="settings" element={<SupervisorEnhancedSettingsPage />} />
         <Route path="assignments/request" element={<RequestAssignmentPage />} />
+        <Route path="assignments/pending" element={<PendingAssignmentsPage />} />
+        <Route path="bits" element={<MyBitsPage />} />
         <Route path="messaging" element={<ManagerMessagingPage />} />
       </Route>
       
@@ -314,12 +324,15 @@ function App() {
         <Route path="supervisors" element={<SupervisorsList />} />
         <Route path="supervisors/profiles" element={<SupervisorsList />} />
         <Route path="supervisors/register" element={<GSRegisterSupervisorPage />} />
+        <Route path="supervisors/assign" element={<GSAssignLocationPage />} />
         <Route path="supervisors/activity" element={<Navigate to="/general-supervisor/activity-logs" replace />} />
         <Route path="supervisors/:id" element={<SupervisorProfile />} />
         <Route path="operators" element={<GSOperatorsList />} />
         <Route path="operators/:id" element={<GSOperatorProfile />} />
         <Route path="operators/approval" element={<GSOperatorApprovalPage />} />
+        <Route path="operators/register" element={<GSRegisterOperatorPage />} />
         <Route path="locations" element={<GSLocationsList />} />
+        <Route path="locations/assignments" element={<GSAssignLocationPage />} />
         <Route path="attendance" element={<GSAttendancePage />} />
         <Route path="incidents" element={<GSIncidentsPage />} />
         <Route path="activity-logs" element={<GSActivityLogsPage />} />
@@ -331,11 +344,13 @@ function App() {
         <Route path="settings" element={<GSEnhancedSettingsPage />} />
         <Route path="assignments/assign" element={<AssignOperatorPage />} />
         <Route path="assignments/approvals" element={<AssignmentApprovalsPage />} />
+        <Route path="assignments/requests" element={<GSAssignmentRequestsPage />} />
         <Route path="messaging" element={<ManagerMessagingPage />} />
       </Route>
       
       {/* Director Routes */}
       <Route path="/director/dashboard" element={<DirectorLayout><DirectorDashboard /></DirectorLayout>} />
+      <Route path="/director/attendance" element={<DirectorLayout><OnDutyPage /></DirectorLayout>} />
       <Route path="/director/financial-overview" element={<DirectorLayout><FinancialOverview /></DirectorLayout>} />
       <Route path="/director/daily-logs" element={<DirectorLayout><DailyLogs /></DirectorLayout>} />
       <Route path="/director/monthly-logs" element={<DirectorLayout><MonthlyLogs /></DirectorLayout>} />

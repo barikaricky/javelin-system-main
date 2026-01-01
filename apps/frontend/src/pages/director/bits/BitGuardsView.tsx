@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../../../lib/api';
+import { api, getImageUrl } from '../../../lib/api';
 import { toast } from 'react-hot-toast';
 import {
   ChevronDown,
@@ -28,6 +28,7 @@ interface Guard {
       phone: string;
       state: string;
       profilePhoto?: string;
+      passportPhoto?: string;
     };
   };
   shiftType: string;
@@ -367,20 +368,27 @@ export default function BitGuardsView() {
                             const user = operator?.userId;
                             if (!operator || !user) return null;
                             
+                            const profilePhoto = user.profilePhoto || user.passportPhoto;
+                            
                             return (
                             <tr key={guard._id} className="hover:bg-gray-50">
                               <td className="px-4 py-4 whitespace-nowrap">
                                 <div className="flex items-center">
                                   <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden mr-3">
-                                    {user.profilePhoto ? (
+                                    {profilePhoto ? (
                                       <img
-                                        src={user.profilePhoto}
+                                        src={getImageUrl(profilePhoto)}
                                         alt={user.firstName}
                                         className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                          if (e.currentTarget.nextElementSibling) {
+                                            (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                                          }
+                                        }}
                                       />
-                                    ) : (
-                                      <Users className="w-full h-full p-2 text-gray-400" />
-                                    )}
+                                    ) : null}
+                                    <Users className={`w-full h-full p-2 text-gray-400 ${profilePhoto ? 'hidden' : ''}`} />
                                   </div>
                                   <div>
                                     <p className="text-sm font-medium text-gray-900">

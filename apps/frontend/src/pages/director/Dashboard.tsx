@@ -49,7 +49,7 @@ import {
   DollarSign,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
-import { api } from '../../lib/api';
+import { api, getImageUrl } from '../../lib/api';
 import NotificationCard from '../../components/director/NotificationCard';
 
 // Types
@@ -108,6 +108,47 @@ interface TopSupervisor {
   operatorsManaged: number;
 }
 
+interface OnDutyPerson {
+  _id: string;
+  operatorId: {
+    _id: string;
+    employeeId: string;
+    userId: {
+      _id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone?: string;
+      phoneNumber?: string;
+      profilePhoto?: string;
+      passportPhoto?: string;
+      status: string;
+    };
+  };
+  supervisorId?: {
+    _id: string;
+    userId: {
+      firstName: string;
+      lastName: string;
+    };
+  };
+  bitId?: {
+    _id: string;
+    bitName: string;
+    bitCode: string;
+  };
+  locationId?: {
+    _id: string;
+    locationName: string;
+    address: string;
+    city: string;
+    state: string;
+  };
+  shiftType: string;
+  status: string;
+  startDate: string;
+}
+
 export default function DirectorDashboard() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
@@ -137,6 +178,7 @@ export default function DirectorDashboard() {
   });
   const [locations, setLocations] = useState<LocationStatus[]>([]);
   const [topSupervisors, setTopSupervisors] = useState<TopSupervisor[]>([]);
+  const [onDutyPersonnel, setOnDutyPersonnel] = useState<OnDutyPerson[]>([]);
   const [alerts, setAlerts] = useState<{ id: number; type: string; message: string; urgent: boolean }[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
@@ -173,6 +215,7 @@ export default function DirectorDashboard() {
       setStats(data.stats);
       setLocations(data.locations || []);
       setTopSupervisors(data.topSupervisors || []);
+      setOnDutyPersonnel(data.onDutyPersonnel || []);
       setAlerts(data.alerts || []);
       setLastUpdated(new Date());
     } catch (error: any) {
@@ -544,6 +587,111 @@ export default function DirectorDashboard() {
               <p className="text-[10px] sm:text-xs text-slate-500 mt-2 text-center">
                 {Math.round((stats.attendance.present / stats.totalPersonnel) * 100)}% attendance rate
               </p>
+            </div>
+
+            {/* On Duty Personnel */}
+            <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-5 border border-gray-100">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
+                  On Duty Now
+                  <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                    {onDutyPersonnel.length}
+                  </span>
+                </h2>
+                <button 
+                  onClick={() => navigate('/director/operators/list')}
+                  className="text-blue-500 text-xs sm:text-sm font-medium hover:text-blue-600 flex items-center gap-1"
+                >
+                  View All <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
+                </button>
+              </div>
+              
+              {onDutyPersonnel.length === 0 ? (
+                <div className="text-center py-6 sm:py-8">
+                  <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-gray-500 text-xs sm:text-sm">No personnel on duty</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {onDutyPersonnel.slice(0, 10).map(assignment => {
+                    const operator = assignment.operatorId;
+                    const user = operator?.userId;
+                    if (!operator || !user) return null;
+                    
+                    const profilePhoto = user.profilePhoto || user.passportPhoto;
+                    const operatorName = `${user.firstName} ${user.lastName}`;
+                    const supervisor = assignment.supervisorId?.userId;
+                    const supervisorName = supervisor ? `${supervisor.firstName} ${supervisor.lastName}` : 'N/A';
+                    
+                    return (
+                      <div 
+                        key={assignment._id} 
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-100"
+                      >
+                        <div className="relative">
+                          {profilePhoto ? (
+                            <img
+                              src={getImageUrl(profilePhoto)}
+                              alt={operatorName}
+                              className="w-10 h-10 rounded-full object-cover border-2 border-green-200"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                if (e.currentTarget.nextElementSibling) {
+                                  (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                                }
+                              }}
+                            />
+                          ) : null}
+                          <div className={`w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-semibold text-sm border-2 border-green-200 ${profilePhoto ? 'hidden' : ''}`}>
+                            {user.firstName[0]}{user.lastName[0]}
+                          </div>
+                          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 text-sm truncate">{operatorName}</p>
+                          <p className="text-xs text-gray-500">ID: {operator.employeeId}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            {assignment.shiftType && (
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                                assignment.shiftType === 'DAY' ? 'bg-yellow-100 text-yellow-800' :
+                                assignment.shiftType === 'NIGHT' ? 'bg-indigo-100 text-indigo-800' :
+                                'bg-purple-100 text-purple-800'
+                              }`}>
+                                {assignment.shiftType}
+                              </span>
+                            )}
+                            {assignment.bitId && (
+                              <span className="text-[10px] text-gray-600 truncate">
+                                @ {assignment.bitId.bitName}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          {assignment.locationId && (
+                            <p className="text-xs font-medium text-gray-700 truncate max-w-24">
+                              {assignment.locationId.locationName}
+                            </p>
+                          )}
+                          <p className="text-[10px] text-gray-500">
+                            Sup: {supervisorName}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              
+              {onDutyPersonnel.length > 10 && (
+                <button 
+                  onClick={() => navigate('/director/operators/list')}
+                  className="mt-3 w-full py-2 text-xs sm:text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                >
+                  View All {onDutyPersonnel.length} Personnel
+                </button>
+              )}
             </div>
 
             {/* Recent Activity */}

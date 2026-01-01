@@ -415,7 +415,7 @@ export class AssignmentService {
     return await GuardAssignment.find(query)
       .populate({
         path: 'operatorId',
-        populate: { path: 'userId', select: 'firstName lastName email phone profilePhoto state' },
+        populate: { path: 'userId', select: 'firstName lastName email phone phoneNumber profilePhoto passportPhoto state status' },
       })
       .populate({
         path: 'supervisorId',

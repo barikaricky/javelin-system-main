@@ -67,7 +67,9 @@ const menuItems: MenuItem[] = [
     icon: UserCheck,
     children: [
       { name: 'Operator List', icon: Users, path: '/general-supervisor/operators' },
+      { name: 'Register Operator', icon: UserCheck, path: '/general-supervisor/operators/register' },
       { name: 'Operator Approval', icon: Shield, path: '/general-supervisor/operators/approval', badge: 0 },
+      { name: 'Assignment Requests', icon: Clock, path: '/general-supervisor/assignments/requests', badge: 0 },
       { name: 'Assign to BIT', icon: Target, path: '/general-supervisor/assignments/assign' },
       { name: 'Operator Attendance', icon: ClipboardCheck, path: '/general-supervisor/operators/attendance' },
       { name: 'Operator Incidents', icon: AlertTriangle, path: '/general-supervisor/operators/incidents' },

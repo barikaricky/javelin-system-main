@@ -111,7 +111,7 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
     const assignments = await GuardAssignment.find(query)
       .populate({
         path: 'operatorId',
-        populate: { path: 'userId', select: 'firstName lastName email phone profilePhoto state' },
+        populate: { path: 'userId', select: 'firstName lastName email phone phoneNumber profilePhoto passportPhoto state status' },
       })
       .populate('bitId')
       .populate('locationId')
