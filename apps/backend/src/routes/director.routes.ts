@@ -110,36 +110,21 @@ router.get('/dashboard/stats', async (req: Request & { user?: any }, res, next) 
 
     console.log('👮 On Duty Personnel Found:', onDutyOperators.length);
     
-    // Determine current shift based on time of day
-    const currentHour = new Date().getHours();
-    const getCurrentShift = () => {
-      if (currentHour >= 6 && currentHour < 18) {
-        return 'DAY'; // 6 AM - 6 PM
-      } else {
-        return 'NIGHT'; // 6 PM - 6 AM
-      }
-    };
-    const currentShift = getCurrentShift();
-
-    // Filter on-duty personnel by current shift (include ROTATING in both)
-    const filteredOnDutyOperators = onDutyOperators.filter((assignment: any) => {
-      return assignment.shiftType === currentShift || assignment.shiftType === 'ROTATING';
-    });
-
-    console.log('⏰ Shift Filtering:', {
-      currentHour,
-      currentShift,
+    // Show shift breakdown (display all as stored in database, no time-based filtering)
+    console.log('⏰ Shift Breakdown:', {
       totalOnDuty: onDutyOperators.length,
-      filteredByShift: filteredOnDutyOperators.length
+      DAY: onDutyOperators.filter((a: any) => a.shiftType === 'DAY').length,
+      NIGHT: onDutyOperators.filter((a: any) => a.shiftType === 'NIGHT').length,
+      ROTATING: onDutyOperators.filter((a: any) => a.shiftType === 'ROTATING').length,
     });
     
     // Debug first on-duty person structure
-    if (filteredOnDutyOperators.length > 0) {
+    if (onDutyOperators.length > 0) {
       console.log('📋 First on-duty person sample:', {
-        hasOperator: !!filteredOnDutyOperators[0].operatorId,
-        hasUserId: !!(filteredOnDutyOperators[0].operatorId as any)?.userId,
-        status: filteredOnDutyOperators[0].status,
-        shift: filteredOnDutyOperators[0].shiftType
+        hasOperator: !!onDutyOperators[0].operatorId,
+        hasUserId: !!(onDutyOperators[0].operatorId as any)?.userId,
+        status: onDutyOperators[0].status,
+        shift: onDutyOperators[0].shiftType
       });
     }
 
@@ -386,7 +371,7 @@ router.get('/dashboard/stats', async (req: Request & { user?: any }, res, next) 
 
     const statsResult = {
       totalPersonnel,
-      guardsOnDuty: filteredOnDutyOperators.length,
+      guardsOnDuty: onDutyOperators.length,
       activeManagers: totalManagers,
       generalSupervisors: totalGeneralSupervisors,
       supervisors: totalSupervisors,
@@ -419,7 +404,7 @@ router.get('/dashboard/stats', async (req: Request & { user?: any }, res, next) 
       topSupervisors: mappedTopSupervisors,
       alerts,
       notifications: [],
-      onDutyPersonnel: filteredOnDutyOperators,
+      onDutyPersonnel: onDutyOperators,
     });
   } catch (error) {
     console.error('❌ Error fetching dashboard stats:', error);

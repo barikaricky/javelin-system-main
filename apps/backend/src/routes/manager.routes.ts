@@ -107,29 +107,15 @@ router.get('/dashboard/stats', authenticate, async (_req: AuthRequest, res: Resp
         .lean(),
     ]);
 
-    // Determine current shift based on time of day
-    const currentHour = new Date().getHours();
-    const getCurrentShift = () => {
-      if (currentHour >= 6 && currentHour < 18) {
-        return 'DAY'; // 6 AM - 6 PM
-      } else {
-        return 'NIGHT'; // 6 PM - 6 AM
-      }
-    };
-    const currentShift = getCurrentShift();
-
-    // Filter on-duty personnel by current shift (include ROTATING in both)
-    const filteredOnDutyOperators = onDutyOperators.filter((assignment: any) => {
-      return assignment.shiftType === currentShift || assignment.shiftType === 'ROTATING';
-    });
-
-    // Debug logging for on-duty personnel
+    // Debug logging for on-duty personnel (show all active assignments as stored in database)
     console.log('🔍 Manager Dashboard - On Duty Personnel Debug:', {
-      currentHour,
-      currentShift,
       totalAssignments: onDutyOperators.length,
-      filteredCount: filteredOnDutyOperators.length,
-      sampleData: filteredOnDutyOperators.slice(0, 2).map((a: any) => ({
+      shiftBreakdown: {
+        DAY: onDutyOperators.filter((a: any) => a.shiftType === 'DAY').length,
+        NIGHT: onDutyOperators.filter((a: any) => a.shiftType === 'NIGHT').length,
+        ROTATING: onDutyOperators.filter((a: any) => a.shiftType === 'ROTATING').length,
+      },
+      sampleData: onDutyOperators.slice(0, 2).map((a: any) => ({
         id: a._id,
         status: a.status,
         operatorName: a.operatorId?.userId ? `${a.operatorId.userId.firstName} ${a.operatorId.userId.lastName}` : 'No user',
@@ -185,7 +171,7 @@ router.get('/dashboard/stats', authenticate, async (_req: AuthRequest, res: Resp
       supervisors: mappedSupervisors,
       locations: mappedLocations,
       incidents: mappedIncidents,
-      onDutyPersonnel: filteredOnDutyOperators,
+      onDutyPersonnel: onDutyOperators,
     });
   } catch (error) {
     next(error);
