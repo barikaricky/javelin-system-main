@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 import { asyncHandler } from '../middlewares/error.middleware';
 import { logger } from '../utils/logger';
-import { User, Supervisor, Operator, Location, Attendance, IncidentReport } from '../models';
+import { User, Supervisor, Operator, Location, Attendance, IncidentReport, GuardAssignment } from '../models';
 
 // Local enum type
 type UserStatus = 'ACTIVE' | 'INACTIVE' | 'PENDING';
@@ -101,6 +101,7 @@ router.get('/dashboard', asyncHandler(async (req: any, res) => {
     supervisorsList,
     incidentsList,
     locationsList,
+    onDutyOperators,
   ] = await Promise.all([
     // Total operators under supervisors who report to this GS
     Operator.countDocuments({ supervisorId: { $in: supervisorIds } }),
@@ -144,7 +145,35 @@ router.get('/dashboard', asyncHandler(async (req: any, res) => {
     Location.find({ isActive: true })
     .limit(10)
     .lean(),
+    // On Duty Personnel - Active assignments under this GS's supervision
+    GuardAssignment.find({ 
+      status: 'ACTIVE',
+      supervisorId: { $in: supervisorIds }
+    })
+      .populate({
+        path: 'operatorId',
+        populate: { path: 'userId', select: 'firstName lastName email phone phoneNumber profilePhoto passportPhoto status' }
+      })
+      .populate({
+        path: 'supervisorId',
+        populate: { path: 'userId', select: 'firstName lastName email phone phoneNumber profilePhoto passportPhoto' }
+      })
+      .populate('bitId', 'bitName bitCode')
+      .populate('locationId', 'locationName address city state')
+      .sort({ startDate: -1 })
+      .limit(50)
+      .lean(),
   ]);
+
+  // Debug logging for on-duty personnel
+  console.log('🔍 GS Dashboard - On Duty Personnel Debug:', {
+    totalAssignments: onDutyOperators.length,
+    shiftBreakdown: {
+      DAY: onDutyOperators.filter((a: any) => a.shiftType === 'DAY').length,
+      NIGHT: onDutyOperators.filter((a: any) => a.shiftType === 'NIGHT').length,
+      ROTATING: onDutyOperators.filter((a: any) => a.shiftType === 'ROTATING').length,
+    },
+  });
 
   // Calculate attendance rate
   const attendanceRate = totalOperators > 0 ? Math.round((todayAttendance / totalOperators) * 100) : 0;
@@ -237,6 +266,7 @@ router.get('/dashboard', asyncHandler(async (req: any, res) => {
     supervisors: mappedSupervisors,
     incidents: mappedIncidents,
     locations: mappedLocations,
+    onDutyPersonnel: onDutyOperators,
   });
 }));
 
