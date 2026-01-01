@@ -41,6 +41,7 @@ import companyDocumentRoutes from './routes/companyDocument.routes';
 import idVerificationRoutes from './routes/id-verification.routes';
 import assignmentRoutes from './routes/assignment.routes';
 import bitExpenseRoutes from './routes/bit-expense.routes';
+import reportRoutes from './routes/report.routes';
 // import emergencyAlertRoutes from './routes/emergencyAlert.routes';
 
 const app = express();
@@ -138,6 +139,10 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Static files for uploads
 app.use('/uploads', express.static('uploads'));
 
+// Make mongoose available to routes
+import mongoose from 'mongoose';
+app.set('mongoose', mongoose);
+
 // Request logging middleware
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.path}`, { 
@@ -179,6 +184,7 @@ app.use('/api/documents', companyDocumentRoutes);
 app.use('/api/verify-id', idVerificationRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/bit-expenses', bitExpenseRoutes);
+app.use('/api/reports', reportRoutes);
 // app.use('/api/emergency-alerts', emergencyAlertRoutes);
 
 // Health check

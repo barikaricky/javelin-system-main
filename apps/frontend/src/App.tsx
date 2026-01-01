@@ -34,6 +34,7 @@ import MessagingPage from './pages/director/messaging/MessagingPage';
 import DirectorCommunicationPage from './pages/director/communication/CommunicationPage';
 import DirectorBitExpensesPage from './pages/director/BitExpensesPage';
 import DirectorNotificationsPage from './pages/director/NotificationsPage';
+import { ReportsListPage, CreateReportPage } from './pages/director/reports';
 
 // Manager Dashboard imports
 import ManagerLayout from './pages/manager/ManagerLayout';
@@ -102,6 +103,8 @@ import GSRegisterSupervisorPage from './pages/general-supervisor/supervisors/Reg
 import GSOperatorApprovalPage from './pages/general-supervisor/operators/OperatorApprovalPage';
 import GSOperatorProfile from './pages/general-supervisor/operators/OperatorProfile';
 import GSEnhancedCommunicationPage from './pages/general-supervisor/communication/EnhancedCommunicationPage';
+import { GSOnDutyPage } from './pages/general-supervisor/attendance';
+
 
 // Secretary imports
 import SecretaryLayout from './pages/secretary/SecretaryLayout';
@@ -335,7 +338,8 @@ function App() {
         <Route path="operators/register" element={<GSRegisterOperatorPage />} />
         <Route path="locations" element={<GSLocationsList />} />
         <Route path="locations/assignments" element={<GSAssignLocationPage />} />
-        <Route path="attendance" element={<GSAttendancePage />} />
+        <Route path="attendance" element={<GSOnDutyPage />} />
+        <Route path="attendance/operators" element={<GSAttendancePage />} />
         <Route path="incidents" element={<GSIncidentsPage />} />
         <Route path="activity-logs" element={<GSActivityLogsPage />} />
         <Route path="communication" element={<GSCommunicationPage />} />
@@ -353,6 +357,8 @@ function App() {
       {/* Director Routes */}
       <Route path="/director/dashboard" element={<DirectorLayout><DirectorDashboard /></DirectorLayout>} />
       <Route path="/director/attendance" element={<DirectorLayout><OnDutyPage /></DirectorLayout>} />
+      <Route path="/director/reports" element={<DirectorLayout><ReportsListPage /></DirectorLayout>} />
+      <Route path="/director/reports/create" element={<DirectorLayout><CreateReportPage /></DirectorLayout>} />
       <Route path="/director/financial-overview" element={<DirectorLayout><FinancialOverview /></DirectorLayout>} />
       <Route path="/director/daily-logs" element={<DirectorLayout><DailyLogs /></DirectorLayout>} />
       <Route path="/director/monthly-logs" element={<DirectorLayout><MonthlyLogs /></DirectorLayout>} />

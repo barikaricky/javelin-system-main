@@ -99,14 +99,18 @@ export default function GSOnDutyPage() {
         setLoading(true);
       }
 
-      console.log('🔍 Fetching on-duty personnel from /gs/dashboard...');
-      const response = await api.get('/gs/dashboard');
+      console.log('🔍 Fetching on-duty personnel from /general-supervisor/dashboard...');
+      const response = await api.get('/general-supervisor/dashboard');
       console.log('📦 Raw API Response:', {
         status: response.status,
         hasData: !!response.data,
         hasOnDutyPersonnel: !!response.data?.onDutyPersonnel,
-        dataKeys: response.data ? Object.keys(response.data) : []
+        dataKeys: response.data ? Object.keys(response.data) : [],
+        fullData: response.data
       });
+      console.log('🎯 OnDutyPersonnel value:', response.data?.onDutyPersonnel);
+      console.log('🎯 OnDutyPersonnel type:', typeof response.data?.onDutyPersonnel);
+      console.log('🎯 OnDutyPersonnel isArray:', Array.isArray(response.data?.onDutyPersonnel));
       
       const onDutyData = response.data.onDutyPersonnel || [];
       

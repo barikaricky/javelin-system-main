@@ -92,6 +92,19 @@ router.get('/dashboard', asyncHandler(async (req: any, res) => {
   supervisorIds.push(gs._id);
   console.log(`📊 Dashboard: Checking operators under ${supervisorIds.length} supervisors (including GS)`);
 
+  // Debug on-duty assignments
+  console.log('🔍 GS Dashboard - Pre-query debug:');
+  const totalAssignments = await GuardAssignment.countDocuments();
+  const activeAssignments = await GuardAssignment.countDocuments({ status: 'ACTIVE' });
+  const activeForSupervisors = await GuardAssignment.countDocuments({ 
+    status: 'ACTIVE',
+    supervisorId: { $in: supervisorIds }
+  });
+  console.log(`📊 Total assignments in DB: ${totalAssignments}`);
+  console.log(`📊 Active assignments in DB: ${activeAssignments}`);
+  console.log(`📊 Active assignments for GS's supervisors: ${activeForSupervisors}`);
+  console.log(`👥 SupervisorIds being used:`, supervisorIds);
+
   // Get all stats and data in parallel
   const [
     totalOperators,
@@ -267,6 +280,16 @@ router.get('/dashboard', asyncHandler(async (req: any, res) => {
     incidents: mappedIncidents,
     locations: mappedLocations,
     onDutyPersonnel: onDutyOperators,
+  });
+  
+  console.log('✅ GS Dashboard response sent with onDutyPersonnel:', {
+    count: onDutyOperators.length,
+    sampleData: onDutyOperators.length > 0 ? {
+      firstPerson: onDutyOperators[0]?.operatorId?.userId ? 
+        `${onDutyOperators[0].operatorId.userId.firstName} ${onDutyOperators[0].operatorId.userId.lastName}` : 'N/A',
+      shift: onDutyOperators[0]?.shiftType,
+      location: onDutyOperators[0]?.locationId?.locationName
+    } : 'No data'
   });
 }));
 
