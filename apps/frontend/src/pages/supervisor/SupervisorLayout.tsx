@@ -17,6 +17,8 @@ import {
   Menu,
   X,
   Clock,
+  Plus,
+  BarChart3,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
@@ -48,7 +50,15 @@ const navigation = [
   { name: 'Incidents', href: '/supervisor/incidents', icon: AlertTriangle },
   { name: 'Messages', href: '/supervisor/messages', icon: MessageSquare },
   { name: 'Meetings', href: '/supervisor/meetings', icon: Video },
-  { name: 'Reports', href: '/supervisor/reports', icon: FileText },
+  {
+    name: 'Security Reports',
+    icon: FileText,
+    children: [
+      { name: 'My Reports', href: '/supervisor/reports', icon: FileText },
+      { name: 'Create Report', href: '/supervisor/reports/create', icon: Plus },
+      { name: 'Analytics', href: '/supervisor/reports/analytics', icon: BarChart3 },
+    ],
+  },
   { name: 'ID Card', href: '/supervisor/id-cards', icon: CreditCard },
   { name: 'Settings', href: '/supervisor/settings', icon: Settings },
 ];

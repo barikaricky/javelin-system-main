@@ -41,6 +41,12 @@ import {
   ReportDetailsPage as ManagerReportDetailsPage, 
   ReportsAnalyticsPage as ManagerReportsAnalyticsPage 
 } from './pages/manager/reports';
+import { 
+  ReportsListPage as SecretaryReportsListPage, 
+  CreateReportPage as SecretaryCreateReportPage, 
+  ReportDetailsPage as SecretaryReportDetailsPage, 
+  ReportsAnalyticsPage as SecretaryReportsAnalyticsPage 
+} from './pages/secretary/reports';
 
 // Manager Dashboard imports
 import ManagerLayout from './pages/manager/ManagerLayout';
@@ -75,6 +81,14 @@ import MyOperatorsPage from './pages/supervisor/operators/MyOperatorsPage';
 import SupervisorIDCardPage from './pages/supervisor/IDCardPage';
 import SupervisorIDCardGenerator from './pages/supervisor/IDCardGenerator';
 import SupervisorEnhancedSettingsPage from './pages/supervisor/EnhancedSettingsPage';
+
+// Supervisor Reports Module
+import { 
+  ReportsListPage as SupervisorReportsListPage, 
+  CreateReportPage as SupervisorCreateReportPage, 
+  ReportDetailsPage as SupervisorReportDetailsPage, 
+  ReportsAnalyticsPage as SupervisorReportsAnalyticsPage 
+} from './pages/supervisor/reports';
 
 // Director Operator Registration
 import DirectorRegisterOperatorPage from './pages/director/operators/RegisterOperatorPage';
@@ -283,6 +297,12 @@ function App() {
         <Route path="messages" element={<SecretaryMessagingPage />} />
         <Route path="settings" element={<SecretarySettingsPage />} />
         <Route path="bit-expenses" element={<SecretaryBitExpensesPage />} />
+        
+        {/* Secretary Reports Routes */}
+        <Route path="reports" element={<SecretaryReportsListPage />} />
+        <Route path="reports/create" element={<SecretaryCreateReportPage />} />
+        <Route path="reports/analytics" element={<SecretaryReportsAnalyticsPage />} />
+        <Route path="reports/:id" element={<SecretaryReportDetailsPage />} />
       </Route>
       
       {/* Manager Routes */}
@@ -337,6 +357,10 @@ function App() {
         <Route path="assignments/request" element={<RequestAssignmentPage />} />
         <Route path="assignments/pending" element={<PendingAssignmentsPage />} />
         <Route path="bits" element={<MyBitsPage />} />
+        <Route path="reports" element={<SupervisorReportsListPage />} />
+        <Route path="reports/create" element={<SupervisorCreateReportPage />} />
+        <Route path="reports/analytics" element={<SupervisorReportsAnalyticsPage />} />
+        <Route path="reports/:id" element={<SupervisorReportDetailsPage />} />
         <Route path="messaging" element={<ManagerMessagingPage />} />
       </Route>
       

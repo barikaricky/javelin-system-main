@@ -146,6 +146,15 @@ const menuItems: MenuItem[] = [
     ]
   },
   { 
+    name: 'Security Reports', 
+    icon: FileText,
+    children: [
+      { name: 'All Reports', icon: FileText, path: '/secretary/reports' },
+      { name: 'Create Report', icon: PlusCircle, path: '/secretary/reports/create', badge: 'New' },
+      { name: 'Analytics', icon: BarChart3, path: '/secretary/reports/analytics' },
+    ]
+  },
+  { 
     name: 'Communications', 
     icon: MessageSquare,
     children: [

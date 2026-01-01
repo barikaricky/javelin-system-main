@@ -213,8 +213,8 @@ router.post('/', (req, res, next) => {
     uploadedAt: new Date(),
   })) || [];
   
-  // Directors and Managers auto-approve their reports
-  const isAutoApprove = req.user.role === 'DIRECTOR' || req.user.role === 'MANAGER';
+  // Directors, Managers, and Secretaries auto-approve their reports
+  const isAutoApprove = req.user.role === 'DIRECTOR' || req.user.role === 'MANAGER' || req.user.role === 'SECRETARY';
   const reportStatus = status || 'DRAFT';
   const finalStatus = isAutoApprove && reportStatus !== 'DRAFT' ? 'APPROVED' : reportStatus;
   
@@ -239,7 +239,7 @@ router.post('/', (req, res, next) => {
       performedBy: req.user.userId,
       performedAt: new Date(),
       ipAddress: req.ip,
-      details: 'Auto-approved by Director/Manager',
+      details: 'Auto-approved by Director/Manager/Secretary',
     });
   }
   
@@ -411,7 +411,7 @@ router.post('/:id/submit', authenticate, asyncHandler(async (req: any, res) => {
 }));
 
 // Approve report
-router.post('/:id/approve', authenticate, authorize('DIRECTOR', 'MANAGER', 'GENERAL_SUPERVISOR'), asyncHandler(async (req: any, res) => {
+router.post('/:id/approve', authenticate, authorize('DIRECTOR', 'MANAGER', 'SECRETARY', 'GENERAL_SUPERVISOR'), asyncHandler(async (req: any, res) => {
   const report = await Report.findById(req.params.id);
   
   if (!report) {
@@ -434,7 +434,7 @@ router.post('/:id/approve', authenticate, authorize('DIRECTOR', 'MANAGER', 'GENE
 }));
 
 // Request revision
-router.post('/:id/revision', authenticate, authorize('DIRECTOR', 'MANAGER', 'GENERAL_SUPERVISOR'), asyncHandler(async (req: any, res) => {
+router.post('/:id/revision', authenticate, authorize('DIRECTOR', 'MANAGER', 'SECRETARY', 'GENERAL_SUPERVISOR'), asyncHandler(async (req: any, res) => {
   const { notes } = req.body;
   const report = await Report.findById(req.params.id);
   
@@ -457,7 +457,7 @@ router.post('/:id/revision', authenticate, authorize('DIRECTOR', 'MANAGER', 'GEN
 }));
 
 // Reject report
-router.post('/:id/reject', authenticate, authorize('DIRECTOR', 'MANAGER', 'GENERAL_SUPERVISOR'), asyncHandler(async (req: any, res) => {
+router.post('/:id/reject', authenticate, authorize('DIRECTOR', 'MANAGER', 'SECRETARY', 'GENERAL_SUPERVISOR'), asyncHandler(async (req: any, res) => {
   const { reason } = req.body;
   const report = await Report.findById(req.params.id);
   
