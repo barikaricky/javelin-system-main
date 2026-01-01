@@ -57,6 +57,7 @@ import { ManagerBitDetailsPage } from './pages/manager/bits/BitDetailsPage';
 import { ManagerLocationDetailsPage } from './pages/manager/locations/LocationDetailsPage';
 import ManagerMoneyInView from './pages/manager/MoneyInView';
 import ManagerBitExpensesPage from './pages/manager/BitExpensesPage';
+import { ManagerOnDutyPage } from './pages/manager/attendance';
 
 // Supervisor imports
 import SupervisorLayout from './pages/supervisor/SupervisorLayout';
@@ -271,6 +272,7 @@ function App() {
       <Route path="/manager" element={<ManagerLayout />}>
         <Route index element={<Navigate to="/manager/dashboard" replace />} />
         <Route path="dashboard" element={<ManagerDashboard />} />
+        <Route path="attendance" element={<ManagerOnDutyPage />} />
         <Route path="financial-overview" element={<FinancialOverview />} />
         <Route path="daily-logs" element={<DailyLogs />} />
         <Route path="monthly-logs" element={<MonthlyLogs />} />

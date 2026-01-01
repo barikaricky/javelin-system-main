@@ -16,9 +16,11 @@ import {
   Star,
   AlertCircle,
   ChevronRight,
+  ShieldCheck,
+  Shield,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { api } from '../../lib/api';
+import { api, getImageUrl } from '../../lib/api';
 
 // Stats Card Component
 interface StatsCardProps {
@@ -240,6 +242,48 @@ function LocationCard({ location }: { location: Location }) {
   );
 }
 
+// On Duty Person Interface
+interface OnDutyPerson {
+  _id: string;
+  operatorId: {
+    _id: string;
+    employeeId: string;
+    userId: {
+      _id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone?: string;
+      phoneNumber?: string;
+      profilePhoto?: string;
+      passportPhoto?: string;
+      status: string;
+    };
+  };
+  supervisorId?: {
+    _id: string;
+    userId: {
+      firstName: string;
+      lastName: string;
+    };
+  };
+  bitId?: {
+    _id: string;
+    bitName: string;
+    bitCode: string;
+  };
+  locationId?: {
+    _id: string;
+    locationName: string;
+    address: string;
+    city: string;
+    state: string;
+  };
+  shiftType: string;
+  status: string;
+  startDate: string;
+}
+
 export default function ManagerDashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loading, setLoading] = useState(true);
@@ -260,6 +304,7 @@ export default function ManagerDashboard() {
   const [recentIncidents, setRecentIncidents] = useState<Incident[]>([]);
   const [topSupervisors, setTopSupervisors] = useState<Supervisor[]>([]);
   const [locationStatuses, setLocationStatuses] = useState<Location[]>([]);
+  const [onDutyPersonnel, setOnDutyPersonnel] = useState<OnDutyPerson[]>([]);
 
   // Fetch dashboard data from API
   const fetchDashboardData = async () => {
@@ -272,6 +317,7 @@ export default function ManagerDashboard() {
         setRecentIncidents(response.data.incidents || []);
         setTopSupervisors(response.data.supervisors || []);
         setLocationStatuses(response.data.locations || []);
+        setOnDutyPersonnel(response.data.onDutyPersonnel || []);
       }
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
@@ -333,11 +379,19 @@ export default function ManagerDashboard() {
       {/* Quick Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatsCard
+          title="On Duty"
+          value={onDutyPersonnel.length}
+          subtitle="Active personnel"
+          icon={ShieldCheck}
+          color="emerald"
+          linkTo="/manager/attendance"
+        />
+        <StatsCard
           title="Total Supervisors"
           value={stats.totalSupervisors}
           subtitle="Active in your zone"
           icon={UserCheck}
-          color="emerald"
+          color="blue"
           linkTo="/manager/supervisors"
           trend={{ value: 8, isPositive: true }}
         />
@@ -346,7 +400,7 @@ export default function ManagerDashboard() {
           value={stats.totalOperators}
           subtitle="Under supervision"
           icon={Users}
-          color="blue"
+          color="purple"
           linkTo="/manager/operators"
           trend={{ value: 5, isPositive: true }}
         />
@@ -355,17 +409,8 @@ export default function ManagerDashboard() {
           value={stats.activeLocations}
           subtitle="Currently monitored"
           icon={MapPin}
-          color="purple"
-          linkTo="/manager/locations"
-        />
-        <StatsCard
-          title="Today's Attendance"
-          value={`${stats.todayAttendance}/${stats.totalOperators}`}
-          subtitle={`${stats.attendanceRate}% attendance rate`}
-          icon={ClipboardCheck}
           color="amber"
-          linkTo="/manager/attendance"
-          trend={{ value: 2, isPositive: true }}
+          linkTo="/manager/locations"
         />
       </div>
 
@@ -395,6 +440,116 @@ export default function ManagerDashboard() {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {/* On Duty Personnel */}
+        <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 overflow-hidden">
+          <div className="p-4 sm:p-6 border-b border-gray-100">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                <div className="p-1.5 sm:p-2 bg-green-100 rounded-lg flex-shrink-0">
+                  <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-sm sm:text-base text-gray-900 truncate">On Duty Now</h3>
+                  <p className="text-xs sm:text-sm text-gray-500">Active personnel ({onDutyPersonnel.length})</p>
+                </div>
+              </div>
+              <Link 
+                to="/manager/attendance"
+                className="text-xs sm:text-sm text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1 flex-shrink-0"
+              >
+                <span className="hidden sm:inline">View All</span>
+                <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
+              </Link>
+            </div>
+          </div>
+          <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 max-h-96 overflow-y-auto">
+            {onDutyPersonnel.length === 0 ? (
+              <div className="text-center py-6 sm:py-8">
+                <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-gray-300 mx-auto mb-2" />
+                <p className="text-gray-500 text-xs sm:text-sm">No personnel on duty</p>
+              </div>
+            ) : (
+              onDutyPersonnel.slice(0, 10).map(assignment => {
+                const operator = assignment.operatorId;
+                const user = operator?.userId;
+                if (!operator || !user) return null;
+                
+                const profilePhoto = user.profilePhoto || user.passportPhoto;
+                const operatorName = `${user.firstName} ${user.lastName}`;
+                const supervisor = assignment.supervisorId?.userId;
+                const supervisorName = supervisor ? `${supervisor.firstName} ${supervisor.lastName}` : 'N/A';
+                
+                return (
+                  <div 
+                    key={assignment._id} 
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-100"
+                  >
+                    <div className="relative flex-shrink-0">
+                      {profilePhoto ? (
+                        <img
+                          src={getImageUrl(profilePhoto)}
+                          alt={operatorName}
+                          className="w-10 h-10 rounded-full object-cover border-2 border-green-200"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            if (e.currentTarget.nextElementSibling) {
+                              (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                            }
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-semibold text-sm border-2 border-green-200 ${profilePhoto ? 'hidden' : ''}`}>
+                        {user.firstName[0]}{user.lastName[0]}
+                      </div>
+                      <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 text-sm truncate">{operatorName}</p>
+                      <p className="text-xs text-gray-500">ID: {operator.employeeId}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        {assignment.shiftType && (
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                            assignment.shiftType === 'DAY' ? 'bg-yellow-100 text-yellow-800' :
+                            assignment.shiftType === 'NIGHT' ? 'bg-indigo-100 text-indigo-800' :
+                            'bg-purple-100 text-purple-800'
+                          }`}>
+                            {assignment.shiftType}
+                          </span>
+                        )}
+                        {assignment.bitId && (
+                          <span className="text-[10px] text-gray-600 truncate">
+                            @ {assignment.bitId.bitName}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      {assignment.locationId && (
+                        <p className="text-xs font-medium text-gray-700 truncate max-w-24">
+                          {assignment.locationId.locationName}
+                        </p>
+                      )}
+                      <p className="text-[10px] text-gray-500">
+                        Sup: {supervisorName}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+          {onDutyPersonnel.length > 10 && (
+            <div className="p-3 sm:p-4 border-t border-gray-100">
+              <Link 
+                to="/manager/attendance"
+                className="w-full py-2 text-xs sm:text-sm font-medium text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors flex items-center justify-center"
+              >
+                View All {onDutyPersonnel.length} Personnel
+              </Link>
+            </div>
+          )}
+        </div>
+
         {/* Recent Incidents */}
         <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 overflow-hidden">
           <div className="p-4 sm:p-6 border-b border-gray-100">

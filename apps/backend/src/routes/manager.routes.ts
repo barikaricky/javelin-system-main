@@ -21,6 +21,15 @@ router.get('/dashboard/stats', authenticate, async (_req: AuthRequest, res: Resp
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Debug: Check total assignments in database
+    const totalAssignments = await GuardAssignment.countDocuments();
+    const activeAssignments = await GuardAssignment.countDocuments({ status: 'ACTIVE' });
+    console.log('📊 Manager Dashboard - Assignment Counts:', {
+      total: totalAssignments,
+      active: activeAssignments,
+      statuses: await GuardAssignment.distinct('status')
+    });
+
     // Fetch all stats in parallel using Mongoose
     const [
       totalGeneralSupervisors,
@@ -33,6 +42,7 @@ router.get('/dashboard/stats', authenticate, async (_req: AuthRequest, res: Resp
       supervisorsList,
       locationsList,
       recentIncidents,
+      onDutyOperators,
     ] = await Promise.all([
       // Total General Supervisors
       Supervisor.countDocuments({
@@ -80,7 +90,53 @@ router.get('/dashboard/stats', authenticate, async (_req: AuthRequest, res: Resp
           populate: { path: 'locationId', select: 'name' }
         })
         .lean(),
+      // On Duty Personnel - Active assignments
+      GuardAssignment.find({ status: 'ACTIVE' })
+        .populate({
+          path: 'operatorId',
+          populate: { path: 'userId', select: 'firstName lastName email phone phoneNumber profilePhoto passportPhoto status' }
+        })
+        .populate({
+          path: 'supervisorId',
+          populate: { path: 'userId', select: 'firstName lastName email phone phoneNumber profilePhoto passportPhoto' }
+        })
+        .populate('bitId', 'bitName bitCode')
+        .populate('locationId', 'locationName address city state')
+        .sort({ startDate: -1 })
+        .limit(50)
+        .lean(),
     ]);
+
+    // Determine current shift based on time of day
+    const currentHour = new Date().getHours();
+    const getCurrentShift = () => {
+      if (currentHour >= 6 && currentHour < 18) {
+        return 'DAY'; // 6 AM - 6 PM
+      } else {
+        return 'NIGHT'; // 6 PM - 6 AM
+      }
+    };
+    const currentShift = getCurrentShift();
+
+    // Filter on-duty personnel by current shift (include ROTATING in both)
+    const filteredOnDutyOperators = onDutyOperators.filter((assignment: any) => {
+      return assignment.shiftType === currentShift || assignment.shiftType === 'ROTATING';
+    });
+
+    // Debug logging for on-duty personnel
+    console.log('🔍 Manager Dashboard - On Duty Personnel Debug:', {
+      currentHour,
+      currentShift,
+      totalAssignments: onDutyOperators.length,
+      filteredCount: filteredOnDutyOperators.length,
+      sampleData: filteredOnDutyOperators.slice(0, 2).map((a: any) => ({
+        id: a._id,
+        status: a.status,
+        operatorName: a.operatorId?.userId ? `${a.operatorId.userId.firstName} ${a.operatorId.userId.lastName}` : 'No user',
+        shiftType: a.shiftType,
+        locationId: a.locationId?._id
+      }))
+    });
 
     // Calculate attendance rate
     const attendanceRate = totalOperators > 0 ? Math.round((todayAttendance / totalOperators) * 100) : 0;
@@ -129,6 +185,7 @@ router.get('/dashboard/stats', authenticate, async (_req: AuthRequest, res: Resp
       supervisors: mappedSupervisors,
       locations: mappedLocations,
       incidents: mappedIncidents,
+      onDutyPersonnel: filteredOnDutyOperators,
     });
   } catch (error) {
     next(error);
