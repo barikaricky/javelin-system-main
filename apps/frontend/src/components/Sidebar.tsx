@@ -112,6 +112,7 @@ const menuItems: MenuItem[] = [
     children: [
       { name: 'All Reports', icon: FileText, path: '/director/reports' },
       { name: 'Create Report', icon: PlusCircle, path: '/director/reports/create' },
+      { name: 'Review Reports', icon: AlertCircle, path: '/director/reports/review' },
       { name: 'Analytics', icon: BarChart3, path: '/director/reports/analytics' },
     ]
   },

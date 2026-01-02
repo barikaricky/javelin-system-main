@@ -3,6 +3,8 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import Report from '../models/Report';
+import { Notification } from '../models/Notification.model';
+import { User } from '../models/User.model';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
 
@@ -282,6 +284,51 @@ router.post('/', (req, res, next) => {
       select: 'firstName lastName email'
     });
   
+  // Send notification to Manager and Director if submitted by Supervisor/GS
+  if ((req.user.role === 'SUPERVISOR' || req.user.role === 'GENERAL_SUPERVISOR') && finalStatus === 'PENDING_REVIEW') {
+    try {
+      const managersAndDirectors = await User.find({ 
+        role: { $in: ['MANAGER', 'DIRECTOR'] } 
+      }).lean();
+      
+      const creatorName = `${req.user.firstName} ${req.user.lastName}`;
+      const REPORT_TYPE_NAMES: Record<string, string> = {
+        DAILY_ACTIVITY: 'Daily Activity',
+        INCIDENT: 'Incident',
+        EMERGENCY: 'Emergency',
+        VISITOR_LOG: 'Visitor Log',
+        PATROL: 'Patrol',
+        EQUIPMENT: 'Equipment / Asset',
+        CLIENT_INSTRUCTION: 'Client Instruction',
+        END_OF_SHIFT: 'End-of-Shift',
+      };
+      const reportTypeName = REPORT_TYPE_NAMES[reportType] || reportType;
+      
+      for (const recipient of managersAndDirectors) {
+        await Notification.create({
+          receiverId: recipient._id,
+          type: 'REPORT_SUBMITTED',
+          subject: 'New Report Awaiting Review',
+          message: `${creatorName} submitted a ${reportTypeName} report for review`,
+          actionUrl: `/reports/${report._id}`,
+          entityType: 'REPORT',
+          entityId: report._id.toString(),
+          metadata: {
+            reportId: report._id,
+            submitterId: req.user.userId,
+            reportType: reportType,
+            priority: priority || 'MEDIUM',
+          },
+        });
+      }
+      
+      console.log(`📧 Sent report review notifications to ${managersAndDirectors.length} managers/directors`);
+    } catch (notifError) {
+      console.error('Failed to send notifications:', notifError);
+      // Don't fail the report creation if notification fails
+    }
+  }
+  
   res.status(201).json({
     success: true,
     message: 'Report created successfully',
@@ -475,6 +522,45 @@ router.post('/:id/reject', authenticate, authorize('DIRECTOR', 'MANAGER', 'SECRE
   res.json({
     success: true,
     message: 'Report rejected',
+    report,
+  });
+}));
+
+// Update report status (unified endpoint for approve/revision/reject)
+router.put('/:id/status', authenticate, authorize('DIRECTOR', 'MANAGER', 'SECRETARY', 'GENERAL_SUPERVISOR'), asyncHandler(async (req: any, res) => {
+  const { status, reviewComment } = req.body;
+  const report = await Report.findById(req.params.id);
+  
+  if (!report) {
+    return res.status(404).json({ success: false, message: 'Report not found' });
+  }
+  
+  const validStatuses = ['APPROVED', 'REVISION_REQUIRED', 'REJECTED'];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ success: false, message: 'Invalid status' });
+  }
+  
+  report.status = status;
+  report.reviewedAt = new Date();
+  report.reviewedBy = req.user.userId;
+  
+  if (status === 'APPROVED') {
+    report.approvedAt = new Date();
+    report.approvedBy = req.user.userId;
+    await report.addAuditLog('APPROVED', req.user.userId, reviewComment || 'Report approved', req.ip);
+  } else if (status === 'REVISION_REQUIRED') {
+    report.revisionNotes = reviewComment;
+    await report.addAuditLog('REVISION_REQUESTED', req.user.userId, reviewComment, req.ip);
+  } else if (status === 'REJECTED') {
+    report.rejectionReason = reviewComment;
+    await report.addAuditLog('REJECTED', req.user.userId, reviewComment, req.ip);
+  }
+  
+  await report.save();
+  
+  res.json({
+    success: true,
+    message: `Report ${status.toLowerCase().replace('_', ' ')} successfully`,
     report,
   });
 }));

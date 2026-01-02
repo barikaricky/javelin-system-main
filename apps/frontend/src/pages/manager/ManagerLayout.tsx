@@ -179,6 +179,12 @@ const menuItems: MenuItem[] = [
         badge: 'New',
       },
       {
+        id: 'review-reports',
+        label: 'Review Reports',
+        icon: AlertCircle,
+        path: '/manager/reports/review',
+      },
+      {
         id: 'reports-analytics',
         label: 'Analytics',
         icon: BarChart3,
