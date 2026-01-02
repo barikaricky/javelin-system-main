@@ -823,36 +823,22 @@ router.get('/locations', asyncHandler(async (req: any, res) => {
       { _id: { $in: locationIds } },
       { isActive: true },
     ],
-  }).sort({ name: 1 }).lean();
+  })
+  .select('locationName city state address isActive')
+  .sort({ locationName: 1 })
+  .lean();
 
-  // Get detailed info for each location
-  const locationsWithDetails = await Promise.all(
-    locations.map(async (loc: any) => {
-      const locationSupervisors = await Supervisor.find({
-        locationId: loc._id,
-        generalSupervisorId: gs._id,
-      }).populate('userId', 'firstName lastName').lean();
-      
-      const operatorCount = await Operator.countDocuments({
-        locationId: loc._id,
-        supervisorId: { $in: supervisors.map(s => s._id) },
-      });
-      
-      const supervisorCount = locationSupervisors.length;
-      
-      return {
-        ...loc,
-        operatorCount,
-        supervisorCount,
-        assignedSupervisors: locationSupervisors.map((s: any) => ({
-          id: s._id,
-          name: `${s.userId?.firstName || ''} ${s.userId?.lastName || ''}`,
-        })),
-      };
-    })
-  );
+  res.json({ locations });
+}));
 
-  res.json(locationsWithDetails);
+// Get all BITs for reports
+router.get('/bits', asyncHandler(async (req: any, res) => {
+  const { Bit } = require('../models');
+  const bits = await Bit.find({ isActive: true })
+    .select('bitName bitCode isActive')
+    .sort({ bitName: 1 })
+    .lean();
+  res.json({ bits });
 }));
 
 // Get attendance for operators under GS supervision

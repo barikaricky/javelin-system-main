@@ -124,14 +124,14 @@ export default function CreateReportPage() {
     try {
       setLoading(true);
       const [locationsRes, bitsRes, supervisorsRes] = await Promise.all([
-        api.get('/locations'),
-        api.get('/bits'),
-        api.get('/supervisors'),
+        api.get('/general-supervisor/locations'),
+        api.get('/general-supervisor/bits'),
+        api.get('/general-supervisor/my-supervisors'),
       ]);
       
       setLocations(locationsRes.data.locations || []);
       setBits(bitsRes.data.bits || []);
-      setSupervisors(supervisorsRes.data.supervisors || []);
+      setSupervisors(supervisorsRes.data || []);
     } catch (error) {
       console.error('Failed to fetch data:', error);
       toast.error('Failed to load form data');

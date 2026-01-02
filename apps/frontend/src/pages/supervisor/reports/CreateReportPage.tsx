@@ -123,15 +123,23 @@ export default function CreateReportPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [locationsRes, bitsRes, supervisorsRes] = await Promise.all([
-        api.get('/locations'),
-        api.get('/bits'),
-        api.get('/supervisors'),
+      // Fetch locations, bits, and current supervisor profile
+      const [locationsRes, bitsRes, profileRes] = await Promise.all([
+        api.get('/supervisors/locations'),
+        api.get('/supervisors/bits'),
+        api.get('/supervisors/my-profile'),
       ]);
       
       setLocations(locationsRes.data.locations || []);
       setBits(bitsRes.data.bits || []);
-      setSupervisors(supervisorsRes.data.supervisors || []);
+      
+      // Auto-populate supervisorId with current logged-in supervisor
+      if (profileRes.data.supervisor?._id) {
+        setFormData(prev => ({
+          ...prev,
+          supervisorId: profileRes.data.supervisor._id
+        }));
+      }
     } catch (error) {
       console.error('Failed to fetch data:', error);
       toast.error('Failed to load form data');
@@ -482,43 +490,23 @@ export default function CreateReportPage() {
                 </div>
               </div>
 
-              {/* Supervisor and Priority */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Supervisor (Optional)
-                  </label>
-                  <select
-                    value={formData.supervisorId}
-                    onChange={(e) => setFormData(prev => ({ ...prev, supervisorId: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Auto-assign</option>
-                    {supervisors.map(supervisor => (
-                      <option key={supervisor._id} value={supervisor._id}>
-                        {supervisor.userId.firstName} {supervisor.userId.lastName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <AlertCircle className="w-4 h-4 inline mr-1" />
-                    Priority
-                  </label>
-                  <select
-                    value={formData.priority}
-                    onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    {PRIORITIES.map(priority => (
-                      <option key={priority.value} value={priority.value}>
-                        {priority.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              {/* Priority (Supervisor field hidden - auto-populated) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <AlertCircle className="w-4 h-4 inline mr-1" />
+                  Priority *
+                </label>
+                <select
+                  value={formData.priority}
+                  onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {PRIORITIES.map(priority => (
+                    <option key={priority.value} value={priority.value}>
+                      {priority.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>

@@ -287,11 +287,15 @@ router.post('/', (req, res, next) => {
   // Send notification to Manager and Director if submitted by Supervisor/GS
   if ((req.user.role === 'SUPERVISOR' || req.user.role === 'GENERAL_SUPERVISOR') && finalStatus === 'PENDING_REVIEW') {
     try {
-      const managersAndDirectors = await User.find({ 
-        role: { $in: ['MANAGER', 'DIRECTOR'] } 
-      }).lean();
+      // Fetch the creator's full user details
+      const creator = await User.findById(req.user.userId).select('firstName lastName').lean();
+      const creatorName = creator ? `${creator.firstName} ${creator.lastName}` : 'A supervisor';
       
-      const creatorName = `${req.user.firstName} ${req.user.lastName}`;
+      const managersAndDirectors = await User.find({ 
+        role: { $in: ['MANAGER', 'DIRECTOR'] },
+        isActive: true
+      }).select('_id role email firstName lastName').lean();
+      
       const REPORT_TYPE_NAMES: Record<string, string> = {
         DAILY_ACTIVITY: 'Daily Activity',
         INCIDENT: 'Incident',
@@ -304,24 +308,33 @@ router.post('/', (req, res, next) => {
       };
       const reportTypeName = REPORT_TYPE_NAMES[reportType] || reportType;
       
-      for (const recipient of managersAndDirectors) {
-        await Notification.create({
+      const notificationPromises = managersAndDirectors.map(async (recipient) => {
+        const actionUrl = recipient.role === 'DIRECTOR' 
+          ? `/director/reports/${report._id}`
+          : `/manager/reports/${report._id}`;
+          
+        return Notification.create({
           receiverId: recipient._id,
           type: 'REPORT_SUBMITTED',
           subject: 'New Report Awaiting Review',
           message: `${creatorName} submitted a ${reportTypeName} report for review`,
-          actionUrl: `/reports/${report._id}`,
+          actionUrl,
           entityType: 'REPORT',
           entityId: report._id.toString(),
           metadata: {
             reportId: report._id,
             submitterId: req.user.userId,
+            submitterName: creatorName,
             reportType: reportType,
             priority: priority || 'MEDIUM',
           },
         });
-      }
+      });
+          },
+        });
+      });
       
+      await Promise.all(notificationPromises);
       console.log(`📧 Sent report review notifications to ${managersAndDirectors.length} managers/directors`);
     } catch (notifError) {
       console.error('Failed to send notifications:', notifError);

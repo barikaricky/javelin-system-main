@@ -418,10 +418,10 @@ export async function assignSupervisorToGeneralSupervisor(
 export async function getAvailableLocations() {
   try {
     const locations = await Location.find({ isActive: true })
-      .select('name address region')
-      .sort({ name: 1 });
+      .select('locationName city state address')
+      .sort({ locationName: 1 });
 
-    return locations;
+    return { locations };
   } catch (error) {
     logger.error('Get available locations error:', error);
     throw error;

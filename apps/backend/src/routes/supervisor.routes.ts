@@ -193,6 +193,16 @@ router.get('/locations', authorize('MANAGER', 'DIRECTOR', 'DEVELOPER', 'SUPERVIS
   res.json(locations);
 }));
 
+// Get all BITs for reports
+router.get('/bits', authorize('SUPERVISOR', 'GENERAL_SUPERVISOR'), asyncHandler(async (req, res) => {
+  const { Bit } = require('../models');
+  const bits = await Bit.find({ isActive: true })
+    .select('bitName bitCode isActive')
+    .sort({ bitName: 1 })
+    .lean();
+  res.json({ bits });
+}));
+
 // Get all supervisors with optional filters
 router.get('/', authorize('MANAGER', 'DIRECTOR', 'DEVELOPER', 'SECRETARY'), asyncHandler(async (req, res) => {
   const { supervisorType, regionAssigned, generalSupervisorId, status, approvalStatus } = req.query;

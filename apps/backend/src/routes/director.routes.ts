@@ -501,13 +501,15 @@ router.get('/notifications', async (req: Request & { user?: any }, res, next) =>
       .lean();
 
     const formattedNotifications = notifications.map(n => ({
+      _id: n._id.toString(),
       id: n._id.toString(),
-      type: n.type,
-      title: n.subject || 'Notification',
+      type: mapNotificationType(n.type),
+      category: n.subject || 'Notification',
       message: n.message,
+      urgent: n.metadata?.priority === 'CRITICAL' || n.metadata?.priority === 'HIGH',
       read: n.isRead,
+      createdAt: n.createdAt,
       timestamp: n.createdAt,
-      priority: getPriorityFromType(n.type),
       actionUrl: n.actionUrl,
       metadata: n.metadata,
     }));
@@ -517,6 +519,19 @@ router.get('/notifications', async (req: Request & { user?: any }, res, next) =>
     next(error);
   }
 });
+
+function mapNotificationType(type: string): string {
+  const typeMap: Record<string, string> = {
+    'REPORT_SUBMITTED': 'warning',
+    'REPORT_APPROVED': 'success',
+    'REPORT_REJECTED': 'critical',
+    'SUPERVISOR_APPROVED': 'success',
+    'SUPERVISOR_REJECTED': 'critical',
+    'OPERATOR_APPROVED': 'success',
+    'MEETING_SCHEDULED': 'info',
+  };
+  return typeMap[type] || 'info';
+}
 
 router.patch('/notifications/:id/read', async (req: Request & { user?: any }, res, next) => {
   try {
