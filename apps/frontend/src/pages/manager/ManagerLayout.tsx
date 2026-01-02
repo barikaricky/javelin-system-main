@@ -30,6 +30,7 @@ import {
   Video,
   Briefcase,
   CreditCard,
+  AlertCircle,
 } from 'lucide-react';
 import { api, getImageUrl } from '../../lib/api';
 import { notificationService, Notification } from '../../services/notificationService';
