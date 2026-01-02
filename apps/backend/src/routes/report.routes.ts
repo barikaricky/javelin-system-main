@@ -167,7 +167,7 @@ router.post('/', (req, res, next) => {
   console.log('✅ Authentication passed');
   console.log('👤 User:', req.user);
   next();
-}, authorize('DIRECTOR', 'GENERAL_SUPERVISOR', 'SUPERVISOR'), (req, res, next) => {
+}, authorize('DIRECTOR', 'MANAGER', 'SECRETARY', 'GENERAL_SUPERVISOR', 'SUPERVISOR'), (req, res, next) => {
   console.log('✅ Authorization passed');
   next();
 }, upload.fields([
@@ -249,9 +249,9 @@ router.post('/', (req, res, next) => {
   const report = await Report.create({
     title,
     reportType,
-    bitId,
-    locationId,
-    supervisorId: supervisorId || req.supervisor?._id || req.generalSupervisor?._id,
+    bitId: bitId || undefined,
+    locationId: locationId || undefined,
+    supervisorId: supervisorId || req.supervisor?._id || req.generalSupervisor?._id || undefined,
     occurrenceDate,
     occurrenceTime,
     description,
@@ -260,13 +260,13 @@ router.post('/', (req, res, next) => {
     audioRecordings,
     attachedFiles,
     priority: priority || 'MEDIUM',
-    tags: tags ? JSON.parse(tags) : [],
+    tags: tags ? (typeof tags === 'string' ? JSON.parse(tags) : tags) : [],
     status: finalStatus,
     createdBy: req.user.userId,
-    submittedAt: isDirector && finalStatus === 'APPROVED' ? new Date() : undefined,
-    submittedBy: isDirector && finalStatus === 'APPROVED' ? req.user.userId : undefined,
-    approvedAt: isDirector && finalStatus === 'APPROVED' ? new Date() : undefined,
-    approvedBy: isDirector && finalStatus === 'APPROVED' ? req.user.userId : undefined,
+    submittedAt: isAutoApprove && finalStatus === 'APPROVED' ? new Date() : undefined,
+    submittedBy: isAutoApprove && finalStatus === 'APPROVED' ? req.user.userId : undefined,
+    approvedAt: isAutoApprove && finalStatus === 'APPROVED' ? new Date() : undefined,
+    approvedBy: isAutoApprove && finalStatus === 'APPROVED' ? req.user.userId : undefined,
     auditLog,
   });
   

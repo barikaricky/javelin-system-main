@@ -134,7 +134,9 @@ const UserSchema = new Schema<IUser>(
     toJSON: {
       virtuals: true,
       transform: (_, ret) => {
-        ret.id = ret._id.toString();
+        if (ret._id) {
+          ret.id = ret._id.toString();
+        }
         delete ret._id;
         delete ret.__v;
         delete ret.passwordHash;
@@ -144,7 +146,9 @@ const UserSchema = new Schema<IUser>(
     toObject: {
       virtuals: true,
       transform: (_, ret) => {
-        ret.id = ret._id.toString();
+        if (ret._id) {
+          ret.id = ret._id.toString();
+        }
         delete ret._id;
         delete ret.__v;
         delete ret.passwordHash;

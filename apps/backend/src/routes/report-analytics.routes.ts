@@ -143,19 +143,34 @@ router.get('/analytics', authenticate, asyncHandler(async (req: any, res: Respon
     count: item.count,
   }));
 
-  // Average response time (hours from creation to approval)
+  // Average response time (hours from creation to approval) - Enhanced calculation
   const approvedReports = await Report.find({
     ...matchQuery,
     status: 'APPROVED',
-    approvedAt: { $exists: true },
-  });
+    approvedAt: { $exists: true, $ne: null },
+    createdAt: { $exists: true, $ne: null },
+  }).select('createdAt approvedAt submittedAt');
+
   let avgResponseTime = 0;
   if (approvedReports.length > 0) {
-    const totalTime = approvedReports.reduce((sum, report) => {
-      const diff = (new Date(report.approvedAt!).getTime() - new Date(report.createdAt).getTime()) / (1000 * 60 * 60);
-      return sum + diff;
-    }, 0);
-    avgResponseTime = totalTime / approvedReports.length;
+    const validReports = approvedReports.filter(
+      report => 
+        report.approvedAt && 
+        report.createdAt && 
+        new Date(report.approvedAt).getTime() > new Date(report.createdAt).getTime()
+    );
+
+    if (validReports.length > 0) {
+      const totalTime = validReports.reduce((sum, report) => {
+        // Use submittedAt if available, otherwise use createdAt
+        const startTime = report.submittedAt || report.createdAt;
+        const endTime = report.approvedAt!;
+        const diffMs = new Date(endTime).getTime() - new Date(startTime).getTime();
+        const diffHours = diffMs / (1000 * 60 * 60);
+        return sum + diffHours;
+      }, 0);
+      avgResponseTime = Math.round((totalTime / validReports.length) * 10) / 10; // Round to 1 decimal
+    }
   }
 
   // Approval rate
