@@ -330,9 +330,6 @@ router.post('/', (req, res, next) => {
           },
         });
       });
-          },
-        });
-      });
       
       await Promise.all(notificationPromises);
       console.log(`📧 Sent report review notifications to ${managersAndDirectors.length} managers/directors`);

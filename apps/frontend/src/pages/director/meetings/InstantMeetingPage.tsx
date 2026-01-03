@@ -56,20 +56,21 @@ export default function InstantMeetingPage() {
       // Start the meeting immediately
       const startedMeeting = await meetingService.startMeeting(response.meeting.id);
 
-      toast.success('Instant meeting started!');
+      toast.success('Instant meeting started! Opening meeting room...');
       
       // Open the in-app meeting room so the user name carries over and you can control participants
       const meetingLink = startedMeeting.meetingLink || response.meeting.meetingLink;
       if (meetingLink) {
-        const meetingRoomUrl = `${window.location.origin}/meeting/${meetingLink}`;
-        window.open(meetingRoomUrl, '_blank');
+        const meetingRoomUrl = `/meeting/${meetingLink}`;
+        // Navigate to meeting room instead of opening in new tab
+        navigate(meetingRoomUrl);
+      } else {
+        throw new Error('Meeting link not generated');
       }
-      
-      // Navigate back to meetings page
-      navigate('/director/meetings');
     } catch (error: any) {
       console.error('Failed to start instant meeting:', error);
-      toast.error(error.response?.data?.error || 'Failed to start meeting');
+      const errorMsg = error.response?.data?.error || error.message || 'Failed to start meeting';
+      toast.error(errorMsg);
       setIsCreating(false);
     }
   };

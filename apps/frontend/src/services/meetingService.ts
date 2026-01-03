@@ -47,9 +47,9 @@ export const getMeetingById = async (meetingId: string): Promise<Meeting> => {
   return response.data.meeting;
 };
 
-export const getMeetingByLink = async (meetingLink: string): Promise<Meeting> => {
-  const response = await api.get<{ meeting: Meeting }>(`${MEETING_API}/link/${meetingLink}`);
-  return response.data.meeting;
+export const getMeetingByLink = async (meetingLink: string): Promise<{meeting: Meeting; canJoin?: boolean; isOrganizer?: boolean; message?: string}> => {
+  const response = await api.get<{ meeting: Meeting; canJoin?: boolean; isOrganizer?: boolean; message?: string }>(`${MEETING_API}/link/${meetingLink}`);
+  return response.data;
 };
 
 export const updateMeeting = async (meetingId: string, data: UpdateMeetingInput): Promise<Meeting> => {

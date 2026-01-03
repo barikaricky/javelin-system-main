@@ -74,7 +74,17 @@ export default function MeetingRoomPage() {
       }
 
       try {
-        const meetingData = await meetingService.getMeetingByLink(meetingLink);
+        const response = await meetingService.getMeetingByLink(meetingLink);
+        const meetingData = response.meeting;
+        const canJoin = response.canJoin !== false;
+        const isOrganizer = response.isOrganizer || false;
+        
+        if (!canJoin) {
+          setError(response.message || 'You are not authorized to join this meeting.');
+          setIsLoading(false);
+          return;
+        }
+        
         setMeeting(meetingData);
         
         const now = new Date();
@@ -82,16 +92,18 @@ export default function MeetingRoomPage() {
         const timeDiff = scheduledTime.getTime() - now.getTime();
         const minutesUntilMeeting = timeDiff / (1000 * 60);
 
-        if (minutesUntilMeeting > 15 && meetingData.status === 'SCHEDULED') {
+        if (minutesUntilMeeting > 15 && meetingData.status === 'SCHEDULED' && !isOrganizer) {
           setError(`Meeting hasn't started yet. It's scheduled for ${scheduledTime.toLocaleString()}`);
         } else if (meetingData.status === 'CANCELLED') {
           setError('This meeting has been cancelled.');
         } else if (meetingData.status === 'ENDED') {
           setError('This meeting has ended.');
         } else {
-          if (meetingData.organizer?.userId === user?.id && meetingData.status === 'SCHEDULED') {
+          // Auto-start meeting if organizer joins and meeting is scheduled
+          if (isOrganizer && meetingData.status === 'SCHEDULED') {
             try {
-              await meetingService.startMeeting(meetingData.id);
+              const startedMeeting = await meetingService.startMeeting(meetingData.id);
+              setMeeting(startedMeeting);
             } catch (e) {
               console.log('Meeting may already be started');
             }
@@ -100,14 +112,23 @@ export default function MeetingRoomPage() {
         }
       } catch (err: any) {
         console.error('Failed to fetch meeting:', err);
-        setError(err.response?.data?.error || 'Failed to load meeting details');
+        const errorMessage = err.response?.data?.message || err.response?.data?.error || 'Failed to load meeting details';
+        
+        // If 401 unauthorized, redirect to login with return URL
+        if (err.response?.status === 401) {
+          toast.error('Please log in to join the meeting');
+          navigate(`/login?redirect=/meeting/${meetingLink}`);
+          return;
+        }
+        
+        setError(errorMessage);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchMeeting();
-  }, [meetingLink, user?.id]);
+  }, [meetingLink, user?.id, navigate]);
 
   // Initialize Jitsi Meeting
   useEffect(() => {

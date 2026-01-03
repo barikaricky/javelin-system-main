@@ -30,7 +30,7 @@ router.post(
   authenticate,
   authorize('SECRETARY', 'DIRECTOR'),
   asyncHandler(async (req: any, res: any) => {
-    const moneyOut = await moneyOutService.createMoneyOut(req.body, req.user.id);
+    const moneyOut = await moneyOutService.createMoneyOut(req.body, req.user.userId);
     
     res.status(201).json({
       success: true,
@@ -167,7 +167,7 @@ router.put(
     const moneyOut = await moneyOutService.updateMoneyOut(
       req.params.id,
       updates,
-      req.user.id,
+      req.user.userId,
       reason
     );
     
@@ -189,7 +189,7 @@ router.post(
   asyncHandler(async (req: any, res: any) => {
     const moneyOut = await moneyOutService.approveMoneyOut(
       req.params.id,
-      req.user.id
+      req.user.userId
     );
     
     res.json({
@@ -219,7 +219,7 @@ router.post(
     
     const moneyOut = await moneyOutService.rejectMoneyOut(
       req.params.id,
-      req.user.id,
+      req.user.userId,
       rejectionReason
     );
     
@@ -250,7 +250,7 @@ router.post(
     
     const moneyOut = await moneyOutService.markAsPaid(
       req.params.id,
-      req.user.id,
+      req.user.userId,
       paymentProof
     );
     
@@ -281,7 +281,7 @@ router.delete(
     
     const moneyOut = await moneyOutService.deleteMoneyOut(
       req.params.id,
-      req.user.id,
+      req.user.userId,
       deletionReason
     );
     

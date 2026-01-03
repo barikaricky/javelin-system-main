@@ -1,5 +1,5 @@
 import MoneyOut, { IMoneyOut, MONEY_OUT_CATEGORIES, BENEFICIARY_TYPES } from '../models/MoneyOut.model';
-import AuditLog from '../models/AuditLog.model';
+import { AuditLog } from '../models/AuditLog.model';
 import mongoose from 'mongoose';
 
 export class MoneyOutService {

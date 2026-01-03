@@ -92,9 +92,9 @@ api.interceptors.response.use(
     });
 
     if (error.response?.status === 401) {
-      // Only redirect if we're not already on the login page and not on dev pages
+      // Only redirect if we're not already on the login page, dev pages, or meeting pages
       const currentPath = window.location.pathname;
-      if (!currentPath.startsWith('/login') && !currentPath.startsWith('/dev/')) {
+      if (!currentPath.startsWith('/login') && !currentPath.startsWith('/dev/') && !currentPath.startsWith('/meeting/')) {
         console.warn('🚫 401 Unauthorized - clearing auth and redirecting to login');
         localStorage.removeItem('token');
         localStorage.removeItem('jevelin-auth');

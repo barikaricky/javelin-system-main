@@ -21,14 +21,24 @@ router.post(
 
     logger.info('Meeting creation request', { userId, body: req.body });
 
-    const director = await Director.findOne({ userId }).lean();
+    // Find or create Director profile
+    let director = await Director.findOne({ userId }).lean();
 
     if (!director) {
-      logger.error('Director not found for user', { userId });
-      return res.status(403).json({ error: 'Only directors can create meetings' });
+      logger.info('Director profile not found, creating new profile', { userId });
+      
+      // Auto-create Director profile for authenticated DIRECTOR users
+      const newDirector = await Director.create({
+        userId,
+        employeeId: `DIR-${Date.now()}-${userId.toString().slice(-4)}`,
+        startDate: new Date(),
+      });
+      
+      director = newDirector.toObject();
+      logger.info('Director profile created', { directorId: director._id });
+    } else {
+      logger.info('Director found', { directorId: director._id });
     }
-
-    logger.info('Director found', { directorId: director._id });
 
     const {
       title,
@@ -219,13 +229,39 @@ router.get(
   })
 );
 
-// Get meeting by link
+// Get meeting by link (with role-based access control)
 router.get(
   '/link/:meetingLink',
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const { meetingLink } = req.params;
+    const userId = req.user!.userId;
+    const userRole = req.user!.role;
+    
     const meeting = await meetingService.getMeetingByLink(meetingLink);
-    res.json({ meeting });
+    
+    // Check if user is the organizer
+    const organizer = await Director.findById(meeting.organizer).populate('userId').lean();
+    const isOrganizer = organizer?.userId?.toString() === userId;
+    
+    // If user is organizer, always allow access
+    if (isOrganizer) {
+      return res.json({ meeting, canJoin: true, isOrganizer: true });
+    }
+    
+    // Check if user's role is in targetRoles
+    if (meeting.targetRoles && meeting.targetRoles.length > 0) {
+      const canJoin = meeting.targetRoles.includes(userRole);
+      
+      if (!canJoin) {
+        return res.status(403).json({ 
+          error: 'Access Denied', 
+          message: `This meeting is restricted to ${meeting.targetRoles.join(', ')} roles only. Your role (${userRole}) is not authorized to join.`,
+          meeting: null 
+        });
+      }
+    }
+    
+    res.json({ meeting, canJoin: true, isOrganizer: false });
   })
 );
 
