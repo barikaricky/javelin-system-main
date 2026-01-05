@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { 
   Shield, ArrowLeft, Edit, MapPin, Building2, Users, Clock, 
   Calendar, CheckCircle, XCircle, User, FileText, AlertCircle,
-  TrendingUp, Briefcase
+  TrendingUp, Briefcase, Mail, Phone
 } from 'lucide-react';
 import axios from 'axios';
 import { getApiBaseURL } from '../../../lib/api';
@@ -44,12 +44,23 @@ interface Assignment {
   operatorId: {
     _id: string;
     employeeId: string;
+    shiftType?: string;
+    locationId?: {
+      _id: string;
+      locationName: string;
+    };
+    startDate?: string;
     userId: {
       _id: string;
       firstName: string;
       lastName: string;
       email?: string;
       phone?: string;
+      phoneNumber?: string;
+      profilePhoto?: string;
+      passportPhoto?: string;
+      state?: string;
+      status?: string;
     };
   };
   startDate?: string;
@@ -394,7 +405,7 @@ export const BitDetailsPage = () => {
                   <p className="text-gray-500 text-sm">No operators assigned yet</p>
                 </div>
               ) : (
-                <div className="space-y-3 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="space-y-4 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar">
                   {assignments.map((assignment, index) => {
                     // Add null safety checks for nested structure
                     const operator = assignment?.operatorId;
@@ -407,41 +418,147 @@ export const BitDetailsPage = () => {
                     
                     // Use startDate or assignedDate, with fallback
                     const displayDate = assignment.startDate || assignment.assignedDate;
+                    const operatorStartDate = operator.startDate;
+                    const photoUrl = user.profilePhoto || user.passportPhoto;
+                    const phoneDisplay = user.phone || user.phoneNumber;
                     
                     return (
                     <div
                       key={assignment._id}
-                      className="p-4 bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border border-purple-100 hover:shadow-md transition-all"
+                      className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all overflow-hidden"
                       style={{ animation: `fadeIn 0.3s ease-out ${index * 0.05}s both` }}
                     >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-900">
-                            {user.firstName || 'N/A'} {user.lastName || ''}
-                          </h3>
-                          <span className="text-xs text-gray-500 font-mono">
-                            {operator.employeeId || 'N/A'}
-                          </span>
-                          {user.phone && (
-                            <span className="block text-xs text-gray-500 mt-1">
-                              {user.phone}
-                            </span>
-                          )}
-                        </div>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(assignment.status)}`}>
+                      {/* Header with Status */}
+                      <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-2 flex items-center justify-between">
+                        <span className="text-white text-sm font-semibold">Operator Profile</span>
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(assignment.status)} bg-white`}>
                           {assignment.status}
                         </span>
                       </div>
                       
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Calendar className="h-4 w-4" />
-                        <span>
-                          {displayDate ? new Date(displayDate).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric'
-                          }) : 'Date not available'}
-                        </span>
+                      <div className="p-4">
+                        {/* Profile Section with Photo */}
+                        <div className="flex gap-4 mb-4">
+                          {/* Profile Photo */}
+                          <div className="flex-shrink-0">
+                            {photoUrl ? (
+                              <img 
+                                src={photoUrl} 
+                                alt={`${user.firstName} ${user.lastName}`}
+                                className="w-20 h-20 rounded-lg object-cover border-2 border-purple-200"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = `https://ui-avatars.com/api/?name=${user.firstName}+${user.lastName}&background=9333ea&color=fff&size=80`;
+                                }}
+                              />
+                            ) : (
+                              <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
+                                {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Basic Info */}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg font-bold text-gray-900 mb-1">
+                              {user.firstName || 'N/A'} {user.lastName || ''}
+                            </h3>
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="inline-flex items-center px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-mono font-semibold">
+                                {operator.employeeId || 'N/A'}
+                              </span>
+                              {user.status && (
+                                <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                                  user.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                                }`}>
+                                  {user.status}
+                                </span>
+                              )}
+                            </div>
+                            {user.state && (
+                              <div className="flex items-center gap-1 text-sm text-gray-600">
+                                <MapPin className="h-3.5 w-3.5" />
+                                <span>{user.state}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Contact Information */}
+                        <div className="bg-gray-50 rounded-lg p-3 mb-3 space-y-2">
+                          <h4 className="text-xs font-semibold text-gray-700 uppercase mb-2">Contact Information</h4>
+                          {user.email && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <Mail className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                              <span className="text-gray-700 break-all">{user.email}</span>
+                            </div>
+                          )}
+                          {phoneDisplay && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <Phone className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                              <span className="text-gray-700">{phoneDisplay}</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Work Details */}
+                        <div className="grid grid-cols-2 gap-3">
+                          {operator.shiftType && (
+                            <div className="bg-blue-50 rounded-lg p-3">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Clock className="h-4 w-4 text-blue-600" />
+                                <span className="text-xs text-gray-600">Shift Type</span>
+                              </div>
+                              <p className="text-sm font-semibold text-gray-900">
+                                {operator.shiftType.replace('_', ' ')}
+                              </p>
+                            </div>
+                          )}
+                          
+                          {operatorStartDate && (
+                            <div className="bg-green-50 rounded-lg p-3">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Calendar className="h-4 w-4 text-green-600" />
+                                <span className="text-xs text-gray-600">Start Date</span>
+                              </div>
+                              <p className="text-sm font-semibold text-gray-900">
+                                {new Date(operatorStartDate).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric'
+                                })}
+                              </p>
+                            </div>
+                          )}
+                          
+                          {displayDate && (
+                            <div className="bg-purple-50 rounded-lg p-3">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Calendar className="h-4 w-4 text-purple-600" />
+                                <span className="text-xs text-gray-600">Assignment Date</span>
+                              </div>
+                              <p className="text-sm font-semibold text-gray-900">
+                                {new Date(displayDate).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric'
+                                })}
+                              </p>
+                            </div>
+                          )}
+                          
+                          {operator.locationId && (
+                            <div className="bg-orange-50 rounded-lg p-3">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Building2 className="h-4 w-4 text-orange-600" />
+                                <span className="text-xs text-gray-600">Location</span>
+                              </div>
+                              <p className="text-sm font-semibold text-gray-900 truncate" title={operator.locationId.locationName}>
+                                {operator.locationId.locationName}
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                     );
