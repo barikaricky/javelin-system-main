@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Plus, Search, MapPin, Users, Clock, Edit } from 'lucide-react';
+import { Shield, Plus, Search, MapPin, Users, Clock, Edit, Trash2 } from 'lucide-react';
 import axios from 'axios';
 import { getApiBaseURL } from '../../../lib/api';
+import toast from 'react-hot-toast';
+import { useAuthStore } from '../../../stores/authStore';
 
 interface Bit {
   _id: string;
@@ -29,6 +31,7 @@ interface BitStats {
 
 export const BitsListPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [bits, setBits] = useState<Bit[]>([]);
   const [stats, setStats] = useState<BitStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,6 +39,7 @@ export const BitsListPage = () => {
   const [filterActive, setFilterActive] = useState<string>('all');
 
   const API_URL = getApiBaseURL();
+  const isDirector = user?.role === 'DIRECTOR';
 
   useEffect(() => {
     fetchBits();
@@ -83,6 +87,35 @@ export const BitsListPage = () => {
       'ROTATING': 'Rotating'
     };
     return labels[shift] || shift;
+  };
+
+  const handleDeleteBit = async (bitId: string, bitName: string) => {
+    if (!isDirector) {
+      toast.error('Only Directors can delete BITs');
+      return;
+    }
+
+    const confirmMessage = `Are you sure you want to delete "${bitName}"? This action cannot be undone.`;
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}/api/bits/${bitId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast.success('BIT deleted successfully');
+      // Remove from local state
+      setBits(bits.filter(bit => bit._id !== bitId));
+      // Refresh stats
+      fetchStats();
+    } catch (error: any) {
+      console.error('Error deleting bit:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to delete BIT';
+      toast.error(errorMessage);
+    }
   };
 
   return (
@@ -285,16 +318,30 @@ export const BitsListPage = () => {
                       </span>
                     )}
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/secretary/bits/${bit._id}/edit`);
-                    }}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
-                  >
-                    <Edit className="h-4 w-4" />
-                    Edit Bit
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/secretary/bits/${bit._id}/edit`);
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                    >
+                      <Edit className="h-4 w-4" />
+                      Edit
+                    </button>
+                    {isDirector && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteBit(bit._id, bit.bitName);
+                        }}
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                        title="Delete BIT (Director only)"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

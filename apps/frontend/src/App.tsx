@@ -140,6 +140,7 @@ import SecretaryLayout from './pages/secretary/SecretaryLayout';
 import SecretaryDashboard from './pages/secretary/Dashboard';
 import { LocationsListPage } from './pages/secretary/locations/LocationsListPage';
 import { CreateLocationPage } from './pages/secretary/locations/CreateLocationPage';
+import { EditLocationPage } from './pages/secretary/locations/EditLocationPage';
 import { BitsListPage } from './pages/secretary/bits/BitsListPage';
 import { CreateBitPage } from './pages/secretary/bits/CreateBitPage';
 import { EditBitPage } from './pages/secretary/bits/EditBitPage';
@@ -274,6 +275,7 @@ function App() {
         <Route path="budgets" element={<SecretaryDashboard />} />
         <Route path="locations" element={<LocationsListPage />} />
         <Route path="locations/create" element={<CreateLocationPage />} />
+        <Route path="locations/:id/edit" element={<EditLocationPage />} />
         <Route path="bits" element={<BitsListPage />} />
         <Route path="bits/create" element={<CreateBitPage />} />
         <Route path="bits/:id/edit" element={<EditBitPage />} />

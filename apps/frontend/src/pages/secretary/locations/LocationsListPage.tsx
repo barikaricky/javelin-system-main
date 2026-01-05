@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MapPin, Plus, Edit, Trash2, Search, Building2, TrendingUp } from 'lucide-react';
+import { MapPin, Plus, Edit, Trash2, Search, Building2, TrendingUp, ChevronDown, ChevronUp, Users } from 'lucide-react';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import { api, getApiBaseURL } from '../../../lib/api';
+import { useAuthStore } from '../../../stores/authStore';
 
 interface Location {
   _id: string;
@@ -17,6 +19,17 @@ interface Location {
   contactPhone?: string;
 }
 
+interface Bit {
+  _id: string;
+  bitCode: string;
+  bitName: string;
+  locationId: string | { _id: string; locationName: string };
+  numberOfOperators: number;
+  shift: string;
+  securityTypes: string[];
+  isActive: boolean;
+}
+
 interface LocationStats {
   total: number;
   active: number;
@@ -26,12 +39,17 @@ interface LocationStats {
 
 export const LocationsListPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const isDirector = user?.role === 'DIRECTOR';
   const [locations, setLocations] = useState<Location[]>([]);
   const [stats, setStats] = useState<LocationStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterState, setFilterState] = useState('');
   const [filterActive, setFilterActive] = useState<string>('all');
+  const [expandedLocations, setExpandedLocations] = useState<Set<string>>(new Set());
+  const [locationBits, setLocationBits] = useState<{ [key: string]: Bit[] }>({});
+  const [loadingBits, setLoadingBits] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
     fetchLocations();
@@ -45,7 +63,6 @@ export const LocationsListPage = () => {
       const params = new URLSearchParams();
       if (searchQuery) params.append('search', searchQuery);
       if (filterState) params.append('state', filterState);
-      // Only add isActive filter if it's not 'all'
       if (filterActive !== 'all') {
         params.append('isActive', filterActive);
       }
@@ -54,12 +71,10 @@ export const LocationsListPage = () => {
       const queryString = params.toString();
       const url = queryString ? `${API_URL}/api/locations?${queryString}` : `${API_URL}/api/locations`;
       
-      console.log('Fetching locations with URL:', url);
       const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      console.log('Locations response:', response.data);
       setLocations(response.data.locations || response.data || []);
     } catch (error) {
       console.error('Error fetching locations:', error);
@@ -76,11 +91,9 @@ export const LocationsListPage = () => {
       const response = await axios.get(`${API_URL}/api/locations/stats`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      console.log('Stats response:', response.data);
       setStats(response.data || { total: 0, active: 0, totalBits: 0, byState: [] });
     } catch (error) {
       console.error('Error fetching stats:', error);
-      // Set default stats on error
       setStats({ total: 0, active: 0, totalBits: 0, byState: [] });
     }
   };
@@ -100,12 +113,85 @@ export const LocationsListPage = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
         setLocations(locations.filter(location => location._id !== id));
-        alert('Location deleted successfully');
+        toast.success('Location deleted successfully');
       } catch (error) {
         console.error('Error deleting location:', error);
-        alert('Failed to delete location');
+        toast.error('Failed to delete location');
       }
     }
+  };
+
+  const toggleLocationExpand = async (locationId: string) => {
+    const newExpanded = new Set(expandedLocations);
+    
+    if (newExpanded.has(locationId)) {
+      newExpanded.delete(locationId);
+    } else {
+      newExpanded.add(locationId);
+      if (!locationBits[locationId]) {
+        await fetchLocationBits(locationId);
+      }
+    }
+    
+    setExpandedLocations(newExpanded);
+  };
+
+  const fetchLocationBits = async (locationId: string) => {
+    try {
+      setLoadingBits(prev => ({ ...prev, [locationId]: true }));
+      const token = localStorage.getItem('token');
+      const API_URL = getApiBaseURL();
+      const response = await axios.get(`${API_URL}/api/bits?locationId=${locationId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const bits = response.data.bits || response.data.data || [];
+      setLocationBits(prev => ({ ...prev, [locationId]: bits }));
+    } catch (error) {
+      console.error('Error fetching bits:', error);
+      toast.error('Failed to load BITs');
+      setLocationBits(prev => ({ ...prev, [locationId]: [] }));
+    } finally {
+      setLoadingBits(prev => ({ ...prev, [locationId]: false }));
+    }
+  };
+
+  const handleDeleteBit = async (bitId: string, bitName: string, locationId: string) => {
+    if (!isDirector) {
+      toast.error('Only Directors can delete BITs');
+      return;
+    }
+
+    const confirmMessage = `Are you sure you want to delete "${bitName}"? This action cannot be undone.`;
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const API_URL = getApiBaseURL();
+      await axios.delete(`${API_URL}/api/bits/${bitId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast.success('BIT deleted successfully');
+      
+      setLocationBits(prev => ({
+        ...prev,
+        [locationId]: prev[locationId].filter(bit => bit._id !== bitId)
+      }));
+      
+      fetchStats();
+    } catch (error: any) {
+      console.error('Error deleting BIT:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete BIT');
+    }
+  };
+
+  const getShiftLabel = (shift: string) => {
+    const labels: { [key: string]: string } = {
+      DAY: 'Day',
+      NIGHT: 'Night',
+      FULL: '24 Hours'
+    };
+    return labels[shift] || shift;
   };
 
   return (
@@ -248,48 +334,131 @@ export const LocationsListPage = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {locations.map(location => (
-                    <tr key={location._id} className="hover:bg-gray-50 transition-colors">
-                      <td className="py-4 px-4 text-sm font-medium text-gray-900">
-                        {location.locationName}
-                      </td>
-                      <td className="py-4 px-4 text-sm text-gray-700">
-                        {location.address}
-                      </td>
-                      <td className="py-4 px-4 text-sm text-gray-700">
-                        {location.city}
-                      </td>
-                      <td className="py-4 px-4 text-sm text-gray-700">
-                        {location.state}
-                      </td>
-                      <td className="py-4 px-4 text-sm text-gray-700">
-                        {getLocationTypeLabel(location.locationType)}
-                      </td>
-                      <td className="py-4 px-4 text-sm">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          location.isActive 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {location.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Link
-                            to={`/secretary/locations/${location._id}/edit`}
-                            className="text-blue-600 hover:text-blue-800 transition-colors"
-                          >
-                            <Edit className="w-5 h-5" />
-                          </Link>
+                    <>
+                      <tr key={location._id} className="hover:bg-gray-50 transition-colors">
+                        <td className="py-4 px-4 text-sm font-medium text-gray-900">
                           <button
-                            onClick={() => handleDeleteLocation(location._id)}
-                            className="text-red-600 hover:text-red-800 transition-colors"
+                            onClick={() => toggleLocationExpand(location._id)}
+                            className="flex items-center gap-2 hover:text-purple-600 transition-colors"
                           >
-                            <Trash2 className="w-5 h-5" />
+                            {expandedLocations.has(location._id) ? (
+                              <ChevronUp className="w-4 h-4" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4" />
+                            )}
+                            {location.locationName}
+                            {location.totalBits > 0 && (
+                              <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">
+                                {location.totalBits} BIT{location.totalBits !== 1 ? 's' : ''}
+                              </span>
+                            )}
                           </button>
-                        </div>
-                      </td>
-                    </tr>
+                        </td>
+                        <td className="py-4 px-4 text-sm text-gray-700">
+                          {location.address}
+                        </td>
+                        <td className="py-4 px-4 text-sm text-gray-700">
+                          {location.city}
+                        </td>
+                        <td className="py-4 px-4 text-sm text-gray-700">
+                          {location.state}
+                        </td>
+                        <td className="py-4 px-4 text-sm text-gray-700">
+                          {getLocationTypeLabel(location.locationType)}
+                        </td>
+                        <td className="py-4 px-4 text-sm">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            location.isActive 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {location.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Link
+                              to={`/secretary/locations/${location._id}/edit`}
+                              className="text-blue-600 hover:text-blue-800 transition-colors"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Edit className="w-5 h-5" />
+                            </Link>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteLocation(location._id);
+                              }}
+                              className="text-red-600 hover:text-red-800 transition-colors"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      
+                      {/* Expanded BITs Section */}
+                      {expandedLocations.has(location._id) && (
+                        <tr>
+                          <td colSpan={7} className="px-4 py-3 bg-gray-50">
+                            {loadingBits[location._id] ? (
+                              <div className="flex justify-center py-4">
+                                <div className="animate-spin h-6 w-6 border-2 border-purple-600 border-t-transparent rounded-full"></div>
+                              </div>
+                            ) : locationBits[location._id]?.length > 0 ? (
+                              <div className="space-y-2">
+                                <h4 className="text-sm font-semibold text-gray-700 mb-3">BITs at this location:</h4>
+                                {locationBits[location._id].map(bit => (
+                                  <div key={bit._id} className="bg-white p-3 rounded-lg border border-gray-200 flex items-center justify-between">
+                                    <div className="flex-1 grid grid-cols-4 gap-4">
+                                      <div>
+                                        <span className="text-xs text-gray-500">BIT Code</span>
+                                        <p className="text-sm font-medium text-gray-900">{bit.bitCode}</p>
+                                      </div>
+                                      <div>
+                                        <span className="text-xs text-gray-500">BIT Name</span>
+                                        <p className="text-sm font-medium text-gray-900">{bit.bitName}</p>
+                                      </div>
+                                      <div>
+                                        <span className="text-xs text-gray-500">Operators</span>
+                                        <p className="text-sm text-gray-700 flex items-center gap-1">
+                                          <Users className="w-3 h-3" />
+                                          {bit.numberOfOperators}
+                                        </p>
+                                      </div>
+                                      <div>
+                                        <span className="text-xs text-gray-500">Shift</span>
+                                        <p className="text-sm text-gray-700">{getShiftLabel(bit.shift)}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 ml-4">
+                                      <button
+                                        onClick={() => navigate(`/secretary/bits/${bit._id}/edit`)}
+                                        className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 transition-colors"
+                                      >
+                                        <Edit className="w-3 h-3" />
+                                        Edit
+                                      </button>
+                                      {isDirector && (
+                                        <button
+                                          onClick={() => handleDeleteBit(bit._id, bit.bitName, location._id)}
+                                          className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                          Delete
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-500 text-center py-3">No BITs found at this location</p>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   ))}
                 </tbody>
               </table>
@@ -301,26 +470,47 @@ export const LocationsListPage = () => {
                 <div key={location._id} className="bg-white rounded-lg shadow-md p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 text-base mb-1">
-                        {location.locationName}
-                      </h3>
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        location.isActive 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {location.isActive ? 'Active' : 'Inactive'}
-                      </span>
+                      <button
+                        onClick={() => toggleLocationExpand(location._id)}
+                        className="flex items-center gap-2 text-left"
+                      >
+                        {expandedLocations.has(location._id) ? (
+                          <ChevronUp className="w-5 h-5 text-gray-500" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-gray-500" />
+                        )}
+                        <h3 className="font-semibold text-gray-900 text-base">
+                          {location.locationName}
+                        </h3>
+                      </button>
+                      <div className="flex items-center gap-2 mt-1 ml-7">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          location.isActive 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {location.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                        {location.totalBits > 0 && (
+                          <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                            {location.totalBits} BIT{location.totalBits !== 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 ml-2">
                       <Link
                         to={`/secretary/locations/${location._id}/edit`}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <Edit className="w-5 h-5" />
                       </Link>
                       <button
-                        onClick={() => handleDeleteLocation(location._id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteLocation(location._id);
+                        }}
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       >
                         <Trash2 className="w-5 h-5" />
@@ -328,7 +518,7 @@ export const LocationsListPage = () => {
                     </div>
                   </div>
                   
-                  <div className="space-y-2 text-sm">
+                  <div className="space-y-2 text-sm ml-7">
                     <div className="flex items-start gap-2">
                       <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                       <span className="text-gray-700">{location.address}</span>
@@ -357,6 +547,61 @@ export const LocationsListPage = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* Expanded BITs for Mobile */}
+                  {expandedLocations.has(location._id) && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      {loadingBits[location._id] ? (
+                        <div className="flex justify-center py-4">
+                          <div className="animate-spin h-6 w-6 border-2 border-purple-600 border-t-transparent rounded-full"></div>
+                        </div>
+                      ) : locationBits[location._id]?.length > 0 ? (
+                        <div className="space-y-3">
+                          <h4 className="text-sm font-semibold text-gray-700">BITs at this location:</h4>
+                          {locationBits[location._id].map(bit => (
+                            <div key={bit._id} className="bg-gray-50 p-3 rounded-lg space-y-2">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-gray-900">{bit.bitCode}</p>
+                                  <p className="text-xs text-gray-600">{bit.bitName}</p>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div>
+                                  <span className="text-gray-500">Operators:</span>
+                                  <span className="ml-1 text-gray-900">{bit.numberOfOperators}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Shift:</span>
+                                  <span className="ml-1 text-gray-900">{getShiftLabel(bit.shift)}</span>
+                                </div>
+                              </div>
+                              <div className="flex gap-2 pt-2">
+                                <button
+                                  onClick={() => navigate(`/secretary/bits/${bit._id}/edit`)}
+                                  className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 transition-colors"
+                                >
+                                  <Edit className="w-3 h-3" />
+                                  Edit
+                                </button>
+                                {isDirector && (
+                                  <button
+                                    onClick={() => handleDeleteBit(bit._id, bit.bitName, location._id)}
+                                    className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                    Delete
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500 text-center py-3">No BITs found at this location</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
