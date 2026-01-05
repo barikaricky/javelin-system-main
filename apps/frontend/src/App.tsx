@@ -63,6 +63,7 @@ import ManagerCommunicationPage from './pages/manager/communication/Communicatio
 import ManagerPendingApprovalsPage from './pages/manager/PendingApprovalsPage';
 import OperatorApprovalsPage from './pages/manager/OperatorApprovalsPage';
 import RegisterSecretaryPage from './pages/manager/secretary/RegisterSecretaryPage';
+import RegisterAdminPage from './pages/manager/RegisterAdminPage';
 import { ManagerBitsListPage } from './pages/manager/bits/BitsListPage';
 import { ManagerLocationsListPage } from './pages/manager/locations/LocationsListPage';
 import { ManagerEditBitPage } from './pages/manager/bits/EditBitPage';
@@ -335,6 +336,7 @@ function App() {
         <Route path="settings" element={<ManagerSettingsPage />} />
         <Route path="id-cards" element={<ManagerIDCardGenerator />} />
         <Route path="secretary/register" element={<RegisterSecretaryPage />} />
+        <Route path="admin/register" element={<RegisterAdminPage />} />
         <Route path="money-in" element={<ManagerMoneyInView />} />
         <Route path="salary" element={<SalaryView />} />
         <Route path="assignments" element={<AssignmentsListPage />} />

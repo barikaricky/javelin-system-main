@@ -2,8 +2,8 @@ import { Bit, Location } from '../models';
 import { AppError } from '../middlewares/error.middleware';
 import { logger } from '../utils/logger';
 
-// Generate bit code
-function generateBitCode(locationName: string, index: number): string {
+// Generate bit code with uniqueness guarantee
+async function generateUniqueBitCode(locationName: string, locationId: string): Promise<string> {
   const prefix = locationName
     .split(' ')
     .map(word => word.charAt(0))
@@ -11,7 +11,37 @@ function generateBitCode(locationName: string, index: number): string {
     .toUpperCase()
     .substring(0, 3);
   
-  const code = `BIT-${prefix}-${String(index).padStart(3, '0')}`;
+  // Find all existing bit codes for this location to get the highest number
+  const existingBits = await Bit.find({ locationId })
+    .select('bitCode')
+    .sort({ bitCode: -1 })
+    .lean();
+  
+  let maxNumber = 0;
+  const pattern = new RegExp(`^BIT-${prefix}-(\\d+)$`);
+  
+  for (const bit of existingBits) {
+    const match = bit.bitCode.match(pattern);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (num > maxNumber) {
+        maxNumber = num;
+      }
+    }
+  }
+  
+  // Generate new code with next number
+  const nextNumber = maxNumber + 1;
+  const code = `BIT-${prefix}-${String(nextNumber).padStart(3, '0')}`;
+  
+  // Double-check uniqueness (race condition protection)
+  const exists = await Bit.findOne({ bitCode: code });
+  if (exists) {
+    // If somehow it exists, try with a timestamp suffix
+    const timestamp = Date.now().toString().slice(-4);
+    return `BIT-${prefix}-${String(nextNumber).padStart(3, '0')}-${timestamp}`;
+  }
+  
   return code;
 }
 
@@ -42,8 +72,7 @@ export async function createBit(data: CreateBitData) {
     }
 
     // Generate unique bit code
-    const bitsCount = await Bit.countDocuments({ locationId: data.locationId });
-    const bitCode = generateBitCode(location.locationName, bitsCount + 1);
+    const bitCode = await generateUniqueBitCode(location.locationName, data.locationId);
 
     const bit = await Bit.create({
       ...data,
