@@ -339,21 +339,21 @@ export default function BitExpensesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Spending per BIT</h1>
-              <p className="text-sm text-gray-600 mt-1">Track operational expenses (Expenses Only - No Salary)</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Spending per BIT</h1>
+              <p className="text-xs sm:text-sm text-gray-600 mt-1">Track operational expenses (Expenses Only - No Salary)</p>
             </div>
             <button
               onClick={() => {
                 resetForm();
                 setShowAddModal(true);
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 w-full sm:w-auto"
             >
               <Plus className="w-5 h-5" />
               Add Expense
@@ -361,11 +361,11 @@ export default function BitExpensesPage() {
           </div>
 
           {/* View Toggle & Period */}
-          <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="flex gap-2 w-full sm:w-auto">
               <button
                 onClick={() => setView('summary')}
-                className={`px-4 py-2 rounded-lg font-medium ${
+                className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg font-medium text-sm sm:text-base ${
                   view === 'summary' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -373,7 +373,7 @@ export default function BitExpensesPage() {
               </button>
               <button
                 onClick={() => setView('list')}
-                className={`px-4 py-2 rounded-lg font-medium ${
+                className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg font-medium text-sm sm:text-base ${
                   view === 'list' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -382,12 +382,12 @@ export default function BitExpensesPage() {
             </div>
 
             {view === 'summary' && (
-              <div className="flex gap-2">
+              <div className="flex gap-2 w-full sm:w-auto">
                 {(['week', 'month', 'year'] as const).map(p => (
                   <button
                     key={p}
                     onClick={() => setPeriod(p)}
-                    className={`px-3 py-1 rounded-lg text-sm font-medium ${
+                    className={`flex-1 sm:flex-none px-3 py-1 rounded-lg text-sm font-medium ${
                       period === p ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
@@ -400,7 +400,7 @@ export default function BitExpensesPage() {
             {view === 'list' && (
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 w-full sm:w-auto text-sm sm:text-base"
               >
                 <Filter className="w-4 h-4" />
                 Filters
@@ -410,7 +410,7 @@ export default function BitExpensesPage() {
 
             <button
               onClick={exportToCSV}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 ml-auto"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 w-full sm:w-auto sm:ml-auto text-sm sm:text-base"
             >
               <Download className="w-4 h-4" />
               Export CSV
@@ -419,7 +419,7 @@ export default function BitExpensesPage() {
 
           {/* Filters */}
           {showFilters && view === 'list' && (
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t">
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 pt-4 border-t">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
                 <input
@@ -427,7 +427,7 @@ export default function BitExpensesPage() {
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder="Search expenses..."
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
               <div>
@@ -435,7 +435,7 @@ export default function BitExpensesPage() {
                 <select
                   value={selectedBit}
                   onChange={e => setSelectedBit(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                 >
                   <option value="">All BITs</option>
                   {bits.map(bit => (
@@ -448,7 +448,7 @@ export default function BitExpensesPage() {
                 <select
                   value={categoryFilter}
                   onChange={e => setCategoryFilter(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                 >
                   <option value="">All Categories</option>
                   {Object.entries(CATEGORIES).map(([key, label]) => (
@@ -461,7 +461,7 @@ export default function BitExpensesPage() {
                 <select
                   value={paymentFilter}
                   onChange={e => setPaymentFilter(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                 >
                   <option value="">All Methods</option>
                   {Object.entries(PAYMENT_METHODS).map(([key, label]) => (
@@ -475,30 +475,30 @@ export default function BitExpensesPage() {
 
         {/* Content */}
         {view === 'summary' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {bitSummaries.length === 0 ? (
               <div className="col-span-full text-center py-12">
-                <DollarSign className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 text-lg">No expenses recorded yet</p>
-                <p className="text-gray-400 text-sm mt-2">Add your first expense to see the summary</p>
+                <DollarSign className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 text-base sm:text-lg">No expenses recorded yet</p>
+                <p className="text-gray-400 text-xs sm:text-sm mt-2">Add your first expense to see the summary</p>
               </div>
             ) : (
               bitSummaries.map(summary => (
-                <div key={summary.id} className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
+                <div key={summary.id} className="bg-white rounded-lg shadow-sm p-4 sm:p-6 hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Location</p>
-                      <p className="text-sm font-semibold text-blue-600 uppercase mb-2">{summary.locationName}</p>
-                      <h3 className="font-bold text-lg text-gray-900">{summary.name}</h3>
-                      <p className="text-sm text-gray-600">{summary.clientName}</p>
+                      <p className="text-xs sm:text-sm font-semibold text-blue-600 uppercase mb-2 truncate">{summary.locationName}</p>
+                      <h3 className="font-bold text-base sm:text-lg text-gray-900 truncate">{summary.name}</h3>
+                      <p className="text-xs sm:text-sm text-gray-600 truncate">{summary.clientName}</p>
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-1 sm:space-x-2 flex-shrink-0">
                       <button
                         onClick={() => openDetailModal(summary)}
-                        className="text-blue-600 hover:text-blue-700"
+                        className="text-blue-600 hover:text-blue-700 p-1"
                         title="View Details"
                       >
-                        <FileText className="w-5 h-5" />
+                        <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
                       </button>
                       <button
                         onClick={async () => {
@@ -513,35 +513,35 @@ export default function BitExpensesPage() {
                           }
                         }
                       }}
-                      className="text-red-600 hover:text-red-700"
+                      className="text-red-600 hover:text-red-700 p-1"
                       title="Delete All Expenses for this BIT"
                       >
-                        <Trash2 className="w-5 h-5" />
+                        <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                       </button>
                     </div>
                   </div>
 
                   <div className="space-y-3">
                     <div>
-                      <p className="text-sm text-gray-600">Total Spending ({getPeriodLabel()})</p>
-                      <p className="text-2xl font-bold text-gray-900">{formatCurrency(summary.totalAmount)}</p>
+                      <p className="text-xs sm:text-sm text-gray-600">Total Spending ({getPeriodLabel()})</p>
+                      <p className="text-xl sm:text-2xl font-bold text-gray-900">{formatCurrency(summary.totalAmount)}</p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <p className="text-xs text-gray-600">Expense Count</p>
-                        <p className="text-lg font-semibold text-gray-900">{summary.expenseCount}</p>
+                        <p className="text-base sm:text-lg font-semibold text-gray-900">{summary.expenseCount}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-600">Average</p>
-                        <p className="text-lg font-semibold text-gray-900">{formatCurrency(summary.averageExpense)}</p>
+                        <p className="text-base sm:text-lg font-semibold text-gray-900">{formatCurrency(summary.averageExpense)}</p>
                       </div>
                     </div>
 
                     {summary.lastExpenseDate && (
                       <div className="pt-3 border-t">
                         <p className="text-xs text-gray-600">Last Expense</p>
-                        <p className="text-sm text-gray-900">{new Date(summary.lastExpenseDate).toLocaleDateString()}</p>
+                        <p className="text-xs sm:text-sm text-gray-900">{new Date(summary.lastExpenseDate).toLocaleDateString()}</p>
                       </div>
                     )}
                   </div>
@@ -550,80 +550,161 @@ export default function BitExpensesPage() {
             )}
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">BIT</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Added By</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {expenses.map(expense => (
-                    <tr key={expense.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {new Date(expense.dateIncurred).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <div>
-                          <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">
-                            {expense.locationName || 'No Location'}
-                          </p>
-                          <p className="font-medium text-gray-900">{expense.bitName}</p>
-                          {expense.clientName && <p className="text-xs text-gray-500">{expense.clientName}</p>}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                          {CATEGORIES[expense.category as keyof typeof CATEGORIES]}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">{expense.description}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                        {formatCurrency(expense.amount)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {PAYMENT_METHODS[expense.paymentMethod as keyof typeof PAYMENT_METHODS]}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{expense.addedByName}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-2">
+          <div className="space-y-3">
+            {/* Desktop Table View - Hidden on mobile */}
+            <div className="hidden lg:block bg-white rounded-lg shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">BIT</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Added By</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {expenses.map(expense => (
+                      <tr key={expense.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {new Date(expense.dateIncurred).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          <div>
+                            <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">
+                              {expense.locationName || 'No Location'}
+                            </p>
+                            <p className="font-medium text-gray-900">{expense.bitName}</p>
+                            {expense.clientName && <p className="text-xs text-gray-500">{expense.clientName}</p>}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                            {CATEGORIES[expense.category as keyof typeof CATEGORIES]}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{expense.description}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                          {formatCurrency(expense.amount)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {PAYMENT_METHODS[expense.paymentMethod as keyof typeof PAYMENT_METHODS]}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{expense.addedByName}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-2">
+                          <button
+                            onClick={() => openEditModal(expense)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title="Edit"
+                          >
+                            <Edit2 className="w-4 h-4 inline" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteExpense(expense.id)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4 inline" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            {/* Mobile Card View - Visible only on mobile */}
+            <div className="lg:hidden space-y-3">
+              {expenses.length === 0 ? (
+                <div className="text-center py-12 bg-white rounded-lg">
+                  <DollarSign className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No expenses found</p>
+                </div>
+              ) : (
+                expenses.map(expense => (
+                  <div key={expense.id} className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">
+                          {expense.locationName || 'No Location'}
+                        </p>
+                        <h3 className="font-bold text-gray-900 text-sm truncate">{expense.bitName}</h3>
+                        {expense.clientName && (
+                          <p className="text-xs text-gray-500 truncate">{expense.clientName}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-2 flex-shrink-0">
                         <button
                           onClick={() => openEditModal(expense)}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="text-blue-600 hover:text-blue-900 p-1"
                           title="Edit"
                         >
-                          <Edit2 className="w-4 h-4 inline" />
+                          <Edit2 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteExpense(expense.id)}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-red-600 hover:text-red-900 p-1"
                           title="Delete"
                         >
-                          <Trash2 className="w-4 h-4 inline" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+                    
+                    {/* Amount */}
+                    <div className="mb-3">
+                      <p className="text-2xl font-bold text-gray-900">{formatCurrency(expense.amount)}</p>
+                    </div>
+                    
+                    {/* Details Grid */}
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Category:</span>
+                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                          {CATEGORIES[expense.category as keyof typeof CATEGORIES]}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-start justify-between">
+                        <span className="text-gray-600 flex-shrink-0">Description:</span>
+                        <span className="text-gray-900 text-right ml-2">{expense.description}</span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Payment:</span>
+                        <span className="text-gray-900">{PAYMENT_METHODS[expense.paymentMethod as keyof typeof PAYMENT_METHODS]}</span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Date:</span>
+                        <span className="text-gray-900">{new Date(expense.dateIncurred).toLocaleDateString()}</span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between pt-2 border-t">
+                        <span className="text-gray-600">Added By:</span>
+                        <span className="text-gray-900 text-sm">{expense.addedByName}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
 
         {/* Add/Edit Modal */}
         {(showAddModal || showEditModal) && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50">
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">
+              <div className="p-4 sm:p-6">
+                <div className="flex items-center justify-between mb-4 sm:mb-6">
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
                     {showAddModal ? 'Add Expense' : 'Edit Expense'}
                   </h2>
                   <button
@@ -633,13 +714,13 @@ export default function BitExpensesPage() {
                       setSelectedExpense(null);
                       resetForm();
                     }}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-gray-400 hover:text-gray-600 p-1"
                   >
-                    <X className="w-6 h-6" />
+                    <X className="w-5 h-5 sm:w-6 sm:h-6" />
                   </button>
                 </div>
 
-                <form onSubmit={showAddModal ? handleAddExpense : handleEditExpense} className="space-y-4">
+                <form onSubmit={showAddModal ? handleAddExpense : handleEditExpense} className="space-y-3 sm:space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
                     <select
