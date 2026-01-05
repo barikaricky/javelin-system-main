@@ -39,22 +39,42 @@ export const LocationDetailsPage = () => {
   const [location, setLocation] = useState<Location | null>(null);
   const [bits, setBits] = useState<Bit[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchLocationDetails();
-    fetchLocationBits();
+    if (id) {
+      fetchLocationDetails();
+      fetchLocationBits();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchLocationDetails = async () => {
     try {
       const token = localStorage.getItem('token');
       const API_URL = getApiBaseURL();
+      console.log(`Fetching location details for ID: ${id}`);
+      console.log(`API URL: ${API_URL}/api/locations/${id}`);
+      
       const response = await axios.get(`${API_URL}/api/locations/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setLocation(response.data.location);
-    } catch (error) {
+      
+      console.log('Location API Response:', response.data);
+      // Handle both response formats
+      const locationData = response.data.location || response.data;
+      console.log('Location Data:', locationData);
+      
+      if (!locationData || !locationData._id) {
+        throw new Error('Invalid location data received');
+      }
+      
+      setLocation(locationData);
+      setError(null);
+    } catch (error: any) {
       console.error('Error fetching location details:', error);
+      console.error('Error response:', error.response?.data);
+      setError(error.response?.data?.message || error.message || 'Failed to load location');
     } finally {
       setLoading(false);
     }
@@ -92,7 +112,28 @@ export const LocationDetailsPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin h-12 w-12 border-4 border-purple-600 border-t-transparent rounded-full"></div>
+        <div className="text-center">
+          <div className="animate-spin h-12 w-12 border-4 border-purple-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading location details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Location</h3>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => navigate('/director/locations')}
+            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            Back to Locations
+          </button>
+        </div>
       </div>
     );
   }
@@ -402,3 +443,4 @@ export const LocationDetailsPage = () => {
     </div>
   );
 };
+export default LocationDetailsPage;

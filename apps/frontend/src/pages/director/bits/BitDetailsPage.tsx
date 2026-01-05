@@ -43,11 +43,18 @@ interface Assignment {
   _id: string;
   operatorId: {
     _id: string;
-    firstName: string;
-    lastName: string;
-    operatorCode: string;
+    employeeId: string;
+    userId: {
+      _id: string;
+      firstName: string;
+      lastName: string;
+      email?: string;
+      phone?: string;
+    };
   };
-  assignedDate: string;
+  startDate?: string;
+  endDate?: string;
+  assignedDate?: string;
   status: string;
 }
 
@@ -82,10 +89,14 @@ export const BitDetailsPage = () => {
     try {
       const token = localStorage.getItem('token');
       const API_URL = getApiBaseURL();
+      console.log(`Fetching assignments for BIT: ${id}`);
       const response = await axios.get(`${API_URL}/api/assignments/bits/${id}/assignments`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setAssignments(response.data.assignments || []);
+      console.log('Assignments API Response:', response.data);
+      const assignmentsData = response.data.assignments || [];
+      console.log('First assignment sample:', assignmentsData[0]);
+      setAssignments(assignmentsData);
     } catch (error) {
       console.error('Error fetching assignments:', error);
     }
@@ -384,7 +395,20 @@ export const BitDetailsPage = () => {
                 </div>
               ) : (
                 <div className="space-y-3 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar">
-                  {assignments.map((assignment, index) => (
+                  {assignments.map((assignment, index) => {
+                    // Add null safety checks for nested structure
+                    const operator = assignment?.operatorId;
+                    const user = operator?.userId;
+                    
+                    if (!operator || !user) {
+                      console.warn('Assignment missing operator/user data:', assignment);
+                      return null;
+                    }
+                    
+                    // Use startDate or assignedDate, with fallback
+                    const displayDate = assignment.startDate || assignment.assignedDate;
+                    
+                    return (
                     <div
                       key={assignment._id}
                       className="p-4 bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border border-purple-100 hover:shadow-md transition-all"
@@ -393,11 +417,16 @@ export const BitDetailsPage = () => {
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-gray-900">
-                            {assignment.operatorId.firstName} {assignment.operatorId.lastName}
+                            {user.firstName || 'N/A'} {user.lastName || ''}
                           </h3>
                           <span className="text-xs text-gray-500 font-mono">
-                            {assignment.operatorId.operatorCode}
+                            {operator.employeeId || 'N/A'}
                           </span>
+                          {user.phone && (
+                            <span className="block text-xs text-gray-500 mt-1">
+                              {user.phone}
+                            </span>
+                          )}
                         </div>
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(assignment.status)}`}>
                           {assignment.status}
@@ -407,15 +436,16 @@ export const BitDetailsPage = () => {
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Calendar className="h-4 w-4" />
                         <span>
-                          {new Date(assignment.assignedDate).toLocaleDateString('en-US', {
+                          {displayDate ? new Date(displayDate).toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',
                             year: 'numeric'
-                          })}
+                          }) : 'Date not available'}
                         </span>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
