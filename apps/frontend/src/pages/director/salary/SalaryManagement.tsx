@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../../../lib/api';
 import { 
   DollarSign, Users, AlertCircle, TrendingUp, Filter, 
-  Plus, Edit, Trash2, CheckCircle, Ban, Eye, Download 
+  Plus, Edit, Trash2, CheckCircle, Ban, Eye, Download, Check, X 
 } from 'lucide-react';
 import { useAuthStore } from '../../../stores/authStore';
+import toast, { Toaster } from 'react-hot-toast';
 
 interface Salary {
   _id: string;
@@ -68,8 +69,12 @@ const SalaryManagement: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
 
-  // Check if user is MD (allow all directors for now, or specifically MDs)
-  const isMD = user?.role === 'DIRECTOR' && (user?.isManagingDirector === true || user?.isManagingDirector === undefined);
+  // Success notification state
+  const [showSuccessNotification, setShowSuccessNotification] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // Check if user is Director
+  const isDirector = user?.role === 'DIRECTOR';
 
   useEffect(() => {
     fetchSalaries();
@@ -111,12 +116,36 @@ const SalaryManagement: React.FC = () => {
     if (!selectedSalary) return;
     try {
       await api.post(`/salary/${selectedSalary._id}/approve`);
+      
+      // Show success notification
+      setSuccessMessage(`✅ Salary approved successfully for ${selectedSalary.workerName}`);
+      setShowSuccessNotification(true);
+      setTimeout(() => setShowSuccessNotification(false), 5000);
+      
+      // Show toast notification
+      toast.success(`Salary approved for ${selectedSalary.workerName}`, {
+        duration: 4000,
+        icon: '✅',
+        style: {
+          background: '#10B981',
+          color: '#fff',
+          fontWeight: '600',
+        },
+      });
+      
       setShowApproveModal(false);
       setSelectedSalary(null);
       fetchSalaries();
       fetchStats();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to approve salary');
+      const errorMsg = err.response?.data?.message || 'Failed to approve salary';
+      toast.error(errorMsg, {
+        duration: 4000,
+        style: {
+          background: '#EF4444',
+          color: '#fff',
+        },
+      });
     }
   };
 
@@ -127,6 +156,23 @@ const SalaryManagement: React.FC = () => {
         paymentMethod,
         paymentReference
       });
+      
+      // Show success notification
+      setSuccessMessage(`💰 Salary marked as paid for ${selectedSalary.workerName}`);
+      setShowSuccessNotification(true);
+      setTimeout(() => setShowSuccessNotification(false), 5000);
+      
+      // Show toast notification
+      toast.success(`Payment recorded for ${selectedSalary.workerName}`, {
+        duration: 4000,
+        icon: '💰',
+        style: {
+          background: '#3B82F6',
+          color: '#fff',
+          fontWeight: '600',
+        },
+      });
+      
       setShowPaidModal(false);
       setSelectedSalary(null);
       setPaymentMethod('');
@@ -134,7 +180,14 @@ const SalaryManagement: React.FC = () => {
       fetchSalaries();
       fetchStats();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to mark as paid');
+      const errorMsg = err.response?.data?.message || 'Failed to mark salary as paid';
+      toast.error(errorMsg, {
+        duration: 4000,
+        style: {
+          background: '#EF4444',
+          color: '#fff',
+        },
+      });
     }
   };
 
@@ -208,7 +261,7 @@ const SalaryManagement: React.FC = () => {
 
   const years = Array.from({ length: 5 }, (_, i) => currentDate.getFullYear() - i);
 
-  if (!isMD) {
+  if (!isDirector) {
     return (
       <div className="p-6">
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
@@ -216,7 +269,7 @@ const SalaryManagement: React.FC = () => {
             <Ban size={20} />
             <p className="font-semibold">Access Denied</p>
           </div>
-          <p className="text-sm mt-1">Only the Managing Director can access this page.</p>
+          <p className="text-sm mt-1">Only Directors can access this page.</p>
         </div>
       </div>
     );
@@ -224,15 +277,40 @@ const SalaryManagement: React.FC = () => {
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
+      {/* Toast Notifications */}
+      <Toaster position="top-right" />
+      
+      {/* Success Notification Banner */}
+      {showSuccessNotification && (
+        <div className="fixed top-4 right-4 z-50 animate-slide-in-right">
+          <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 max-w-md">
+            <div className="flex-shrink-0">
+              <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <Check className="w-6 h-6" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-sm">{successMessage}</p>
+            </div>
+            <button
+              onClick={() => setShowSuccessNotification(false)}
+              className="flex-shrink-0 hover:bg-white hover:bg-opacity-20 rounded p-1 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Salary Management</h1>
-          <p className="text-xs sm:text-sm text-gray-600 mt-1">Full control over worker salaries (MD Only)</p>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">Full control over worker salaries (Director Access)</p>
         </div>
-        <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg">
+        <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg border border-green-200">
           <CheckCircle size={18} className="sm:w-5 sm:h-5" />
-          <span className="text-xs sm:text-sm font-medium">MD Full Access</span>
+          <span className="text-xs sm:text-sm font-medium">Director Authorized</span>
         </div>
       </div>
 
@@ -597,30 +675,76 @@ const SalaryManagement: React.FC = () => {
         )}
       </div>
 
-      {/* Approve Modal */}
+      {/* Approve Modal - Enhanced */}
       {showApproveModal && selectedSalary && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Approve Salary</h3>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to approve the salary for <strong>{selectedSalary.workerName}</strong>?
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => {
-                  setShowApproveModal(false);
-                  setSelectedSalary(null);
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleApprove}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-              >
-                Approve
-              </button>
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 transform transition-all animate-scale-in">
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-4 rounded-t-2xl">
+              <div className="flex items-center gap-3 text-white">
+                <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                  <CheckCircle size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Approve Salary</h3>
+                  <p className="text-sm text-green-50">Authorize payment for this worker</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-6">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 mb-6 border border-gray-200">
+                <p className="text-sm text-gray-600 mb-3">You are approving salary for:</p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500 text-sm">Worker:</span>
+                    <span className="font-bold text-gray-900">{selectedSalary.workerName}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500 text-sm">Role:</span>
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleBadgeColor(selectedSalary.workerRole)}`}>
+                      {selectedSalary.workerRole}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500 text-sm">Period:</span>
+                    <span className="font-semibold text-gray-900">{months[selectedSalary.month - 1]} {selectedSalary.year}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-300">
+                    <span className="text-gray-500 text-sm">Net Amount:</span>
+                    <span className="text-2xl font-bold text-green-600">{formatCurrency(selectedSalary.netSalary)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6">
+                <div className="flex items-start gap-2">
+                  <AlertCircle size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-800">
+                    By approving, this salary will be marked as APPROVED and ready for payment processing.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowApproveModal(false);
+                    setSelectedSalary(null);
+                  }}
+                  className="flex-1 px-4 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleApprove}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl hover:from-green-600 hover:to-emerald-700 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  <CheckCircle size={20} />
+                  Approve Now
+                </button>
+              </div>
             </div>
           </div>
         </div>

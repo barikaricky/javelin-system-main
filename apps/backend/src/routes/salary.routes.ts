@@ -130,16 +130,16 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Create new salary record
- * MD ONLY
+ * DIRECTOR ONLY
  */
 router.post('/', asyncHandler(async (req: Request, res: Response) => {
   const user = (req as any).user;
 
-  // Only MD can create salary records
-  if (user.role !== 'DIRECTOR' || !user.isManagingDirector) {
+  // Only Directors can create salary records
+  if (user.role !== 'DIRECTOR') {
     return res.status(403).json({
       success: false,
-      message: 'Only Managing Director can create salary records'
+      message: 'Only Directors can create salary records'
     });
   }
 
@@ -157,16 +157,16 @@ router.post('/', asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Update salary record
- * MD ONLY (can only edit PENDING salaries)
+ * DIRECTOR ONLY (can only edit PENDING salaries)
  */
 router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
   const user = (req as any).user;
 
-  // Only MD can update salary records
-  if (user.role !== 'DIRECTOR' || !user.isManagingDirector) {
+  // Only Directors can update salary records
+  if (user.role !== 'DIRECTOR') {
     return res.status(403).json({
       success: false,
-      message: 'Only Managing Director can update salary records'
+      message: 'Only Directors can update salary records'
     });
   }
 
@@ -191,16 +191,16 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Add deduction to salary
- * MD ONLY
+ * DIRECTOR ONLY
  */
 router.post('/:id/deduction', asyncHandler(async (req: Request, res: Response) => {
   const user = (req as any).user;
 
-  // Only MD can add deductions
-  if (user.role !== 'DIRECTOR' || !user.isManagingDirector) {
+  // Only Directors can add deductions
+  if (user.role !== 'DIRECTOR') {
     return res.status(403).json({
       success: false,
-      message: 'Only Managing Director can add deductions'
+      message: 'Only Directors can add deductions'
     });
   }
 
@@ -231,16 +231,16 @@ router.post('/:id/deduction', asyncHandler(async (req: Request, res: Response) =
 
 /**
  * Approve salary
- * MD ONLY
+ * DIRECTOR ONLY
  */
 router.post('/:id/approve', asyncHandler(async (req: Request, res: Response) => {
   const user = (req as any).user;
 
-  // Only MD can approve salaries
-  if (user.role !== 'DIRECTOR' || !user.isManagingDirector) {
+  // Only Directors can approve salaries
+  if (user.role !== 'DIRECTOR') {
     return res.status(403).json({
       success: false,
-      message: 'Only Managing Director can approve salaries'
+      message: 'Only Directors can approve salaries'
     });
   }
 
@@ -255,16 +255,16 @@ router.post('/:id/approve', asyncHandler(async (req: Request, res: Response) => 
 
 /**
  * Mark salary as paid
- * MD ONLY
+ * DIRECTOR ONLY
  */
 router.post('/:id/mark-paid', asyncHandler(async (req: Request, res: Response) => {
   const user = (req as any).user;
 
-  // Only MD can mark as paid
-  if (user.role !== 'DIRECTOR' || !user.isManagingDirector) {
+  // Only Directors can mark as paid
+  if (user.role !== 'DIRECTOR') {
     return res.status(403).json({
       success: false,
-      message: 'Only Managing Director can mark salaries as paid'
+      message: 'Only Directors can mark salaries as paid'
     });
   }
 
@@ -293,16 +293,16 @@ router.post('/:id/mark-paid', asyncHandler(async (req: Request, res: Response) =
 
 /**
  * Delete salary record (soft delete)
- * MD ONLY
+ * DIRECTOR ONLY
  */
 router.delete('/:id', asyncHandler(async (req: Request, res: Response) => {
   const user = (req as any).user;
 
-  // Only MD can delete salary records
-  if (user.role !== 'DIRECTOR' || !user.isManagingDirector) {
+  // Only Directors can delete salary records
+  if (user.role !== 'DIRECTOR') {
     return res.status(403).json({
       success: false,
-      message: 'Only Managing Director can delete salary records'
+      message: 'Only Directors can delete salary records'
     });
   }
 

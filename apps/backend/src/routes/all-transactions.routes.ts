@@ -53,6 +53,11 @@ router.get(
     // Fetch all transaction types
     const allTransactions = [];
 
+    console.log('=== Fetching All Transactions ===');
+    console.log('Date Filter:', dateFilter);
+    console.log('Type Filter:', type);
+    console.log('Period:', period);
+
     // 1. Money In transactions
     if (!type || type === 'all' || type === 'money_in') {
       const moneyInQuery: any = { 
@@ -74,6 +79,8 @@ router.get(
         .populate('clientId', 'clientName companyName')
         .populate('recordedById', 'firstName lastName')
         .lean();
+
+      console.log(`Found ${moneyInRecords.length} Money In transactions`);
 
       moneyInRecords.forEach((record: any) => {
         allTransactions.push({
@@ -112,6 +119,8 @@ router.get(
       const moneyOutRecords = await MoneyOut.find(moneyOutQuery)
         .populate('requestedById', 'firstName lastName')
         .lean();
+
+      console.log(`Found ${moneyOutRecords.length} Money Out transactions`);
 
       moneyOutRecords.forEach((record: any) => {
         allTransactions.push({
@@ -152,6 +161,8 @@ router.get(
         .populate('addedBy', 'firstName lastName')
         .lean();
 
+      console.log(`Found ${bitExpenses.length} BIT Expenses`);
+
       bitExpenses.forEach((record: any) => {
         allTransactions.push({
           _id: record._id,
@@ -174,27 +185,38 @@ router.get(
     // 4. Salaries
     if (!type || type === 'all' || type === 'salary') {
       const salaryQuery: any = { 
-        status: { $in: ['APPROVED', 'PAID'] }
+        isDeleted: false
       };
+      
+      // Include PENDING, APPROVED, and PAID salaries
+      if (!type || type === 'all') {
+        // For "all transactions" view, show all statuses
+        salaryQuery.status = { $in: ['PENDING', 'APPROVED', 'PAID'] };
+      } else {
+        // For salary-specific filter, show only approved/paid
+        salaryQuery.status = { $in: ['APPROVED', 'PAID'] };
+      }
+      
+      // Apply date filter to paidAt or createdAt
       if (Object.keys(dateFilter).length > 0) {
-        // For salaries, use the payment period
-        const year = now.getFullYear();
-        const month = now.getMonth() + 1;
         salaryQuery.$or = [
-          { year, month },
-          { paidAt: dateFilter }
+          { paidAt: dateFilter },
+          { createdAt: dateFilter }
         ];
       }
+      
       if (search) {
-        salaryQuery.$or = [
-          { workerName: { $regex: search, $options: 'i' } }
-        ];
+        salaryQuery.workerName = { $regex: search, $options: 'i' };
       }
 
+      console.log('Salary Query:', JSON.stringify(salaryQuery, null, 2));
+      
       const salaries = await Salary.find(salaryQuery)
         .populate('worker', 'firstName lastName')
-        .populate('processedBy', 'firstName lastName')
+        .populate('paidBy', 'firstName lastName')
         .lean();
+
+      console.log(`Found ${salaries.length} salaries`);
 
       salaries.forEach((record: any) => {
         allTransactions.push({
@@ -207,7 +229,7 @@ router.get(
           paymentMethod: record.paymentMethod || 'BANK_TRANSFER',
           referenceNumber: record._id.toString().slice(-8).toUpperCase(),
           beneficiary: record.workerName,
-          recordedBy: record.processedBy ? `${record.processedBy.firstName} ${record.processedBy.lastName}` : 'SYSTEM',
+          recordedBy: record.paidBy ? `${record.paidBy.firstName} ${record.paidBy.lastName}` : 'SYSTEM',
           status: record.status,
           location: 'N/A',
           createdAt: record.createdAt
@@ -217,6 +239,13 @@ router.get(
 
     // Sort by date (newest first)
     allTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    console.log(`=== TOTAL TRANSACTIONS: ${allTransactions.length} ===`);
+    console.log('Breakdown:');
+    console.log('- Money In:', allTransactions.filter(t => t.type === 'MONEY_IN').length);
+    console.log('- Money Out:', allTransactions.filter(t => t.type === 'MONEY_OUT').length);
+    console.log('- BIT Expenses:', allTransactions.filter(t => t.type === 'BIT_EXPENSE').length);
+    console.log('- Salaries:', allTransactions.filter(t => t.type === 'SALARY').length);
 
     // Pagination
     const pageNum = parseInt(page);
