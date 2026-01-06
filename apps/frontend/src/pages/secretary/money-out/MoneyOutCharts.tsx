@@ -1,5 +1,5 @@
 import React from 'react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface MoneyOutChartsProps {
   records: any[];
@@ -127,16 +127,31 @@ const MoneyOutCharts: React.FC<MoneyOutChartsProps> = ({ records }) => {
           </ResponsiveContainer>
         </div>
 
-        {/* Top Beneficiaries */}
+        {/* Top Beneficiaries - Pie Chart */}
         <div className="md:col-span-2">
           <h4 className="text-sm font-semibold text-gray-700 mb-3 text-center">Top 5 Beneficiaries</h4>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={beneficiaryData} layout="horizontal">
-              <XAxis type="number" tickFormatter={formatCurrency} />
-              <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 12 }} />
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={beneficiaryData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={100}
+                label={(entry) => `${entry.name.substring(0, 20)}${entry.name.length > 20 ? '...' : ''}`}
+                labelLine={{ stroke: '#6b7280', strokeWidth: 1 }}
+              >
+                {beneficiaryData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="value" fill="#3b82f6" />
-            </BarChart>
+              <Legend 
+                wrapperStyle={{ paddingTop: '20px' }}
+                iconType="circle"
+              />
+            </PieChart>
           </ResponsiveContainer>
         </div>
       </div>
