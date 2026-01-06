@@ -138,14 +138,24 @@ const SalaryManagement: React.FC = () => {
       fetchSalaries();
       fetchStats();
     } catch (err: any) {
+      // Close modal on error
+      setShowApproveModal(false);
+      setSelectedSalary(null);
+      
+      // Extract and display error message
       const errorMsg = err.response?.data?.message || 'Failed to approve salary';
+      console.error('Approval error:', errorMsg);
+      
       toast.error(errorMsg, {
-        duration: 4000,
+        duration: 6000,
         style: {
           background: '#EF4444',
           color: '#fff',
         },
       });
+      
+      // Refresh the list to get current data
+      fetchSalaries();
     }
   };
 
@@ -180,14 +190,26 @@ const SalaryManagement: React.FC = () => {
       fetchSalaries();
       fetchStats();
     } catch (err: any) {
+      // Close modal on error
+      setShowPaidModal(false);
+      setSelectedSalary(null);
+      setPaymentMethod('');
+      setPaymentReference('');
+      
+      // Extract and display error message
       const errorMsg = err.response?.data?.message || 'Failed to mark salary as paid';
+      console.error('Mark paid error:', errorMsg);
+      
       toast.error(errorMsg, {
-        duration: 4000,
+        duration: 6000,
         style: {
           background: '#EF4444',
           color: '#fff',
         },
       });
+      
+      // Refresh the list to get current data
+      fetchSalaries();
     }
   };
 
@@ -246,6 +268,9 @@ const SalaryManagement: React.FC = () => {
     };
     return roleColors[role] || 'bg-gray-100 text-gray-800';
   };
+
+  // Alias for getRoleBadge (for modal usage)
+  const getRoleBadgeColor = getRoleBadge;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-NG', {
@@ -677,8 +702,8 @@ const SalaryManagement: React.FC = () => {
 
       {/* Approve Modal - Enhanced */}
       {showApproveModal && selectedSalary && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 transform transition-all animate-scale-in">
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4">
             {/* Header with gradient */}
             <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-4 rounded-t-2xl">
               <div className="flex items-center gap-3 text-white">
@@ -703,17 +728,21 @@ const SalaryManagement: React.FC = () => {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-500 text-sm">Role:</span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleBadgeColor(selectedSalary.workerRole)}`}>
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
                       {selectedSalary.workerRole}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-500 text-sm">Period:</span>
-                    <span className="font-semibold text-gray-900">{months[selectedSalary.month - 1]} {selectedSalary.year}</span>
+                    <span className="font-semibold text-gray-900">
+                      {months[selectedSalary.month - 1]} {selectedSalary.year}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between pt-2 border-t border-gray-300">
                     <span className="text-gray-500 text-sm">Net Amount:</span>
-                    <span className="text-2xl font-bold text-green-600">{formatCurrency(selectedSalary.netSalary)}</span>
+                    <span className="text-2xl font-bold text-green-600">
+                      {formatCurrency(selectedSalary.netSalary)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -739,7 +768,7 @@ const SalaryManagement: React.FC = () => {
                 </button>
                 <button
                   onClick={handleApprove}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl hover:from-green-600 hover:to-emerald-700 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl hover:from-green-600 hover:to-emerald-700 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2"
                 >
                   <CheckCircle size={20} />
                   Approve Now

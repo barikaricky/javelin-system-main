@@ -83,13 +83,8 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('❌ API Error:', {
-      url: error.config?.url,
-      method: error.config?.method,
-      baseURL: error.config?.baseURL,
-      status: error.response?.status,
-      message: error.message,
-    });
+    // Log concise error info
+    console.error('❌ API Error:', error.response?.data?.message || error.message);
 
     if (error.response?.status === 401) {
       // Only redirect if we're not already on the login page, dev pages, or meeting pages

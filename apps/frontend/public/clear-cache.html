@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Cache & Reload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+            background: rgba(255,255,255,0.1);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        h1 { font-size: 2.5em; margin-bottom: 20px; }
+        p { font-size: 1.2em; margin: 20px 0; }
+        .success { color: #4ade80; font-weight: bold; }
+        button {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        button:hover { transform: scale(1.05); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Cache Cleaner</h1>
+        <p>Clearing browser cache and storage...</p>
+        <p class="success" id="status">Processing...</p>
+        <button onclick="goToSalary()">Go to Salary Page →</button>
+    </div>
+
+    <script>
+        // Clear all localStorage
+        localStorage.clear();
+        
+        // Clear all sessionStorage
+        sessionStorage.clear();
+        
+        // Clear any cached API data
+        if ('caches' in window) {
+            caches.keys().then(names => {
+                names.forEach(name => caches.delete(name));
+            });
+        }
+        
+        // Update status
+        setTimeout(() => {
+            document.getElementById('status').textContent = '✅ Cache Cleared! Click the button to continue.';
+        }, 500);
+        
+        function goToSalary() {
+            // Force reload the app
+            window.location.href = 'http://localhost:3001/director/salary';
+        }
+    </script>
+</body>
+</html>

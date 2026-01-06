@@ -12,7 +12,7 @@ router.use(authenticate);
  * Get all salaries
  * Secretary/Manager: View-only (excluding Director salaries)
  * MD: Full visibility
- * Now fetches from User profiles with their monthly salary
+ * Fetches from actual Salary collection
  */
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const { month, year, workerRole, status, workerId } = req.query;
@@ -21,7 +21,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   // Secretary and Manager cannot see Director salaries
   const excludeDirector = user.role === 'SECRETARY' || user.role === 'MANAGER';
 
-  const salaries = await SalaryService.getWorkerSalariesFromProfiles({
+  const salaries = await SalaryService.getAllSalaries({
     month: month ? Number(month) : undefined,
     year: year ? Number(year) : undefined,
     workerRole: workerRole as any,
@@ -29,6 +29,11 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     workerId: workerId as string,
     excludeDirector
   });
+
+  console.log(`📊 Returning ${salaries.length} REAL salaries from Salary collection`);
+  if (salaries.length > 0) {
+    console.log('First 3 salary IDs:', salaries.slice(0, 3).map((s: any) => ({ id: s._id, name: s.workerName, status: s.status })));
+  }
 
   res.json({
     success: true,
@@ -39,7 +44,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
 /**
  * Get salary statistics
  * All roles can view stats
- * Now fetches from User profiles
+ * Fetches from actual Salary collection
  */
 router.get('/stats', asyncHandler(async (req: Request, res: Response) => {
   const { month, year, workerRole } = req.query;
@@ -47,12 +52,10 @@ router.get('/stats', asyncHandler(async (req: Request, res: Response) => {
 
   const excludeDirector = user.role === 'SECRETARY' || user.role === 'MANAGER';
 
-  const stats = await SalaryService.getSalaryStatsFromProfiles({
-    month: month ? Number(month) : undefined,
-    year: year ? Number(year) : undefined,
-    workerRole: workerRole as any,
-    excludeDirector
-  });
+  const stats = await SalaryService.getSalaryStats(
+    month ? Number(month) : undefined,
+    year ? Number(year) : undefined
+  );
 
   res.json({
     success: true,

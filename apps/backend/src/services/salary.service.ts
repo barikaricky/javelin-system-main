@@ -63,11 +63,11 @@ export class SalaryService {
 
     // Audit log
     await AuditLog.create({
-      user: new mongoose.Types.ObjectId(data.createdBy),
-      action: 'CREATE',
-      resourceType: 'Salary',
-      resourceId: salary._id,
-      details: `Created salary for ${data.workerName} (${data.workerRole}) - ${data.month}/${data.year}`
+      userId: new mongoose.Types.ObjectId(data.createdBy),
+      action: 'CREATE_SALARY',
+      entityType: 'Salary',
+      entityId: salary._id.toString(),
+      metadata: { workerName: data.workerName, workerRole: data.workerRole, month: data.month, year: data.year }
     });
 
     return salary.populate('worker createdBy');
@@ -154,11 +154,11 @@ export class SalaryService {
 
     // Audit log
     await AuditLog.create({
-      user: new mongoose.Types.ObjectId(data.updatedBy),
-      action: 'UPDATE',
-      resourceType: 'Salary',
-      resourceId: salary._id,
-      details: `Updated salary for ${salary.workerName} - ${salary.month}/${salary.year}`
+      userId: new mongoose.Types.ObjectId(createdBy),
+      action: 'CREATE_SALARY',
+      entityType: 'Salary',
+      entityId: salary._id.toString(),
+      metadata: { workerName: salary.workerName, month: salary.month, year: salary.year }
     });
 
     return salary.populate('worker createdBy approvedBy paidBy');
@@ -190,11 +190,11 @@ export class SalaryService {
 
     // Audit log
     await AuditLog.create({
-      user: new mongoose.Types.ObjectId(data.approvedBy),
-      action: 'UPDATE',
-      resourceType: 'Salary',
-      resourceId: salary._id,
-      details: `Added ${data.type} deduction of ₦${data.amount} for ${salary.workerName}`
+      userId: new mongoose.Types.ObjectId(data.approvedBy),
+      action: 'ADD_SALARY_DEDUCTION',
+      entityType: 'Salary',
+      entityId: salary._id.toString(),
+      metadata: { workerName: salary.workerName, type: data.type, amount: data.amount }
     });
 
     return salary.populate('worker createdBy approvedBy paidBy');
@@ -222,11 +222,11 @@ export class SalaryService {
 
     // Audit log
     await AuditLog.create({
-      user: new mongoose.Types.ObjectId(approvedBy),
-      action: 'APPROVE',
-      resourceType: 'Salary',
-      resourceId: salary._id,
-      details: `Approved salary for ${salary.workerName} - ${salary.month}/${salary.year}`
+      userId: new mongoose.Types.ObjectId(approvedBy),
+      action: 'APPROVE_SALARY',
+      entityType: 'Salary',
+      entityId: salary._id.toString(),
+      metadata: { workerName: salary.workerName, month: salary.month, year: salary.year }
     });
 
     return salary.populate('worker createdBy approvedBy paidBy');
@@ -261,11 +261,11 @@ export class SalaryService {
 
     // Audit log
     await AuditLog.create({
-      user: new mongoose.Types.ObjectId(paidBy),
-      action: 'UPDATE',
-      resourceType: 'Salary',
-      resourceId: salary._id,
-      details: `Marked salary as PAID for ${salary.workerName} - ${salary.month}/${salary.year} via ${paymentMethod}`
+      userId: new mongoose.Types.ObjectId(paidBy),
+      action: 'MARK_SALARY_PAID',
+      entityType: 'Salary',
+      entityId: salary._id.toString(),
+      metadata: { workerName: salary.workerName, month: salary.month, year: salary.year, paymentMethod }
     });
 
     return salary.populate('worker createdBy approvedBy paidBy');
@@ -293,11 +293,11 @@ export class SalaryService {
 
     // Audit log
     await AuditLog.create({
-      user: new mongoose.Types.ObjectId(deletedBy),
-      action: 'DELETE',
-      resourceType: 'Salary',
-      resourceId: salary._id,
-      details: `Deleted salary for ${salary.workerName} - ${salary.month}/${salary.year}. Reason: ${reason}`
+      userId: new mongoose.Types.ObjectId(deletedBy),
+      action: 'DELETE_SALARY',
+      entityType: 'Salary',
+      entityId: salary._id.toString(),
+      metadata: { workerName: salary.workerName, month: salary.month, year: salary.year, reason }
     });
 
     return salary;
