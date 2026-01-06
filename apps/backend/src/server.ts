@@ -45,6 +45,7 @@ import reportRoutes from './routes/report.routes';
 import reportAnalyticsRoutes from './routes/report-analytics.routes';
 import notificationsRoutes from './routes/notifications.routes';
 import adminRoutes from './routes/admin.routes';
+import allTransactionsRoutes from './routes/all-transactions.routes';
 // import emergencyAlertRoutes from './routes/emergencyAlert.routes';
 
 const app = express();
@@ -191,6 +192,7 @@ app.use('/api/reports', reportAnalyticsRoutes); // Register analytics routes BEF
 app.use('/api/reports', reportRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/admins', adminRoutes);
+app.use('/api/all-transactions', allTransactionsRoutes);
 // app.use('/api/emergency-alerts', emergencyAlertRoutes);
 
 // Health check

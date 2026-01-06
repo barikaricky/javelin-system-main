@@ -180,6 +180,7 @@ import AdminSupervisorsPage from './pages/admin/SupervisorsPage';
 // Director imports
 import MoneyInReports from './pages/director/financial/MoneyInReports';
 import MoneyOutReports from './pages/director/financial/MoneyOutReports';
+import AllTransactionsPage from './pages/director/transactions/AllTransactionsPage';
 import SalaryManagement from './pages/director/salary/SalaryManagement';
 import SalaryView from './pages/manager/SalaryView';
 
@@ -454,6 +455,7 @@ function App() {
       <Route path="/director/polls/active" element={<DirectorLayout><ActivePollsPage /></DirectorLayout>} />
       <Route path="/director/polls/results" element={<DirectorLayout><PollResultsPage /></DirectorLayout>} />
       <Route path="/director/polls/results/:id" element={<DirectorLayout><PollResultsPage /></DirectorLayout>} />
+      <Route path="/director/transactions/all" element={<DirectorLayout><AllTransactionsPage /></DirectorLayout>} />
       <Route path="/director/transactions/expenses" element={<DirectorLayout><ExpensesPage /></DirectorLayout>} />
       <Route path="/director/financial/money-in" element={<DirectorLayout><MoneyInReports /></DirectorLayout>} />
       <Route path="/director/financial/money-out" element={<DirectorLayout><MoneyOutReports /></DirectorLayout>} />
