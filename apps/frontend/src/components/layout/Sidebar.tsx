@@ -75,6 +75,7 @@ const directorMenuItems: MenuItem[] = [
       { name: 'Supervisors', icon: Shield, path: '/director/personnel/supervisors' },
       { name: 'Operators', icon: Users, path: '/director/personnel/operators' },
       { name: 'Register Manager', icon: UserPlus, path: '/director/personnel/register-manager' },
+      { name: 'Register Admin', icon: Shield, path: '/director/admin/register' },
       { name: 'Pending Approvals', icon: AlertCircle, path: '/director/personnel/pending-approvals' },
       { name: 'All Personnel', icon: UsersRound, path: '/director/personnel/all' },
     ]

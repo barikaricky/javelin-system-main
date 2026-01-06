@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-mongoose.connect('mongodb://localhost:27017/jevelin')
+mongoose.connect('mongodb://localhost:27017/javelin')
   .then(async () => {
     console.log('✅ Connected to MongoDB\n');
     

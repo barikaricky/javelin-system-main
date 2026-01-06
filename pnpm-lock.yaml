@@ -11,6 +11,9 @@ importers:
       '@heroicons/react':
         specifier: ^2.2.0
         version: 2.2.0(react@19.2.3)
+      bcrypt:
+        specifier: ^5.1.1
+        version: 5.1.1
     devDependencies:
       concurrently:
         specifier: ^8.2.2

@@ -89,13 +89,6 @@ const menuItems: MenuItem[] = [
         badge: 'New',
       },
       {
-        id: 'register-admin',
-        label: 'Register Admin',
-        icon: Shield,
-        path: '/manager/admin/register',
-        badge: 'New',
-      },
-      {
         id: 'register-operator',
         label: 'Register Operator',
         icon: UserPlus,

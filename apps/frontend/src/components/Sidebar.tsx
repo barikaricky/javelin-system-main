@@ -61,6 +61,7 @@ const menuItems: MenuItem[] = [
     icon: Users,
     children: [
       { name: 'Register Manager', icon: UserPlus, path: '/director/personnel/register-manager' },
+      { name: 'Register Admin', icon: Shield, path: '/director/admin/register' },
       { name: 'Register Operator', icon: UserPlus, path: '/director/operators/register' },
       { name: 'Assign Guards to BITs', icon: Shield, path: '/director/operators/assign' },
       { name: 'Pending Approvals', icon: AlertCircle, path: '/director/personnel/pending-approvals', badge: 5 },

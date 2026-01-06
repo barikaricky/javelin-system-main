@@ -7,7 +7,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'DEVELOPER' | 'DIRECTOR' | 'MANAGER' | 'GENERAL_SUPERVISOR' | 'SUPERVISOR' | 'OPERATOR' | 'SECRETARY';
+  role: 'DEVELOPER' | 'DIRECTOR' | 'MANAGER' | 'GENERAL_SUPERVISOR' | 'SUPERVISOR' | 'OPERATOR' | 'SECRETARY' | 'ADMIN';
   phone?: string;
   profilePhoto?: string;
 }

@@ -44,6 +44,7 @@ import bitExpenseRoutes from './routes/bit-expense.routes';
 import reportRoutes from './routes/report.routes';
 import reportAnalyticsRoutes from './routes/report-analytics.routes';
 import notificationsRoutes from './routes/notifications.routes';
+import adminRoutes from './routes/admin.routes';
 // import emergencyAlertRoutes from './routes/emergencyAlert.routes';
 
 const app = express();
@@ -189,6 +190,7 @@ app.use('/api/bit-expenses', bitExpenseRoutes);
 app.use('/api/reports', reportAnalyticsRoutes); // Register analytics routes BEFORE generic report routes
 app.use('/api/reports', reportRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/admins', adminRoutes);
 // app.use('/api/emergency-alerts', emergencyAlertRoutes);
 
 // Health check

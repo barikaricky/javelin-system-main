@@ -5,6 +5,7 @@ export * from './Manager.model';
 export * from './Supervisor.model';
 export * from './Operator.model';
 export * from './Secretary.model';
+export * from './Admin.model';
 export * from './Location.model';
 export * from './Notification.model';
 export * from './Expense.model';

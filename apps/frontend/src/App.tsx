@@ -63,7 +63,7 @@ import ManagerCommunicationPage from './pages/manager/communication/Communicatio
 import ManagerPendingApprovalsPage from './pages/manager/PendingApprovalsPage';
 import OperatorApprovalsPage from './pages/manager/OperatorApprovalsPage';
 import RegisterSecretaryPage from './pages/manager/secretary/RegisterSecretaryPage';
-import RegisterAdminPage from './pages/manager/RegisterAdminPage';
+import RegisterAdminPage from './pages/director/RegisterAdminPage';
 import { ManagerBitsListPage } from './pages/manager/bits/BitsListPage';
 import { ManagerLocationsListPage } from './pages/manager/locations/LocationsListPage';
 import { ManagerEditBitPage } from './pages/manager/bits/EditBitPage';
@@ -168,6 +168,11 @@ import SecretarySupervisorsListPage from './pages/secretary/supervisors/Supervis
 import SecretaryGeneralSupervisorsListPage from './pages/secretary/general-supervisors/GeneralSupervisorsListPage';
 import SecretaryManagersListPage from './pages/secretary/managers/ManagersListPage';
 import SecretaryAssignOperatorPage from './pages/secretary/assignments/AssignOperatorPage';
+
+// Admin imports
+import AdminLayout from './components/layout/AdminLayout';
+import AdminDashboard from './pages/admin/Dashboard';
+import AdminProfilePage from './pages/admin/ProfilePage';
 
 // Director imports
 import MoneyInReports from './pages/director/financial/MoneyInReports';
@@ -309,6 +314,20 @@ function App() {
         <Route path="reports/:id" element={<SecretaryReportDetailsPage />} />
       </Route>
       
+      {/* Admin Routes */}
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="bits" element={<div className="p-8 text-center text-gray-500">BITs & Locations view - Coming soon</div>} />
+        <Route path="operators" element={<div className="p-8 text-center text-gray-500">Operators view - Coming soon</div>} />
+        <Route path="supervisors" element={<div className="p-8 text-center text-gray-500">Supervisors view - Coming soon</div>} />
+        <Route path="messages" element={<div className="p-8 text-center text-gray-500">Messages - Coming soon</div>} />
+        <Route path="reports" element={<div className="p-8 text-center text-gray-500">Reports view - Coming soon</div>} />
+        <Route path="profile" element={<AdminProfilePage />} />
+        <Route path="security" element={<div className="p-8 text-center text-gray-500">Security settings - Coming soon</div>} />
+        <Route path="login-history" element={<div className="p-8 text-center text-gray-500">Login history - Coming soon</div>} />
+      </Route>
+      
       {/* Manager Routes */}
       <Route path="/manager" element={<ManagerLayout />}>
         <Route index element={<Navigate to="/manager/dashboard" replace />} />
@@ -336,7 +355,6 @@ function App() {
         <Route path="settings" element={<ManagerSettingsPage />} />
         <Route path="id-cards" element={<ManagerIDCardGenerator />} />
         <Route path="secretary/register" element={<RegisterSecretaryPage />} />
-        <Route path="admin/register" element={<RegisterAdminPage />} />
         <Route path="money-in" element={<ManagerMoneyInView />} />
         <Route path="salary" element={<SalaryView />} />
         <Route path="assignments" element={<AssignmentsListPage />} />
@@ -420,6 +438,7 @@ function App() {
       <Route path="/director/personnel/register-manager" element={<DirectorLayout><RegisterManagerPage /></DirectorLayout>} />
       <Route path="/director/personnel/pending-approvals" element={<DirectorLayout><PendingApprovalsPage /></DirectorLayout>} />
       <Route path="/director/personnel/all" element={<DirectorLayout><WorkersPage /></DirectorLayout>} />
+      <Route path="/director/admin/register" element={<DirectorLayout><RegisterAdminPage /></DirectorLayout>} />
       <Route path="/director/operators/register" element={<DirectorLayout><DirectorRegisterOperatorPage /></DirectorLayout>} />
       <Route path="/director/operators/assign" element={<DirectorLayout><GuardAssignmentPage /></DirectorLayout>} />
       <Route path="/director/messaging" element={<DirectorLayout><MessagingPage /></DirectorLayout>} />
@@ -502,6 +521,9 @@ function RoleBasedRedirect() {
       return <Navigate to="/operator/dashboard" replace />;
     case 'SECRETARY':
       return <Navigate to="/secretary/dashboard" replace />;
+    case 'ADMIN':
+      console.log('🔄 Admin detected, redirecting to /admin/dashboard');
+      return <Navigate to="/admin/dashboard" replace />;
     default:
       console.log('🔄 Unknown role, redirecting to login');
       return <Navigate to="/login" replace />;

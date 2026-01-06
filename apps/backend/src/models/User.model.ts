@@ -8,6 +8,7 @@ export enum UserRole {
   OPERATOR = 'OPERATOR',
   SECRETARY = 'SECRETARY',
   MANAGER = 'MANAGER',
+  ADMIN = 'ADMIN',
 }
 
 export enum UserStatus {

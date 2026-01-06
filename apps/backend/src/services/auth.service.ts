@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { User, UserRole, Director, Manager, Supervisor, Operator, Secretary } from '../models';
+import { User, UserRole, Director, Manager, Supervisor, Operator, Secretary, Admin } from '../models';
 import { config } from '../config';
 import { AppError } from '../middlewares/error.middleware';
 import { logger } from '../utils/logger';
@@ -69,7 +69,7 @@ export async function login(email: string, password: string, ipAddress?: string,
 
     // Log the login activity and update lastLogin in the background (non-blocking)
     // These are fire-and-forget operations to speed up login response
-    Promise.all([
+    const backgroundTasks = [
       logActivity(
         user._id.toString(),
         'LOGIN',
@@ -83,7 +83,22 @@ export async function login(email: string, password: string, ipAddress?: string,
         { _id: user._id },
         { lastLogin: new Date() }
       )
-    ]).catch(err => {
+    ];
+
+    // If admin, also log the admin login
+    if (user.role === 'ADMIN') {
+      const { logAdminLogin } = await import('./admin.service');
+      backgroundTasks.push(
+        logAdminLogin(
+          user._id.toString(),
+          ipAddress || 'unknown',
+          userAgent || 'unknown',
+          true
+        )
+      );
+    }
+
+    Promise.all(backgroundTasks).catch(err => {
       logger.error('Background login operations failed:', err);
     });
 
@@ -188,6 +203,10 @@ export async function getCurrentUser(userId: string) {
       roleData = await Operator.findOne({ userId: user._id }).exec();
     } else if (user.role === 'SECRETARY') {
       roleData = await Secretary.findOne({ userId: user._id }).exec();
+    } else if (user.role === 'ADMIN') {
+      roleData = await Admin.findOne({ userId: user._id })
+        .populate('officeLocationId', 'locationName city state')
+        .exec();
     }
 
     return {

@@ -29,10 +29,11 @@ const ROLE_CONFIG: Record<string, { label: string; color: string; bgColor: strin
   DIRECTOR: { label: 'Director', color: 'text-purple-700', bgColor: 'bg-purple-50', borderColor: 'border-purple-200', Icon: Shield },
   DEVELOPER: { label: 'Developer', color: 'text-indigo-700', bgColor: 'bg-indigo-50', borderColor: 'border-indigo-200', Icon: UserCog },
   MANAGER: { label: 'Manager', color: 'text-blue-700', bgColor: 'bg-blue-50', borderColor: 'border-blue-200', Icon: Briefcase },
+  ADMIN: { label: 'Admin', color: 'text-cyan-700', bgColor: 'bg-cyan-50', borderColor: 'border-cyan-200', Icon: UserCog },
+  SECRETARY: { label: 'Secretary', color: 'text-pink-700', bgColor: 'bg-pink-50', borderColor: 'border-pink-200', Icon: UserCog },
   GENERAL_SUPERVISOR: { label: 'General Supervisor', color: 'text-emerald-700', bgColor: 'bg-emerald-50', borderColor: 'border-emerald-200', Icon: Users },
   SUPERVISOR: { label: 'Supervisor', color: 'text-teal-700', bgColor: 'bg-teal-50', borderColor: 'border-teal-200', Icon: Users },
   OPERATOR: { label: 'Operator', color: 'text-amber-700', bgColor: 'bg-amber-50', borderColor: 'border-amber-200', Icon: Building2 },
-  SECRETARY: { label: 'Secretary', color: 'text-pink-700', bgColor: 'bg-pink-50', borderColor: 'border-pink-200', Icon: UserCog },
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -60,6 +61,7 @@ interface Personnel {
   department?: string | null;
   supervisorId?: string | null;
   salary?: number | null;
+  jobTitle?: string | null;
   operators?: Personnel[];
 }
 
@@ -141,8 +143,8 @@ export default function WorkersPage() {
     return acc;
   }, {});
 
-  // Sort roles in order
-  const roleOrder = ['DIRECTOR', 'DEVELOPER', 'MANAGER', 'GENERAL_SUPERVISOR', 'SUPERVISOR', 'OPERATOR', 'SECRETARY'];
+  // Sort roles by authority level (top to bottom)
+  const roleOrder = ['DIRECTOR', 'DEVELOPER', 'MANAGER', 'ADMIN', 'SECRETARY', 'GENERAL_SUPERVISOR', 'SUPERVISOR', 'OPERATOR'];
   const sortedRoles = Object.keys(groupedByRole).sort((a, b) => {
     return roleOrder.indexOf(a) - roleOrder.indexOf(b);
   });
@@ -573,6 +575,16 @@ export default function WorkersPage() {
                     })}
                   </p>
                 </div>
+                {/* Show Job Title for Admin */}
+                {selectedPerson.role === 'ADMIN' && selectedPerson.jobTitle && (
+                  <div className="bg-gray-50 rounded-lg p-4 md:col-span-2">
+                    <div className="flex items-center gap-2 text-gray-500 text-sm mb-1">
+                      <Briefcase className="w-4 h-4" />
+                      Job Title
+                    </div>
+                    <p className="font-medium text-gray-900">{selectedPerson.jobTitle}</p>
+                  </div>
+                )}
               </div>
 
               {/* Operators Section for Supervisors */}

@@ -1,7 +1,30 @@
 import { Router, Response } from 'express';
 import { authenticate, AuthRequest } from '../middlewares/auth.middleware';
-import { User, Manager, Supervisor, Operator, Secretary } from '../models';
+import { User, Manager, Supervisor, Operator, Secretary, Admin } from '../models';
 import { logger } from '../utils/logger';
+import path from 'path';
+
+/**
+ * Convert absolute file path to relative URL path
+ */
+function normalizeFilePath(filePath: string | undefined): string | undefined {
+  if (!filePath) return undefined;
+  
+  // If already a relative path starting with /uploads, return as is
+  if (filePath.startsWith('/uploads')) return filePath;
+  
+  // If it's an absolute path, extract the filename and create relative path
+  if (filePath.includes('uploads')) {
+    const filename = path.basename(filePath);
+    // Check which upload directory it belongs to
+    if (filePath.includes('admin-documents')) {
+      return `/uploads/admin-documents/${filename}`;
+    }
+    return `/uploads/${filename}`;
+  }
+  
+  return filePath;
+}
 
 const router = Router();
 
@@ -99,6 +122,19 @@ router.get('/all', async (req: AuthRequest, res: Response) => {
             .lean();
           if (secretary) {
             userData.salary = secretary.salary;
+          }
+        } else if (user.role === 'ADMIN') {
+          const admin = await Admin.findOne({ userId: user._id })
+            .select('id staffId jobTitle department adminRoleLevel passportPhotoUrl salary')
+            .lean();
+          if (admin) {
+            userData.admins = [admin];
+            userData.salary = admin.salary;
+            userData.jobTitle = admin.jobTitle;
+            // Use passportPhotoUrl from admin record if available and normalize the path
+            if (admin.passportPhotoUrl) {
+              userData.passportPhoto = normalizeFilePath(admin.passportPhotoUrl);
+            }
           }
         }
         
