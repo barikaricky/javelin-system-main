@@ -295,8 +295,8 @@ router.get(
 );
 
 /**
- * AI-Powered Financial Suggestions (Advanced Rule-Based System)
- * Acts as a professional accountant analyzing company finances
+ * AI-Powered Financial Suggestions (Simple & Clear for Everyone)
+ * Explains finances in plain English that anyone can understand
  */
 function generateFinancialSuggestions(metrics: any): string[] {
   const suggestions: string[] = [];
@@ -304,122 +304,111 @@ function generateFinancialSuggestions(metrics: any): string[] {
   const profitMargin = metrics.totalIncome > 0 ? (metrics.netCashFlow / metrics.totalIncome) * 100 : 0;
 
   // ========================================
-  // 1. CRITICAL CASH FLOW ANALYSIS
+  // 1. SIMPLE CASH FLOW CHECK
   // ========================================
   if (metrics.netCashFlow < 0) {
     const deficit = Math.abs(metrics.netCashFlow);
-    const monthsToBreakdown = metrics.totalIncome > 0 ? (deficit / (metrics.totalIncome * 0.1)) : 0;
-    suggestions.push(`🚨 URGENT: Negative cash flow of ₦${deficit.toLocaleString()}. At current burn rate, sustainability risk in ${Math.ceil(monthsToBreakdown)} months. Immediate action required: 1) Delay non-critical expenses 2) Accelerate receivables collection 3) Review all Money Out approvals.`);
-  } else if (metrics.netCashFlow > 0 && metrics.netCashFlow < metrics.totalIncome * 0.1) {
-    suggestions.push(`⚠️ Low profit margin (${profitMargin.toFixed(1)}%). Company operating near break-even. Recommendation: Analyze top 3 expense categories and negotiate 10-15% cost reductions. Consider price adjustments for services.`);
-  } else if (metrics.netCashFlow > metrics.totalIncome * 0.3) {
-    const investmentPotential = metrics.netCashFlow * 0.6;
-    suggestions.push(`✅ Excellent profitability! ${profitMargin.toFixed(1)}% profit margin. Suggested allocation: Reserve ₦${investmentPotential.toLocaleString()} (60%) for: 1) Equipment upgrades 2) Emergency fund (3 months operating expenses) 3) Staff training programs.`);
+    suggestions.push(`🚨 PROBLEM: You're spending ₦${deficit.toLocaleString()} MORE than you're earning. This is like spending more money than your salary - you'll run out soon!\n\nWhat to do NOW:\n• Stop paying for things you don't really need right now\n• Call clients who owe you money and ask them to pay faster\n• Check every payment request carefully before approving`);
+  } else if (metrics.netCashFlow > 0 && profitMargin < 10) {
+    suggestions.push(`⚠️ BE CAREFUL: You're only keeping ₦${metrics.netCashFlow.toLocaleString()} after paying everything. That's just ${profitMargin.toFixed(0)}% profit - very small!\n\nThink of it like this: If you earn ₦100, you only keep ₦${profitMargin.toFixed(0)} after expenses.\n\nWhat to do:\n• Find ways to spend less money\n• OR find ways to earn more money\n• Target: Keep at least ₦15-20 from every ₦100 you earn`);
+  } else if (metrics.netCashFlow > metrics.totalIncome * 0.2) {
+    const savingsAmount = metrics.netCashFlow * 0.5;
+    suggestions.push(`✅ EXCELLENT! You're keeping ₦${metrics.netCashFlow.toLocaleString()} as profit (${profitMargin.toFixed(0)}% of what you earn). This is VERY GOOD!\n\nSmart things to do with this money:\n• Save ₦${savingsAmount.toLocaleString()} for emergencies (like unexpected repairs)\n• Buy better equipment to work faster\n• Train your staff to work better\n• Give bonuses to hardworking employees`);
   }
 
   // ========================================
-  // 2. EXPENSE RATIO & OPERATIONAL EFFICIENCY
+  // 2. HOW MUCH YOU'RE SPENDING
   // ========================================
-  if (expenseRatio > 0.95) {
-    suggestions.push(`🔴 CRITICAL: Expense ratio at ${(expenseRatio * 100).toFixed(1)}%. Operating expenses consuming almost all revenue. IMMEDIATE ACTIONS: 1) Freeze all non-essential Money Out requests 2) Renegotiate supplier contracts 3) Review personnel costs 4) Implement expense approval threshold of ₦10,000.`);
-  } else if (expenseRatio > 0.85 && expenseRatio <= 0.95) {
-    suggestions.push(`🟡 High expense ratio (${(expenseRatio * 100).toFixed(1)}%). Profit margin too thin for sustainability. Focus areas: 1) Reduce BIT operational costs by 10% 2) Review salary-to-revenue ratio 3) Eliminate redundant expenses 4) Target 75% expense ratio within 2 months.`);
-  } else if (expenseRatio >= 0.70 && expenseRatio <= 0.85) {
-    suggestions.push(`🟢 Moderate expense ratio (${(expenseRatio * 100).toFixed(1)}%). Healthy operational efficiency but room for improvement. Optimize: 1) Consolidate BIT supply purchases 2) Review utility costs 3) Implement bulk purchasing for uniforms/equipment. Target: Reduce to 65-70% within quarter.`);
+  if (expenseRatio > 0.90) {
+    suggestions.push(`🔴 DANGER: For every ₦100 you earn, you're spending ₦${(expenseRatio * 100).toFixed(0)}! That's almost everything!\n\nImagine: You get ₦100 salary, but ₦${(expenseRatio * 100).toFixed(0)} goes to bills. Only ₦${(100 - expenseRatio * 100).toFixed(0)} left!\n\nEMERGENCY STEPS:\n• Stop all spending that's not absolutely necessary\n• Talk to your suppliers - ask for lower prices\n• Review how many people you're paying - do you need everyone?\n• Set a rule: Need approval before spending more than ₦10,000`);
+  } else if (expenseRatio > 0.80 && expenseRatio <= 0.90) {
+    suggestions.push(`🟡 WARNING: You're spending ₦${(expenseRatio * 100).toFixed(0)} out of every ₦100 you earn. This is too much!\n\nBetter target: Spend only ₦70-75 out of every ₦100 you earn\n\nHow to improve:\n• Look at your biggest expenses - can you reduce them by 10%?\n• Review what locations/BITs are spending most money\n• Find cheaper suppliers for things you buy regularly\n• Check if you're wasting anything (fuel, electricity, supplies)`);
+  } else if (expenseRatio >= 0.65 && expenseRatio <= 0.80) {
+    suggestions.push(`🟢 GOOD: You're spending ₦${(expenseRatio * 100).toFixed(0)} from every ₦100 you earn. This is okay, but can be better!\n\nHow to make it excellent:\n• Buy things in bulk to get discounts (uniforms, equipment)\n• Turn off lights and AC when not needed to save electricity\n• Make sure guards are using fuel wisely\n• Target: Bring spending down to ₦65-70 from every ₦100`);
   } else if (expenseRatio < 0.60 && metrics.totalExpenses > 0) {
-    suggestions.push(`⭐ Outstanding cost control! ${(expenseRatio * 100).toFixed(1)}% expense ratio demonstrates excellent financial management. Maintain by: 1) Monthly expense reviews 2) Continue vendor negotiations 3) Share best practices with all BIT locations.`);
+    suggestions.push(`⭐ AMAZING! You're only spending ₦${(expenseRatio * 100).toFixed(0)} from every ₦100 you earn. This is excellent money management!\n\nKeep doing what you're doing:\n• Continue checking expenses every month\n• Keep negotiating good prices with suppliers\n• Share your cost-saving tricks with all your locations`);
   }
 
   // ========================================
-  // 3. BIT EXPENSES DEEP ANALYSIS
+  // 3. LOCATION/BIT EXPENSES (SIMPLE)
   // ========================================
   const bitExpenseRatio = metrics.totalExpenses > 0 ? metrics.bitExpensesTotal / metrics.totalExpenses : 0;
-  const bitPercentage = (bitExpenseRatio * 100).toFixed(1);
   
-  if (bitExpenseRatio > 0.45) {
-    const avgPerBit = metrics.bitExpensesTotal / 10; // Assuming ~10 BITs
-    suggestions.push(`💡 BIT expenses are ${bitPercentage}% of total costs (₦${metrics.bitExpensesTotal.toLocaleString()}). Average per location: ₦${avgPerBit.toLocaleString()}/period. HIGH PRIORITY: 1) Audit top 3 spending locations 2) Standardize equipment procurement 3) Implement location expense caps 4) Review fuel/transport efficiency.`);
-  } else if (bitExpenseRatio > 0.30 && bitExpenseRatio <= 0.45) {
-    suggestions.push(`📊 BIT operational costs at ${bitPercentage}% of expenses. Consider: 1) Centralize purchasing for 10-15% bulk discounts 2) Implement preventive maintenance to reduce repairs 3) Review uniform replacement cycles 4) Share cost-saving practices between locations.`);
-  } else if (bitExpenseRatio > 0 && bitExpenseRatio <= 0.20) {
-    suggestions.push(`✅ Excellent BIT cost control at ${bitPercentage}%. Operations running efficiently. Maintain by: 1) Document current best practices 2) Regular expense monitoring 3) Proactive maintenance schedules 4) Continue supervisor training on cost management.`);
+  if (bitExpenseRatio > 0.40 && metrics.bitExpensesTotal > 0) {
+    const avgPerLocation = Math.round(metrics.bitExpensesTotal / 10);
+    suggestions.push(`💡 Your locations (BITs) are spending A LOT: ₦${metrics.bitExpensesTotal.toLocaleString()} total\n\nEach location spends about: ₦${avgPerLocation.toLocaleString()}\n\nCheck these:\n• Which location spends the most? Why?\n• Are they buying things at good prices?\n• Can you buy uniforms/equipment for ALL locations together (cheaper)?\n• Are they using too much fuel for vehicles?\n• Set a spending limit for each location`);
+  } else if (bitExpenseRatio > 0.25 && bitExpenseRatio <= 0.40 && metrics.bitExpensesTotal > 0) {
+    suggestions.push(`📊 Your locations are spending ₦${metrics.bitExpensesTotal.toLocaleString()}. This is normal.\n\nWays to spend less:\n• Buy supplies for all locations at once (get bulk discount)\n• Fix equipment regularly so it doesn't break (cheaper than buying new)\n• Share good ideas between locations - if one is saving money, others can copy`);
   }
 
   // ========================================
-  // 4. PERSONNEL COSTS & WORKFORCE OPTIMIZATION
+  // 4. SALARY COSTS (SIMPLE)
   // ========================================
   const salaryRatio = metrics.totalExpenses > 0 ? metrics.salariesTotal / metrics.totalExpenses : 0;
-  const salaryToRevenueRatio = metrics.totalIncome > 0 ? metrics.salariesTotal / metrics.totalIncome : 0;
-  const salaryPercentage = (salaryRatio * 100).toFixed(1);
   
-  if (salaryRatio > 0.60) {
-    suggestions.push(`👥 Personnel costs at ${salaryPercentage}% of expenses (₦${metrics.salariesTotal.toLocaleString()}). Labor-intensive operation detected. Optimization strategies: 1) Review staff-to-contract ratio 2) Implement performance-based compensation 3) Cross-train operators for flexibility 4) Consider variable staffing for peak periods.`);
-  } else if (salaryRatio > 0.45 && salaryRatio <= 0.60) {
-    suggestions.push(`👥 Salary costs at ${salaryPercentage}% of expenses. Balanced but monitor closely. Actions: 1) Ensure productivity metrics justify headcount 2) Review overtime patterns 3) Consider productivity bonuses vs base salary increases 4) Project next quarter staffing needs.`);
-  } else if (salaryRatio > 0 && salaryRatio < 0.30 && salaryToRevenueRatio < 0.20) {
-    suggestions.push(`✅ Optimal personnel cost ratio at ${salaryPercentage}%. Efficient workforce utilization. Opportunity: Invest ${(metrics.salariesTotal * 0.05).toLocaleString()} (5% of salary budget) in: 1) Skills training 2) Performance incentives 3) Staff retention programs to maintain quality.`);
+  if (salaryRatio > 0.55 && metrics.salariesTotal > 0) {
+    suggestions.push(`👥 You're spending ₦${metrics.salariesTotal.toLocaleString()} on salaries - that's MORE THAN HALF of all your expenses!\n\nThis means: For every ₦100 you spend, ₦${(salaryRatio * 100).toFixed(0)} goes to paying staff\n\nThink about:\n• Do you have too many workers for the amount of work?\n• Can some guards work at multiple locations?\n• Are you paying overtime too much? (It's expensive!)\n• Give bonuses for good work instead of just raising salaries`);
+  } else if (salaryRatio > 0.35 && salaryRatio <= 0.55 && metrics.salariesTotal > 0) {
+    suggestions.push(`👥 Salary spending is ₦${metrics.salariesTotal.toLocaleString()}. This is balanced.\n\nStay balanced by:\n• Making sure each worker is productive (doing good work)\n• Training staff so they work better\n• Checking if overtime is necessary or can be avoided`);
+  } else if (salaryRatio > 0 && salaryRatio < 0.30) {
+    suggestions.push(`✅ Your salary costs are VERY EFFICIENT! Good job managing your workforce.\n\nKeep your good workers happy:\n• Give small bonuses for excellent performance\n• Provide training to help them grow\n• Happy workers stay longer (saving you hiring costs)`);
   }
 
   // ========================================
-  // 5. REVENUE GROWTH & SUSTAINABILITY
+  // 5. INCOME VS EXPENSES (SIMPLE)
   // ========================================
-  const revenueBuffer = metrics.totalIncome - metrics.totalExpenses;
-  const bufferPercentage = metrics.totalIncome > 0 ? (revenueBuffer / metrics.totalIncome) * 100 : 0;
-  
-  if (bufferPercentage < 15 && metrics.totalIncome > 0) {
-    const targetRevenue = metrics.totalExpenses * 1.25; // 25% buffer
-    const revenueGap = targetRevenue - metrics.totalIncome;
-    suggestions.push(`📈 Revenue buffer only ${bufferPercentage.toFixed(1)}% above expenses. Risk: Vulnerable to income fluctuations. GROWTH STRATEGY: Increase revenue by ₦${revenueGap.toLocaleString()} (${((revenueGap/metrics.totalIncome)*100).toFixed(1)}%) through: 1) Pursue 2-3 new contracts 2) Upsell existing clients on additional security services 3) Review pricing - last increase analysis.`);
-  } else if (bufferPercentage >= 15 && bufferPercentage < 25) {
-    suggestions.push(`📊 Revenue buffer at ${bufferPercentage.toFixed(1)}%. Adequate but not optimal. Target: 25-30% buffer. Strategies: 1) Client retention program (5% increase in retention = 25% profit boost) 2) Expand service offerings 3) Quarterly price reviews 4) Invoice promptly - reduce receivables days.`);
+  if (metrics.totalIncome > 0) {
+    const extra = metrics.totalIncome - metrics.totalExpenses;
+    const extraPercent = (extra / metrics.totalIncome) * 100;
+    
+    if (extraPercent < 15 && extra >= 0) {
+      const needMore = metrics.totalExpenses * 0.25 - extra;
+      suggestions.push(`📈 You need to earn MORE money! Right now, you only keep ₦${extra.toLocaleString()} extra.\n\nWhy this matters: If clients pay late or you have emergency, you're in trouble!\n\nHow to earn more money:\n• Talk to current clients - can you guard more places for them?\n• Find 2-3 new clients\n• Check your prices - are they too low? When did you last increase them?\n• Target: Earn at least ₦${needMore.toLocaleString()} more per month`);
+    } else if (extraPercent >= 15 && extraPercent < 25) {
+      suggestions.push(`📊 You're keeping ₦${extra.toLocaleString()} extra (${extraPercent.toFixed(0)}% of income). This is okay!\n\nTo make it better:\n• Focus on keeping current clients happy (easier than finding new ones)\n• Ask clients if they need additional services\n• Check prices every 3 months - adjust if costs go up`);
+    }
   }
 
   // ========================================
-  // 6. CASH FLOW PATTERN ANALYSIS
+  // 6. MONEY OUT ANALYSIS (SIMPLE)
   // ========================================
-  const moneyOutRatio = metrics.totalExpenses > 0 ? metrics.moneyOutTotal / metrics.totalExpenses : 0;
-  
-  if (moneyOutRatio > 0.40) {
-    suggestions.push(`💸 High discretionary spending detected: Money Out is ${(moneyOutRatio * 100).toFixed(1)}% of expenses (₦${metrics.moneyOutTotal.toLocaleString()}). Recommendation: 1) Require detailed justification for amounts >₦5,000 2) Implement 2-level approval for >₦25,000 3) Monthly Money Out category review 4) Identify recurring expenses for budget allocation.`);
+  if (metrics.moneyOutTotal > metrics.totalExpenses * 0.35) {
+    suggestions.push(`💸 You're spending too much on "Money Out" (other expenses): ₦${metrics.moneyOutTotal.toLocaleString()}\n\nWhat is Money Out? Payments for supplies, repairs, transport, etc.\n\nControl this better:\n• Any payment over ₦5,000? Must write down WHY you need it\n• Any payment over ₦25,000? Must get 2 managers to approve\n• Review all "Money Out" every month - where is money going?\n• Some expenses happen every month? Plan for them in budget`);
   }
 
   // ========================================
-  // 7. TRANSACTION VOLUME & RECORDING HEALTH
+  // 7. RECORD KEEPING (SIMPLE)
   // ========================================
-  if (metrics.transactionCount < 15) {
-    suggestions.push(`📊 Low transaction count (${metrics.transactionCount} records). Data integrity concern: 1) Verify all Money In recorded with receipts 2) Confirm all BIT expenses captured 3) Review salary processing completeness 4) Train staff on transaction recording requirements 5) Weekly transaction audits.`);
-  } else if (metrics.transactionCount > 100) {
-    const avgTransactionSize = (metrics.totalIncome + metrics.totalExpenses) / metrics.transactionCount;
-    suggestions.push(`📈 High transaction volume (${metrics.transactionCount} entries). Average transaction: ₦${avgTransactionSize.toLocaleString()}. Efficiency opportunity: 1) Categorize and analyze transaction patterns 2) Consider batching small expenses 3) Implement automated recurring entry templates 4) Monthly reconciliation reviews.`);
+  if (metrics.transactionCount < 20) {
+    suggestions.push(`📊 You only have ${metrics.transactionCount} transactions recorded. This seems LOW.\n\nWhy this matters: If you don't write down all money coming in and going out, you can't know if you're making or losing money!\n\nMake sure you record:\n• EVERY money you receive from clients (with receipt)\n• EVERY expense at locations/BITs\n• ALL salary payments\n• Train everyone: "No payment without recording it"\n• Check records every week - don't wait until month end`);
   }
 
   // ========================================
-  // 8. PROFITABILITY BENCHMARKS
+  // 8. PROFIT CHECK (SIMPLE)
   // ========================================
-  if (profitMargin >= 20 && profitMargin < 30) {
-    suggestions.push(`💰 Strong ${profitMargin.toFixed(1)}% profit margin. Industry standard: 15-25% for security services. Recommendation: Maintain quality while: 1) Building 6-month emergency reserve (₦${(metrics.totalExpenses * 0.5).toLocaleString()}) 2) Investing in growth initiatives 3) Considering staff profit-sharing program.`);
-  } else if (profitMargin >= 30) {
-    suggestions.push(`🏆 Exceptional ${profitMargin.toFixed(1)}% profit margin! Above industry standard (15-25%). Strategic options: 1) Competitive pricing review to gain market share 2) Investment in technology/equipment 3) Expansion to new territories 4) Enhanced employee benefits for retention 5) Dividend consideration for stakeholders.`);
-  } else if (profitMargin < 5 && profitMargin >= 0) {
-    suggestions.push(`⚠️ Thin ${profitMargin.toFixed(1)}% profit margin. Vulnerability alert: 90-day action plan needed: 1) WEEK 1-2: Expense audit - identify 15% cuts 2) WEEK 3-4: Client pricing review - target 8-10% increase 3) WEEK 5-8: Implement efficiency measures 4) WEEK 9-12: Track improvements. Target: 15% margin in 90 days.`);
+  if (profitMargin >= 15 && profitMargin < 25 && metrics.netCashFlow > 0) {
+    suggestions.push(`💰 You're keeping ${profitMargin.toFixed(0)}% profit - this is GOOD for security business!\n\nNormal profit for security companies: 15-25%\n\nSmart moves:\n• Save money equal to 6 months of expenses (for emergencies)\n• Invest in better equipment or vehicles\n• Consider sharing profits with hardworking staff (keeps them motivated)`);
+  } else if (profitMargin >= 25) {
+    suggestions.push(`🏆 WOW! ${profitMargin.toFixed(0)}% profit - this is EXCELLENT!\n\nYou have options:\n• Your prices might be high - consider small reduction to get more clients\n• Invest in growing your business (new locations, more guards)\n• Improve staff benefits (they're making you successful!)\n• Save for big investments (vehicles, office, technology)`);
+  } else if (profitMargin > 0 && profitMargin < 10) {
+    suggestions.push(`⚠️ Your profit is only ${profitMargin.toFixed(0)}% - this is TOO LOW!\n\nWhat this means: You're barely making money. One problem and you could lose money!\n\n90-DAY PLAN:\n• First 2 weeks: Find expenses you can cut (target: save 15%)\n• Next 2 weeks: Review client prices - can you increase by 8-10%?\n• Next month: Start changes, track if improving\n• Last month: Measure results - aim for 15% profit`);
   }
 
   // ========================================
-  // 9. WORKING CAPITAL RECOMMENDATIONS
+  // 9. EMERGENCY SAVINGS (SIMPLE)
   // ========================================
-  const workingCapitalTarget = metrics.totalExpenses * 0.25; // 3 months of expenses
-  if (metrics.netCashFlow > 0 && metrics.netCashFlow < workingCapitalTarget) {
-    const shortfall = workingCapitalTarget - metrics.netCashFlow;
-    suggestions.push(`🏦 Working Capital: Build emergency reserve to ₦${workingCapitalTarget.toLocaleString()} (3 months expenses). Current shortfall: ₦${shortfall.toLocaleString()}. Strategy: Set aside ${((shortfall/metrics.totalIncome)*100).toFixed(1)}% of monthly revenue until target reached. Protects against: contract delays, unexpected expenses, seasonal fluctuations.`);
+  if (metrics.netCashFlow > 0 && metrics.netCashFlow < metrics.totalExpenses * 0.25) {
+    const needToSave = metrics.totalExpenses * 0.25 - metrics.netCashFlow;
+    suggestions.push(`🏦 IMPORTANT: You need an EMERGENCY FUND (savings for problems)\n\nRight now, you should have: ₦${(metrics.totalExpenses * 0.25).toLocaleString()} saved (3 months of expenses)\n\nYou need: ₦${needToSave.toLocaleString()} more\n\nWhy? If client doesn't pay on time, or vehicle breaks down, or equipment needs replacement - you have money to handle it!\n\nHow: Save a bit from every payment you receive until you reach the target.`);
   }
 
   // ========================================
-  // 10. SMART ACCOUNTING INSIGHTS
+  // 10. SIMPLE SUMMARY
   // ========================================
-  suggestions.push(`💼 PROFESSIONAL INSIGHT: Review key ratios monthly - Current period: Gross Margin ${profitMargin.toFixed(1)}%, Operating Expense Ratio ${(expenseRatio*100).toFixed(1)}%, Labor Cost Ratio ${(salaryRatio*100).toFixed(1)}%. Compare to: Previous period, Industry benchmarks (Security: 15-25% margins), Company targets. Schedule quarterly financial review with all department heads.`);
+  suggestions.push(`💼 SIMPLE SUMMARY:\n\n• For every ₦100 you earn, you keep ₦${profitMargin.toFixed(0)} profit\n• You spend ₦${(expenseRatio * 100).toFixed(0)} on expenses from every ₦100 earned\n• Salary costs take ₦${(salaryRatio * 100).toFixed(0)} from every ₦100 you spend\n\nCheck these numbers every month - are they getting better or worse?\n\nTIP: Have a meeting every 3 months with your managers to discuss money matters.`);
 
-  // Return top 8 most relevant suggestions
-  return suggestions.slice(0, 8);
+  // Return top 6-7 most relevant suggestions
+  return suggestions.slice(0, 7);
 }
 
 export default router;
