@@ -63,6 +63,23 @@ router.get(
   })
 );
 
+// Get all bits with full details (MUST come before /:id)
+router.get(
+  '/all',
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const { includeOperators, includeSupervisor, includeLocation } = req.query;
+    
+    const options = {
+      includeOperators: includeOperators === 'true',
+      includeSupervisor: includeSupervisor === 'true',
+      includeLocation: includeLocation === 'true',
+    };
+    
+    const bits = await bitService.getAllBitsWithDetails(options);
+    res.json(bits);
+  })
+);
+
 // Get bit by ID
 router.get(
   '/:id',

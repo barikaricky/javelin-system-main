@@ -173,6 +173,9 @@ import SecretaryAssignOperatorPage from './pages/secretary/assignments/AssignOpe
 import AdminLayout from './components/layout/AdminLayout';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminProfilePage from './pages/admin/ProfilePage';
+import AdminBitsPage from './pages/admin/BitsPage';
+import AdminOperatorsPage from './pages/admin/OperatorsPage';
+import AdminSupervisorsPage from './pages/admin/SupervisorsPage';
 
 // Director imports
 import MoneyInReports from './pages/director/financial/MoneyInReports';
@@ -318,9 +321,9 @@ function App() {
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
-        <Route path="bits" element={<div className="p-8 text-center text-gray-500">BITs & Locations view - Coming soon</div>} />
-        <Route path="operators" element={<div className="p-8 text-center text-gray-500">Operators view - Coming soon</div>} />
-        <Route path="supervisors" element={<div className="p-8 text-center text-gray-500">Supervisors view - Coming soon</div>} />
+        <Route path="bits" element={<AdminBitsPage />} />
+        <Route path="operators" element={<AdminOperatorsPage />} />
+        <Route path="supervisors" element={<AdminSupervisorsPage />} />
         <Route path="messages" element={<div className="p-8 text-center text-gray-500">Messages - Coming soon</div>} />
         <Route path="reports" element={<div className="p-8 text-center text-gray-500">Reports view - Coming soon</div>} />
         <Route path="profile" element={<AdminProfilePage />} />

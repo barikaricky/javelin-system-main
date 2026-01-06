@@ -153,6 +153,20 @@ router.get(
 );
 
 /**
+ * @route   GET /api/admins/dashboard-stats
+ * @desc    Get dashboard statistics for admin
+ * @access  Private (Admin)
+ */
+router.get(
+  '/dashboard-stats',
+  requireRole(['ADMIN']),
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const stats = await adminService.getDashboardStats();
+    res.json(stats);
+  })
+);
+
+/**
  * @route   GET /api/admins/:id
  * @desc    Get admin by ID
  * @access  Private (Manager, Director)
@@ -250,20 +264,6 @@ router.post(
       message: 'Admin reactivated successfully',
       admin,
     });
-  })
-);
-
-/**
- * @route   GET /api/admins/dashboard-stats
- * @desc    Get dashboard statistics for admin
- * @access  Private (Admin)
- */
-router.get(
-  '/dashboard-stats',
-  requireRole(['ADMIN']),
-  asyncHandler(async (req: AuthRequest, res: Response) => {
-    const stats = await adminService.getDashboardStats();
-    res.json(stats);
   })
 );
 

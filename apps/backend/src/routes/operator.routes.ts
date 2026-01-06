@@ -16,6 +16,31 @@ router.get('/dashboard', authorize('OPERATOR', 'SUPERVISOR', 'DIRECTOR'), (req, 
   res.json({ message: 'Operator dashboard' });
 });
 
+// Get all operators with full details (Admin view)
+router.get('/all', asyncHandler(async (req: AuthRequest, res: Response) => {
+  try {
+    const operators = await Operator.find()
+      .select('employeeId userId locationId supervisorId shiftType passportPhoto bankName bankAccount nationalId previousExperience medicalFitness approvalStatus salary startDate createdAt')
+      .populate('userId', 'firstName lastName email phone passportPhoto isActive')
+      .populate('locationId', 'locationName city state address')
+      .populate({
+        path: 'supervisorId',
+        select: 'employeeId userId',
+        populate: {
+          path: 'userId',
+          select: 'firstName lastName email phone',
+        },
+      })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json(operators);
+  } catch (error: any) {
+    logger.error('Error fetching all operators:', error);
+    res.status(500).json({ error: 'Failed to fetch operators' });
+  }
+}));
+
 // Helper function to generate employee ID
 function generateEmployeeId(prefix: string): string {
   const timestamp = Date.now().toString().slice(-8);

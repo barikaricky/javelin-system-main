@@ -1,4 +1,4 @@
-import { Bit, Location } from '../models';
+import { Bit, Location, Operator, Supervisor } from '../models';
 import { AppError } from '../middlewares/error.middleware';
 import { logger } from '../utils/logger';
 
@@ -139,6 +139,121 @@ export async function getAllBits(filters?: {
       pages: Math.ceil(total / limit),
     },
   };
+}
+
+// Get all bits with full details (location, supervisor, operators)
+export async function getAllBitsWithDetails(options?: {
+  includeOperators?: boolean;
+  includeSupervisor?: boolean;
+  includeLocation?: boolean;
+}) {
+  try {
+    const { includeOperators = false, includeSupervisor = false, includeLocation = false } = options || {};
+
+    let query = Bit.find({ isActive: true }).sort({ createdAt: -1 });
+
+    // Populate location if requested
+    if (includeLocation) {
+      query = query.populate('locationId', 'locationName city state address contactPerson contactPhone');
+    }
+
+    // Populate supervisor if requested
+    if (includeSupervisor) {
+      query = query.populate({
+        path: 'supervisorId',
+        select: 'userId employeeId',
+        populate: {
+          path: 'userId',
+          select: 'firstName lastName email phone passportPhoto',
+        },
+      });
+    }
+
+    const bits = await query.lean();
+
+    // If operators are requested, fetch them separately for each bit's location
+    if (includeOperators && bits.length > 0) {
+      const bitsWithOperators = await Promise.all(
+        bits.map(async (bit: any) => {
+          if (bit.locationId?._id) {
+            const operators = await Operator.find({
+              locationId: bit.locationId._id,
+            })
+              .populate('userId', 'firstName lastName email phone passportPhoto isActive')
+              .select('employeeId userId')
+              .lean();
+
+            // Transform location to match frontend expectations (name instead of locationName)
+            const transformedBit = {
+              ...bit,
+              bitId: bit.bitCode,
+              name: bit.bitName,
+              locationId: bit.locationId ? {
+                _id: bit.locationId._id,
+                name: bit.locationId.locationName,
+                address: bit.locationId.address,
+                city: bit.locationId.city,
+                state: bit.locationId.state,
+                contactPerson: bit.locationId.contactPerson,
+                contactPhone: bit.locationId.contactPhone,
+              } : null,
+              operators: operators.map((op: any) => ({
+                _id: op._id,
+                employeeId: op.employeeId,
+                userId: {
+                  firstName: op.userId?.firstName,
+                  lastName: op.userId?.lastName,
+                  email: op.userId?.email,
+                  phone: op.userId?.phone,
+                  passportPhoto: op.userId?.passportPhoto,
+                },
+                isActive: op.userId?.isActive,
+              })),
+            };
+            return transformedBit;
+          }
+          // Transform even if no operators
+          return {
+            ...bit,
+            bitId: bit.bitCode,
+            name: bit.bitName,
+            locationId: bit.locationId ? {
+              _id: bit.locationId._id,
+              name: bit.locationId.locationName,
+              address: bit.locationId.address,
+              city: bit.locationId.city,
+              state: bit.locationId.state,
+              contactPerson: bit.locationId.contactPerson,
+              contactPhone: bit.locationId.contactPhone,
+            } : null,
+            operators: [],
+          };
+        })
+      );
+      return bitsWithOperators;
+    }
+
+    // Transform bits even without operators
+    const transformedBits = bits.map((bit: any) => ({
+      ...bit,
+      bitId: bit.bitCode,
+      name: bit.bitName,
+      locationId: bit.locationId ? {
+        _id: bit.locationId._id,
+        name: bit.locationId.locationName,
+        address: bit.locationId.address,
+        city: bit.locationId.city,
+        state: bit.locationId.state,
+        contactPerson: bit.locationId.contactPerson,
+        contactPhone: bit.locationId.contactPhone,
+      } : null,
+    }));
+
+    return transformedBits;
+  } catch (error: any) {
+    logger.error('Error getting bits with details:', error);
+    throw new AppError(error.message || 'Failed to get bits', 500);
+  }
 }
 
 // Get bit by ID

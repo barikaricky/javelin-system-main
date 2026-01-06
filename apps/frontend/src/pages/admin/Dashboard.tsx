@@ -66,7 +66,7 @@ export default function AdminDashboard() {
     setIsLoading(true);
     try {
       // Fetch dashboard statistics
-      const response = await api.get('/admin/dashboard-stats');
+      const response = await api.get('/admins/dashboard-stats');
       setStats(response.data);
     } catch (error: any) {
       console.error('Failed to fetch dashboard stats:', error);

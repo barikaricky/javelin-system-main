@@ -34,6 +34,23 @@ router.get('/stats', authorize('MANAGER', 'DIRECTOR', 'DEVELOPER'), asyncHandler
   res.json(stats);
 }));
 
+// Get all supervisors with full details (Admin view)
+router.get('/all', authorize('ADMIN', 'DIRECTOR', 'MANAGER', 'DEVELOPER'), asyncHandler(async (req: any, res) => {
+  try {
+    const supervisors = await Supervisor.find()
+      .select('employeeId userId locationId role salary startDate passportPhoto bankName bankAccount nationalId previousExperience medicalFitness approvalStatus createdAt')
+      .populate('userId', 'firstName lastName email phone passportPhoto isActive')
+      .populate('locationId', 'locationName city state address')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json(supervisors);
+  } catch (error: any) {
+    logger.error('Error fetching all supervisors:', error);
+    res.status(500).json({ error: 'Failed to fetch supervisors' });
+  }
+}));
+
 // Get approval statistics (Director and Manager)
 router.get('/approval-stats', authorize('DIRECTOR', 'MANAGER', 'DEVELOPER'), asyncHandler(async (req, res) => {
   const stats = await getApprovalStats();

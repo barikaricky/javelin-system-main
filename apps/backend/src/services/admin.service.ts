@@ -1,4 +1,4 @@
-import { Admin, User } from '../models';
+import { Admin, User, Bit, Location, Operator, Supervisor } from '../models';
 import { AppError } from '../middlewares/error.middleware';
 import { logger } from '../utils/logger';
 import bcrypt from 'bcryptjs';
@@ -413,34 +413,37 @@ export async function getAdminStats() {
  * Get dashboard statistics for admin view
  */
 export async function getDashboardStats() {
-  const { BIT, Location, Operator, Supervisor, User } = await import('../models');
-  
-  const [
-    totalBits,
-    activeBits,
-    totalLocations,
-    totalOperators,
-    totalSupervisors,
-    totalGeneralSupervisors,
-  ] = await Promise.all([
-    BIT.countDocuments(),
-    BIT.countDocuments({ isActive: true }),
-    Location.countDocuments(),
-    Operator.countDocuments({ isActive: true }),
-    User.countDocuments({ role: 'SUPERVISOR' }),
-    User.countDocuments({ role: 'GENERAL_SUPERVISOR' }),
-  ]);
+  try {
+    const [
+      totalBits,
+      activeBits,
+      totalLocations,
+      totalOperators,
+      totalSupervisors,
+      totalGeneralSupervisors,
+    ] = await Promise.all([
+      Bit.countDocuments(),
+      Bit.countDocuments({ isActive: true }),
+      Location.countDocuments(),
+      Operator.countDocuments({ isActive: true }),
+      User.countDocuments({ role: 'SUPERVISOR' }),
+      User.countDocuments({ role: 'GENERAL_SUPERVISOR' }),
+    ]);
 
-  return {
-    totalBits,
-    activeBits,
-    inactiveBits: totalBits - activeBits,
-    totalLocations,
-    totalOperators,
-    totalSupervisors,
-    totalGeneralSupervisors,
-    unreadMessages: 0, // TODO: Implement messaging count
-    recentReports: 0, // TODO: Implement reports count
-  };
+    return {
+      totalBits,
+      activeBits,
+      inactiveBits: totalBits - activeBits,
+      totalLocations,
+      totalOperators,
+      totalSupervisors,
+      totalGeneralSupervisors,
+      unreadMessages: 0, // TODO: Implement messaging count
+      recentReports: 0, // TODO: Implement reports count
+    };
+  } catch (error) {
+    logger.error('Error fetching dashboard stats:', error);
+    throw new AppError('Failed to fetch dashboard statistics', 500);
+  }
 }
 
