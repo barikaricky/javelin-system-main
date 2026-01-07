@@ -18,6 +18,7 @@ import MandatoryPollModal from './components/MandatoryPollModal';
 import VersionAnnouncement from './components/VersionAnnouncement';
 import FeatureAnnouncement from './components/FeatureAnnouncement';
 import DownloadAppPage from './pages/DownloadAppPage';
+import InstallPromptBanner from './components/InstallPromptBanner';
 
 // Director Poll Pages
 import { CreatePollPage, ActivePollsPage, PollResultsPage } from './pages/director/polls';
@@ -491,11 +492,14 @@ function App() {
   );
 
   const content = (
-    <VersionAnnouncement>
-      <FeatureAnnouncement>
-        {routes}
-      </FeatureAnnouncement>
-    </VersionAnnouncement>
+    <>
+      <VersionAnnouncement>
+        <FeatureAnnouncement>
+          {routes}
+        </FeatureAnnouncement>
+      </VersionAnnouncement>
+      <InstallPromptBanner />
+    </>
   );
 
   if (isPublicRoute || !user) {
