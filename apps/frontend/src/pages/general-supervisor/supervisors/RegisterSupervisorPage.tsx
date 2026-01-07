@@ -147,7 +147,16 @@ export default function GSRegisterSupervisorPage() {
     try {
       const response = await api.get('/supervisors/locations');
       const locationsData = response.data.locations || response.data || [];
-      setLocations(locationsData);
+      
+      // Map backend format (_id, locationName) to frontend format (id, name)
+      const mappedLocations = locationsData.map((loc: any) => ({
+        id: loc._id,
+        name: loc.locationName,
+        address: loc.address,
+        region: loc.region,
+      }));
+      
+      setLocations(mappedLocations);
     } catch (error) {
       console.error('Error loading locations:', error);
       toast.error('Failed to load locations');
