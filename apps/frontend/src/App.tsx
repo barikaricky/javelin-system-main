@@ -17,6 +17,7 @@ import LoadingScreen from './components/LoadingScreen';
 import MandatoryPollModal from './components/MandatoryPollModal';
 import VersionAnnouncement from './components/VersionAnnouncement';
 import FeatureAnnouncement from './components/FeatureAnnouncement';
+import DownloadAppPage from './pages/DownloadAppPage';
 
 // Director Poll Pages
 import { CreatePollPage, ActivePollsPage, PollResultsPage } from './pages/director/polls';
@@ -254,6 +255,7 @@ function App() {
 
   const isPublicRoute =
     location.pathname === '/login' ||
+    location.pathname === '/download' ||
     location.pathname.startsWith('/dev/') ||
     location.pathname === '/dev/init-director' ||
     location.pathname.startsWith('/verify-id/');
@@ -262,6 +264,7 @@ function App() {
     <Routes>
       {/* Public routes */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/download" element={<DownloadAppPage />} />
       <Route path="/dev/onboarding" element={<DevOnboardingPage />} />
       <Route path="/dev/init-director" element={<DevOnboardingPage />} />
       <Route path="/verify-id/:userId" element={<IDVerification />} />

@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import App from './App';
 import './index.css';
+import './registerSW';
 
 const queryClient = new QueryClient({
   defaultOptions: {
