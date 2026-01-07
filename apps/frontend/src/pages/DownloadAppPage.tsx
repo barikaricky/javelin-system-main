@@ -245,8 +245,14 @@ export default function DownloadAppPage() {
               </div>
             </button>
           ) : (
-            <div className="mb-8 text-blue-200 text-sm">
-              <p>💡 Install button will appear when available on your device</p>
+            <div className="mb-8">
+              <div className="inline-flex items-center gap-3 px-8 py-4 bg-blue-500/20 border-2 border-blue-400 rounded-xl text-blue-100 mb-4">
+                <Download className="w-6 h-6" />
+                <span className="font-semibold">Ready to Install</span>
+              </div>
+              <p className="text-blue-200 text-sm max-w-2xl mx-auto">
+                Follow the instructions below for your device, or look for the install icon (⊕) in your browser's address bar
+              </p>
             </div>
           )}
 
@@ -286,12 +292,10 @@ export default function DownloadAppPage() {
         <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 mb-8">
           <div className="text-center mb-8">
             <h3 className="text-3xl font-bold text-white mb-3">
-              {isInstallable ? 'Or Choose Your Platform' : 'Choose Your Platform'}
+              Installation Instructions
             </h3>
             <p className="text-blue-200">
-              {isInstallable 
-                ? 'For manual installation, select your device below' 
-                : 'Select your device to see installation instructions'}
+              Choose your device type below for step-by-step instructions
             </p>
           </div>
 
