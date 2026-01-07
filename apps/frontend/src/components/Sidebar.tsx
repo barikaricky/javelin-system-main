@@ -29,6 +29,7 @@ import {
   MessagesSquare,
   Radio,
   AlertOctagon,
+  AlertTriangle,
   MapPin,
   Building2,
   Shield,
@@ -64,6 +65,7 @@ const menuItems: MenuItem[] = [
       { name: 'Register Admin', icon: Shield, path: '/director/admin/register' },
       { name: 'Register Operator', icon: UserPlus, path: '/director/operators/register' },
       { name: 'Assign Guards to BITs', icon: Shield, path: '/director/operators/assign' },
+      { name: 'Incomplete Operators', icon: AlertTriangle, path: '/director/operators/incomplete' },
       { name: 'Pending Approvals', icon: AlertCircle, path: '/director/personnel/pending-approvals', badge: 5 },
       { name: 'All Personnel', icon: UsersRound, path: '/director/personnel/all' },
     ]

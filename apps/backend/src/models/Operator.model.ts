@@ -5,6 +5,10 @@ export interface IGuarantor {
   phone: string;
   address: string;
   photo?: string;
+  idType?: string;
+  idNumber?: string;
+  occupation?: string;
+  relationship?: string;
 }
 
 export interface IOperator extends Document {
@@ -64,17 +68,21 @@ const OperatorSchema = new Schema<IOperator>(
       {
         name: {
           type: String,
-          required: true,
+          required: false,
         },
         phone: {
           type: String,
-          required: true,
+          required: false,
         },
         address: {
           type: String,
-          required: true,
+          required: false,
         },
         photo: String,
+        idType: String,
+        idNumber: String,
+        occupation: String,
+        relationship: String,
       },
     ],
     previousExperience: String,

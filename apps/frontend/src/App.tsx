@@ -95,6 +95,8 @@ import {
 // Director Operator Registration
 import DirectorRegisterOperatorPage from './pages/director/operators/RegisterOperatorPage';
 import GuardAssignmentPage from './pages/director/operators/GuardAssignmentPage';
+import IncompleteOperatorsPage from './pages/director/operators/IncompleteOperatorsPage';
+import EditOperatorPage from './pages/director/operators/EditOperatorPage';
 
 // Manager Operator Registration
 import ManagerRegisterOperatorPage from './pages/manager/operators/RegisterOperatorPage';
@@ -445,6 +447,8 @@ function App() {
       <Route path="/director/admin/register" element={<DirectorLayout><RegisterAdminPage /></DirectorLayout>} />
       <Route path="/director/operators/register" element={<DirectorLayout><DirectorRegisterOperatorPage /></DirectorLayout>} />
       <Route path="/director/operators/assign" element={<DirectorLayout><GuardAssignmentPage /></DirectorLayout>} />
+      <Route path="/director/operators/incomplete" element={<DirectorLayout><IncompleteOperatorsPage /></DirectorLayout>} />
+      <Route path="/director/operators/edit/:userId" element={<DirectorLayout><EditOperatorPage /></DirectorLayout>} />
       <Route path="/director/messaging" element={<DirectorLayout><MessagingPage /></DirectorLayout>} />
       <Route path="/director/communications/messages" element={<DirectorLayout><MessagingPage /></DirectorLayout>} />
       <Route path="/director/communications/center" element={<DirectorLayout><DirectorCommunicationPage /></DirectorLayout>} />

@@ -49,6 +49,8 @@ export interface IUser extends Document {
   nextOfKinPhone?: string;
   passportPhoto?: string;
   state?: string;
+  isProfileComplete?: boolean;
+  missingFields?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -129,6 +131,14 @@ const UserSchema = new Schema<IUser>(
     nextOfKinPhone: String,
     passportPhoto: String,
     state: String,
+    isProfileComplete: {
+      type: Boolean,
+      default: false,
+    },
+    missingFields: {
+      type: [String],
+      default: [],
+    },
   },
   {
     timestamps: true,

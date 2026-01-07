@@ -104,6 +104,7 @@ export default function RegisterOperatorPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [captureType, setCaptureType] = useState<'applicant' | 'guarantor1' | 'guarantor2' | null>(null);
+  const [allowIncomplete, setAllowIncomplete] = useState(false);
 
   const [formData, setFormData] = useState({
     // Personal Information
@@ -132,12 +133,20 @@ export default function RegisterOperatorPage() {
     guarantor1Phone: '',
     guarantor1Address: '',
     guarantor1Photo: '',
+    guarantor1IdType: '',
+    guarantor1IdNumber: '',
+    guarantor1Occupation: '',
+    guarantor1Relationship: '',
     
     // Second Guarantor
     guarantor2Name: '',
     guarantor2Phone: '',
     guarantor2Address: '',
     guarantor2Photo: '',
+    guarantor2IdType: '',
+    guarantor2IdNumber: '',
+    guarantor2Occupation: '',
+    guarantor2Relationship: '',
     
     // Additional Info
     previousExperience: '',
@@ -456,38 +465,40 @@ export default function RegisterOperatorPage() {
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1:
-        if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone) {
-          toast.error('Please fill in all required personal information');
+        // Only require firstName and lastName - most basic info
+        if (!formData.firstName || !formData.lastName) {
+          toast.error('First name and last name are required');
           return false;
         }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        // Validate email format only if provided
+        if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
           toast.error('Please enter a valid email address');
           return false;
         }
         return true;
       case 2:
-        if (!formData.locationId || !formData.shiftType) {
-          toast.error('Please select location and shift type');
+        // Location and shift type are optional when allowing incomplete
+        if (!allowIncomplete && (!formData.locationId || !formData.shiftType)) {
+          toast.error('Please select location and shift type (or enable "Allow Incomplete Registration")');
           return false;
         }
         return true;
       case 3:
-        if (!formData.guarantor1Name || !formData.guarantor1Phone || !formData.guarantor1Address) {
-          toast.error('Please fill in first guarantor information');
+        // Guarantor info is optional when allowing incomplete
+        if (!allowIncomplete && (!formData.guarantor1Name || !formData.guarantor1Phone || !formData.guarantor1Address)) {
+          toast.error('Please fill in first guarantor information (or enable "Allow Incomplete Registration")');
           return false;
         }
-        if (!formData.guarantor2Name || !formData.guarantor2Phone || !formData.guarantor2Address) {
-          toast.error('Please fill in second guarantor information');
+        if (!allowIncomplete && (!formData.guarantor2Name || !formData.guarantor2Phone || !formData.guarantor2Address)) {
+          toast.error('Please fill in second guarantor information (or enable "Allow Incomplete Registration")');
           return false;
         }
         return true;
       case 4:
-        if (!formData.applicantPhoto) {
-          toast.error('Please provide applicant photo');
-          return false;
-        }
-        if (!formData.ninNumber) {
-          toast.error('Please provide NIN number');
+        // Applicant photo is now optional
+        // NIN number is also optional when allowing incomplete
+        if (!allowIncomplete && !formData.ninNumber) {
+          toast.error('Please provide NIN number (or enable "Allow Incomplete Registration")');
           return false;
         }
         return true;
@@ -509,16 +520,16 @@ export default function RegisterOperatorPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Guarantor 1 validation
-    if (!formData.guarantor1Name || !formData.guarantor1Phone || !formData.guarantor1Address) {
-      toast.error('Please fill all Guarantor 1 information (Name, Phone, Address)');
+    // Guarantor 1 validation (only if not allowing incomplete)
+    if (!allowIncomplete && (!formData.guarantor1Name || !formData.guarantor1Phone || !formData.guarantor1Address)) {
+      toast.error('Please fill all Guarantor 1 information (Name, Phone, Address) or enable "Allow Incomplete Registration"');
       setCurrentStep(3); // Go to guarantor step
       return;
     }
     
-    // Guarantor 2 validation
-    if (!formData.guarantor2Name || !formData.guarantor2Phone || !formData.guarantor2Address) {
-      toast.error('Please fill all Guarantor 2 information (Name, Phone, Address)');
+    // Guarantor 2 validation (only if not allowing incomplete)
+    if (!allowIncomplete && (!formData.guarantor2Name || !formData.guarantor2Phone || !formData.guarantor2Address)) {
+      toast.error('Please fill all Guarantor 2 information (Name, Phone, Address) or enable "Allow Incomplete Registration"');
       setCurrentStep(3); // Go to guarantor step
       return;
     }
@@ -534,6 +545,7 @@ export default function RegisterOperatorPage() {
       const submitData: any = {
         ...formData,
         status: 'ACTIVE', // Director can directly activate operators
+        allowIncomplete, // Send the allow incomplete flag to backend
       };
 
       // Only send bitId if it's not empty
@@ -550,6 +562,7 @@ export default function RegisterOperatorPage() {
         hasBitId: !!submitData.bitId,
         hasLocationId: !!submitData.locationId,
         hasSupervisorId: !!submitData.supervisorId,
+        allowIncomplete,
       });
 
       const response = await api.post('/director/operators/register', submitData);
@@ -568,7 +581,21 @@ export default function RegisterOperatorPage() {
 
       setRegisteredOperator(operatorData);
       setShowSuccess(true);
-      toast.success('Operator registered successfully!');
+      
+      // Show appropriate success message based on profile completeness
+      if (response.data.operator.profileComplete) {
+        toast.success('Operator registered successfully with complete profile!');
+      } else {
+        const missingCount = response.data.operator.missingFields?.length || 0;
+        toast.success(
+          `Operator registered successfully! ${missingCount} field${missingCount !== 1 ? 's' : ''} incomplete.`,
+          { duration: 5000 }
+        );
+        toast.error(
+          `Warning: Missing ${response.data.operator.missingFields?.join(', ')}. Complete profile in "Incomplete Operators" page.`,
+          { duration: 8000 }
+        );
+      }
     } catch (error: any) {
       console.error('Registration error:', error);
       toast.error(error.response?.data?.error || 'Failed to register operator');
@@ -983,6 +1010,28 @@ export default function RegisterOperatorPage() {
               <div className="space-y-4">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Personal Information</h2>
                 
+                {/* Allow Incomplete Registration Option */}
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                  <label className="flex items-start cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={allowIncomplete}
+                      onChange={(e) => setAllowIncomplete(e.target.checked)}
+                      className="mt-1 mr-3 h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                    <div>
+                      <div className="font-semibold text-amber-800 mb-1">
+                        Allow Incomplete Registration
+                      </div>
+                      <p className="text-sm text-amber-700">
+                        Enable this to register operators with missing information (e.g., no email, no date of birth, missing documents).
+                        They can still be assigned to work, but you'll receive notifications about incomplete fields.
+                        Only <strong>First Name and Last Name</strong> are required.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -996,7 +1045,6 @@ export default function RegisterOperatorPage() {
                         value={formData.firstName}
                         onChange={handleChange}
                         className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        required
                       />
                     </div>
                   </div>
@@ -1013,14 +1061,14 @@ export default function RegisterOperatorPage() {
                         value={formData.lastName}
                         onChange={handleChange}
                         className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        required
                       />
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email *
+                      Email {!allowIncomplete && <span className="text-red-500">*</span>}
+                      {allowIncomplete && <span className="text-gray-500 text-xs">(Optional)</span>}
                     </label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
@@ -1030,14 +1078,13 @@ export default function RegisterOperatorPage() {
                         value={formData.email}
                         onChange={handleChange}
                         className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        required
                       />
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Phone Number *
+                      Phone Number {allowIncomplete && <span className="text-gray-500 text-xs">(Optional)</span>}
                     </label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
@@ -1047,7 +1094,6 @@ export default function RegisterOperatorPage() {
                         value={formData.phone}
                         onChange={handleChange}
                         className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        required
                       />
                     </div>
                   </div>
@@ -1314,7 +1360,7 @@ export default function RegisterOperatorPage() {
                 {/* First Guarantor */}
                 <div className="border border-gray-200 rounded-lg p-4">
                   <h3 className="font-medium text-gray-900 mb-3">First Guarantor *</h3>
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Full Name *
@@ -1343,7 +1389,7 @@ export default function RegisterOperatorPage() {
                       />
                     </div>
 
-                    <div>
+                    <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Address *
                       </label>
@@ -1359,10 +1405,80 @@ export default function RegisterOperatorPage() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
+                        ID Type *
+                      </label>
+                      <select
+                        name="guarantor1IdType"
+                        value={formData.guarantor1IdType}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="">Select ID Type</option>
+                        <option value="National ID">National ID</option>
+                        <option value="Driver's License">Driver's License</option>
+                        <option value="Voter's Card">Voter's Card</option>
+                        <option value="International Passport">International Passport</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        ID Number *
+                      </label>
+                      <input
+                        type="text"
+                        name="guarantor1IdNumber"
+                        value={formData.guarantor1IdNumber}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Occupation *
+                      </label>
+                      <input
+                        type="text"
+                        name="guarantor1Occupation"
+                        value={formData.guarantor1Occupation}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Relationship with Guard *
+                      </label>
+                      <select
+                        name="guarantor1Relationship"
+                        value={formData.guarantor1Relationship}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="">Select Relationship</option>
+                        <option value="Parent">Parent</option>
+                        <option value="Sibling">Sibling</option>
+                        <option value="Spouse">Spouse</option>
+                        <option value="Friend">Friend</option>
+                        <option value="Colleague">Colleague</option>
+                        <option value="Relative">Relative</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Photo
                       </label>
                       {formData.guarantor1Photo ? (
-                        <div className="relative">
+                        <div className="relative inline-block">
                           <img
                             src={formData.guarantor1Photo}
                             alt="Guarantor 1"
@@ -1405,7 +1521,7 @@ export default function RegisterOperatorPage() {
                 {/* Second Guarantor */}
                 <div className="border border-gray-200 rounded-lg p-4">
                   <h3 className="font-medium text-gray-900 mb-3">Second Guarantor *</h3>
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Full Name *
@@ -1434,7 +1550,7 @@ export default function RegisterOperatorPage() {
                       />
                     </div>
 
-                    <div>
+                    <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Address *
                       </label>
@@ -1450,10 +1566,80 @@ export default function RegisterOperatorPage() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
+                        ID Type *
+                      </label>
+                      <select
+                        name="guarantor2IdType"
+                        value={formData.guarantor2IdType}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="">Select ID Type</option>
+                        <option value="National ID">National ID</option>
+                        <option value="Driver's License">Driver's License</option>
+                        <option value="Voter's Card">Voter's Card</option>
+                        <option value="International Passport">International Passport</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        ID Number *
+                      </label>
+                      <input
+                        type="text"
+                        name="guarantor2IdNumber"
+                        value={formData.guarantor2IdNumber}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Occupation *
+                      </label>
+                      <input
+                        type="text"
+                        name="guarantor2Occupation"
+                        value={formData.guarantor2Occupation}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Relationship with Guard *
+                      </label>
+                      <select
+                        name="guarantor2Relationship"
+                        value={formData.guarantor2Relationship}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="">Select Relationship</option>
+                        <option value="Parent">Parent</option>
+                        <option value="Sibling">Sibling</option>
+                        <option value="Spouse">Spouse</option>
+                        <option value="Friend">Friend</option>
+                        <option value="Colleague">Colleague</option>
+                        <option value="Relative">Relative</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Photo
                       </label>
                       {formData.guarantor2Photo ? (
-                        <div className="relative">
+                        <div className="relative inline-block">
                           <img
                             src={formData.guarantor2Photo}
                             alt="Guarantor 2"
@@ -1502,7 +1688,7 @@ export default function RegisterOperatorPage() {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Applicant Photo *
+                    Applicant Photo {allowIncomplete && <span className="text-gray-500 text-xs">(Optional)</span>}
                   </label>
                   {formData.applicantPhoto ? (
                     <div className="relative inline-block">

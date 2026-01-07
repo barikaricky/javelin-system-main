@@ -669,12 +669,68 @@ router.get('/operators', async (req: Request, res) => {
   }
 });
 
+// Get operators with incomplete profiles
+router.get('/operators/incomplete', async (req: Request, res) => {
+  try {
+    const { getMissingFieldLabels } = require('../utils/profile-completeness');
+    
+    // Find all operators with incomplete profiles
+    const incompleteOperators = await Operator.find()
+      .populate({
+        path: 'userId',
+        match: { isProfileComplete: false },
+      })
+      .populate('locationId')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Filter out null userId (where user was not found or profile is complete)
+    const validIncompleteOperators = incompleteOperators.filter((op: any) => op.userId);
+
+    // Get current assignments for these operators
+    const operatorIds = validIncompleteOperators.map(op => op._id);
+    const assignments = await GuardAssignment.find({
+      operatorId: { $in: operatorIds },
+      status: 'ACTIVE'
+    })
+      .populate('bitId')
+      .populate('locationId')
+      .populate('supervisorId')
+      .lean();
+
+    const assignmentMap = new Map();
+    assignments.forEach(assignment => {
+      assignmentMap.set(assignment.operatorId.toString(), assignment);
+    });
+
+    // Format response with missing fields labels
+    const formattedOperators = validIncompleteOperators.map((operator: any) => ({
+      ...operator,
+      currentAssignment: assignmentMap.get(operator._id.toString()) || null,
+      missingFieldsLabels: getMissingFieldLabels(operator.userId.missingFields || []),
+    }));
+
+    res.json({
+      success: true,
+      count: formattedOperators.length,
+      operators: formattedOperators,
+    });
+  } catch (error: any) {
+    console.error('Error fetching incomplete operators:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to fetch incomplete operators',
+    });
+  }
+});
+
 // Director Register Operator (Director can register directly without approval)
 router.post('/operators/register', async (req: Request & { user?: any }, res, next) => {
   try {
     const bcrypt = require('bcryptjs');
     const { sendOperatorWelcomeEmail } = require('../services/email.service');
     const { Location } = require('../models/Location.model');
+    const { checkProfileCompleteness, getMissingFieldLabels } = require('../utils/profile-completeness');
     const {
       firstName,
       lastName,
@@ -693,15 +749,24 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
       guarantor1Phone,
       guarantor1Address,
       guarantor1Photo,
+      guarantor1IdType,
+      guarantor1IdNumber,
+      guarantor1Occupation,
+      guarantor1Relationship,
       guarantor2Name,
       guarantor2Phone,
       guarantor2Address,
       guarantor2Photo,
+      guarantor2IdType,
+      guarantor2IdNumber,
+      guarantor2Occupation,
+      guarantor2Relationship,
       previousExperience,
       medicalFitness,
       applicantPhoto,
       ninNumber,
       ninDocument,
+      allowIncomplete = true, // Director can register operators with incomplete information
     } = req.body;
 
     const directorUserId = req.user?.userId;
@@ -713,7 +778,23 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
       bitId,
       supervisorId,
       directorId: directorUserId,
+      allowIncomplete,
     });
+
+    // Minimum required fields - only firstName and lastName
+    if (!firstName || !lastName) {
+      res.status(400).json({ error: 'First name and last name are required' });
+      return;
+    }
+    
+    // Generate email if not provided
+    let operatorEmail = email;
+    if (!operatorEmail) {
+      const timestamp = Date.now();
+      const random = Math.floor(Math.random() * 10000);
+      operatorEmail = `operator_${firstName.toLowerCase()}_${timestamp}_${random}@javelin-temp.local`;
+      console.log('📧 Generated temporary email for operator:', operatorEmail);
+    }
 
     // Validate guarantor photos if provided
     const validateBase64Image = (base64: string): boolean => {
@@ -753,11 +834,13 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
       return;
     }
 
-    // Check if email already exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
-      res.status(400).json({ error: 'A user with this email already exists' });
-      return;
+    // Check if email already exists (only if real email provided, not generated)
+    if (email) {
+      const existingUser = await User.findOne({ email: email.toLowerCase() });
+      if (existingUser) {
+        res.status(400).json({ error: 'A user with this email already exists' });
+        return;
+      }
     }
 
     // Check if phone already exists
@@ -778,7 +861,7 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
 
     // Create user with ACTIVE status (Director approval not needed)
     const newUser = new User({
-      email: email.toLowerCase(),
+      email: operatorEmail.toLowerCase(),
       phone: phone || undefined,
       passwordHash: hashedPassword,
       role: 'OPERATOR',
@@ -798,8 +881,20 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
 
     await newUser.save();
 
+    // Initial profile completeness check (without guarantors)
+    let profileCheck = checkProfileCompleteness(newUser);
+    newUser.isProfileComplete = profileCheck.isComplete;
+    newUser.missingFields = profileCheck.missingFields;
+    await newUser.save();
+
+    console.log('📊 Profile completeness check (without guarantors):', {
+      isComplete: profileCheck.isComplete,
+      missingFields: profileCheck.missingFields,
+      missingCount: profileCheck.missingFields.length,
+    });
+
     // Create operator record
-    const newOperator = new Operator({
+    const operatorData: any = {
       userId: newUser._id,
       employeeId,
       locationId: locationId || undefined,
@@ -808,28 +903,58 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
       passportPhoto: applicantPhoto || undefined,
       nationalId: ninNumber || undefined,
       documents: ninDocument ? [ninDocument] : [],
-      guarantors: [
-        {
-          name: guarantor1Name,
-          phone: guarantor1Phone,
-          address: guarantor1Address,
-          photo: guarantor1Photo,
-        },
-        {
-          name: guarantor2Name,
-          phone: guarantor2Phone,
-          address: guarantor2Address,
-          photo: guarantor2Photo,
-        },
-      ],
       previousExperience: previousExperience || undefined,
       medicalFitness: medicalFitness || false,
       approvalStatus: 'APPROVED', // Director registration is auto-approved
       salary: 0, // Can be set later
       startDate: new Date(),
-    });
+    };
+
+    // Only include guarantors if they have data (support incomplete registration)
+    const guarantorsArray = [];
+    if (guarantor1Name && guarantor1Phone && guarantor1Address) {
+      guarantorsArray.push({
+        name: guarantor1Name,
+        phone: guarantor1Phone,
+        address: guarantor1Address,
+        photo: guarantor1Photo,
+        idType: guarantor1IdType || undefined,
+        idNumber: guarantor1IdNumber || undefined,
+        occupation: guarantor1Occupation || undefined,
+        relationship: guarantor1Relationship || undefined,
+      });
+    }
+    if (guarantor2Name && guarantor2Phone && guarantor2Address) {
+      guarantorsArray.push({
+        name: guarantor2Name,
+        phone: guarantor2Phone,
+        address: guarantor2Address,
+        photo: guarantor2Photo,
+        idType: guarantor2IdType || undefined,
+        idNumber: guarantor2IdNumber || undefined,
+        occupation: guarantor2Occupation || undefined,
+        relationship: guarantor2Relationship || undefined,
+      });
+    }
+    if (guarantorsArray.length > 0) {
+      operatorData.guarantors = guarantorsArray;
+    }
+
+    const newOperator = new Operator(operatorData);
 
     await newOperator.save();
+
+    // Final profile completeness check with operator data (includes guarantors)
+    profileCheck = checkProfileCompleteness(newUser, newOperator);
+    newUser.isProfileComplete = profileCheck.isComplete;
+    newUser.missingFields = profileCheck.missingFields;
+    await newUser.save();
+
+    console.log('📊 Final profile completeness check (with guarantors):', {
+      isComplete: profileCheck.isComplete,
+      missingFields: profileCheck.missingFields,
+      missingCount: profileCheck.missingFields.length,
+    });
 
     // Log what values we have for assignment
     console.log('📋 Assignment data check:', {
@@ -922,6 +1047,84 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
       });
     }
 
+    // Create notifications for incomplete profile
+    if (!isComplete && missingFields.length > 0) {
+      const missingFieldLabels = getMissingFieldLabels(missingFields);
+      const Notification = require('../models/Notification.model').Notification;
+      
+      // Notify Director
+      await Notification.create({
+        receiverId: directorUserId,
+        recipientRole: 'DIRECTOR',
+        senderId: newUser._id,
+        type: 'INCOMPLETE_PROFILE',
+        title: '⚠️ Incomplete Operator Profile',
+        message: `Operator ${firstName} ${lastName} (${employeeId}) was registered with incomplete information. Missing: ${missingFieldLabels.join(', ')}`,
+        data: {
+          operatorId: newOperator._id,
+          userId: newUser._id,
+          employeeId,
+          missingFields: missingFieldLabels,
+          locationId,
+          bitId,
+        },
+        priority: 'HIGH',
+      });
+
+      // Notify all Admins
+      const admins = await User.find({ role: 'ADMIN', status: 'ACTIVE' });
+      for (const admin of admins) {
+        await Notification.create({
+          receiverId: admin._id,
+          recipientRole: 'ADMIN',
+          senderId: newUser._id,
+          type: 'INCOMPLETE_PROFILE',
+          title: '⚠️ Incomplete Operator Profile',
+          message: `Operator ${firstName} ${lastName} (${employeeId}) was registered with incomplete information. Missing: ${missingFieldLabels.join(', ')}`,
+          data: {
+            operatorId: newOperator._id,
+            userId: newUser._id,
+            employeeId,
+            missingFields: missingFieldLabels,
+            locationId,
+            bitId,
+          },
+          priority: 'HIGH',
+        });
+      }
+
+      // Notify Manager (if location has a manager)
+      if (locationId) {
+        const managers = await User.find({ role: 'MANAGER', status: 'ACTIVE' });
+        for (const manager of managers) {
+          await Notification.create({
+            receiverId: manager._id,
+            recipientRole: 'MANAGER',
+            senderId: newUser._id,
+            type: 'INCOMPLETE_PROFILE',
+            title: '⚠️ Incomplete Operator Profile at Location',
+            message: `Operator ${firstName} ${lastName} (${employeeId}) at ${locationName} was registered with incomplete information. Missing: ${missingFieldLabels.join(', ')}`,
+            data: {
+              operatorId: newOperator._id,
+              userId: newUser._id,
+              employeeId,
+              missingFields: missingFieldLabels,
+              locationId,
+              locationName,
+              bitId,
+            },
+            priority: 'MEDIUM',
+          });
+        }
+      }
+
+      console.log('📢 Created incomplete profile notifications for:', {
+        operator: `${firstName} ${lastName}`,
+        missingCount: missingFields.length,
+        missingFields: missingFieldLabels,
+      });
+    }
+
     res.status(201).json({
       success: true,
       message: guardAssignment 
@@ -941,10 +1144,171 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
         emailSent: true, // Email notification enabled
         assignmentCreated: !!guardAssignment,
         assignmentId: guardAssignment?._id,
+        profileComplete: isComplete,
+        missingFields: !isComplete ? getMissingFieldLabels(missingFields) : [],
       },
     });
   } catch (error) {
     console.error('Error registering operator:', error);
+    next(error);
+  }
+});
+
+// Update operator profile (complete incomplete registration)
+router.put('/operators/:id', async (req: Request & { user?: any }, res, next) => {
+  try {
+    const { id } = req.params;
+    const { checkProfileCompleteness, updateProfileCompleteness } = require('../utils/profile-completeness');
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      gender,
+      dateOfBirth,
+      address,
+      state,
+      lga,
+      accountName,
+      accountNumber,
+      bankName,
+      // Guarantor 1 fields
+      guarantor1Name,
+      guarantor1Phone,
+      guarantor1Address,
+      guarantor1Photo,
+      guarantor1IdType,
+      guarantor1IdNumber,
+      guarantor1Occupation,
+      guarantor1Relationship,
+      // Guarantor 2 fields
+      guarantor2Name,
+      guarantor2Phone,
+      guarantor2Address,
+      guarantor2Photo,
+      guarantor2IdType,
+      guarantor2IdNumber,
+      guarantor2Occupation,
+      guarantor2Relationship,
+    } = req.body;
+
+    // Find the operator
+    const operator = await Operator.findById(id).populate('userId');
+    if (!operator) {
+      return res.status(404).json({
+        success: false,
+        message: 'Operator not found',
+      });
+    }
+
+    const user = operator.userId;
+
+    // Update user fields
+    if (firstName) user.firstName = firstName;
+    if (lastName) user.lastName = lastName;
+    if (email) user.email = email;
+    if (phone) user.phone = phone;
+    if (gender) user.gender = gender;
+    if (dateOfBirth) user.dateOfBirth = new Date(dateOfBirth);
+    if (address) user.address = address;
+    if (state) user.state = state;
+    if (lga) user.lga = lga;
+    if (accountName) user.accountName = accountName;
+    if (accountNumber) user.accountNumber = accountNumber;
+    if (bankName) user.bankName = bankName;
+
+    // Update guarantor fields
+    const guarantorsArray = [];
+    
+    // Build Guarantor 1 if any data provided
+    if (guarantor1Name || guarantor1Phone || guarantor1Address) {
+      guarantorsArray.push({
+        name: guarantor1Name || '',
+        phone: guarantor1Phone || '',
+        address: guarantor1Address || '',
+        photo: guarantor1Photo || undefined,
+        idType: guarantor1IdType || undefined,
+        idNumber: guarantor1IdNumber || undefined,
+        occupation: guarantor1Occupation || undefined,
+        relationship: guarantor1Relationship || undefined,
+      });
+    }
+    
+    // Build Guarantor 2 if any data provided
+    if (guarantor2Name || guarantor2Phone || guarantor2Address) {
+      guarantorsArray.push({
+        name: guarantor2Name || '',
+        phone: guarantor2Phone || '',
+        address: guarantor2Address || '',
+        photo: guarantor2Photo || undefined,
+        idType: guarantor2IdType || undefined,
+        idNumber: guarantor2IdNumber || undefined,
+        occupation: guarantor2Occupation || undefined,
+        relationship: guarantor2Relationship || undefined,
+      });
+    }
+    
+    // Update operator guarantors
+    if (guarantorsArray.length > 0) {
+      operator.guarantors = guarantorsArray;
+      await operator.save();
+    }
+
+    // Check profile completeness after update (includes guarantor fields)
+    const { isComplete, missingFields } = checkProfileCompleteness(user, operator);
+    user.isProfileComplete = isComplete;
+    user.missingFields = missingFields;
+
+    await user.save();
+
+    console.log('✅ Operator profile updated:', {
+      operatorId: operator._id,
+      userId: user._id,
+      wasComplete: operator.userId.isProfileComplete,
+      nowComplete: isComplete,
+      missingCount: missingFields.length,
+      missingFields: missingFields,
+      guarantorsUpdated: guarantorsArray.length,
+    });
+
+    // If profile is now complete, create success notification
+    if (isComplete && !operator.userId.isProfileComplete) {
+      // Notify Director
+      await Notification.create({
+        receiverId: req.user.userId,
+        recipientRole: 'DIRECTOR',
+        senderId: user._id,
+        type: 'PROFILE_COMPLETED',
+        title: '✅ Operator Profile Completed',
+        message: `Operator ${user.firstName} ${user.lastName} (${operator.employeeId}) profile is now complete!`,
+        data: {
+          operatorId: operator._id,
+          userId: user._id,
+          employeeId: operator.employeeId,
+        },
+        priority: 'MEDIUM',
+      });
+
+      console.log('📢 Profile completion notification sent');
+    }
+
+    res.json({
+      success: true,
+      message: isComplete 
+        ? 'Operator profile updated and completed successfully!'
+        : 'Operator profile updated. Some fields are still missing.',
+      operator: {
+        id: operator._id,
+        userId: user._id,
+        fullName: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        employeeId: operator.employeeId,
+        profileComplete: isComplete,
+        missingFieldsCount: missingFields.length,
+      },
+    });
+  } catch (error) {
+    console.error('Error updating operator:', error);
     next(error);
   }
 });
