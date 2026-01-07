@@ -69,9 +69,8 @@ router.get('/', authenticate, asyncHandler(async (req: any, res) => {
       query.supervisorId = supervisor._id;
     }
   } else if (role === 'GENERAL_SUPERVISOR') {
-    const GeneralSupervisor = req.app.get('mongoose').model('GeneralSupervisor');
     const Supervisor = req.app.get('mongoose').model('Supervisor');
-    const gs = await GeneralSupervisor.findOne({ userId }).lean();
+    const gs = await Supervisor.findOne({ userId, supervisorType: 'GENERAL_SUPERVISOR' }).lean();
     if (gs) {
       const supervisors = await Supervisor.find({ generalSupervisorId: gs._id }).lean();
       const supervisorIds = [...supervisors.map((s: any) => s._id), gs._id];
