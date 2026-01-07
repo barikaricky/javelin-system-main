@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate PWA Icons</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+        h1 { color: #2563eb; }
+        .step { margin: 20px 0; padding: 15px; background: #f0f9ff; border-left: 4px solid #2563eb; }
+        button { background: #2563eb; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #1d4ed8; }
+        canvas { display: none; }
+        .success { color: #22c55e; font-weight: bold; }
+        input[type="file"] { margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Quick PWA Icon Generator</h1>
+        <p>Generate placeholder icons for your PWA to enable installation</p>
+        
+        <div class="step">
+            <h3>Option 1: Upload Your Logo</h3>
+            <input type="file" id="logoInput" accept="image/*">
+            <button onclick="generateFromLogo()">Generate Icons from Logo</button>
+        </div>
+        
+        <div class="step">
+            <h3>Option 2: Create Simple Placeholder</h3>
+            <button onclick="generatePlaceholder()">Generate Blue Placeholder Icons</button>
+            <p style="font-size: 14px; color: #666;">This creates simple blue squares with "JS" text</p>
+        </div>
+        
+        <div id="result" style="margin-top: 20px;"></div>
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <script>
+        const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+        
+        function generatePlaceholder() {
+            const result = document.getElementById('result');
+            result.innerHTML = '<p>Generating icons...</p>';
+            
+            sizes.forEach(size => {
+                const canvas = document.getElementById('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                
+                // Blue gradient background
+                const gradient = ctx.createLinearGradient(0, 0, size, size);
+                gradient.addColorStop(0, '#2563eb');
+                gradient.addColorStop(1, '#1d4ed8');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, size, size);
+                
+                // Add "JS" text
+                ctx.fillStyle = 'white';
+                ctx.font = `bold ${size * 0.4}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('JS', size / 2, size / 2);
+                
+                // Download
+                canvas.toBlob(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `icon-${size}x${size}.png`;
+                    a.click();
+                });
+            });
+            
+            result.innerHTML = '<p class="success">✅ Icons generated! Check your Downloads folder.</p><p>Now copy all icon-*.png files to:<br><strong>apps/frontend/public/</strong></p>';
+        }
+        
+        function generateFromLogo() {
+            const input = document.getElementById('logoInput');
+            const file = input.files[0];
+            if (!file) {
+                alert('Please select a logo file first');
+                return;
+            }
+            
+            const result = document.getElementById('result');
+            result.innerHTML = '<p>Generating icons from your logo...</p>';
+            
+            const img = new Image();
+            img.onload = () => {
+                sizes.forEach(size => {
+                    const canvas = document.getElementById('canvas');
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // White background
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(0, 0, size, size);
+                    
+                    // Draw logo centered
+                    const scale = Math.min(size / img.width, size / img.height) * 0.8;
+                    const w = img.width * scale;
+                    const h = img.height * scale;
+                    const x = (size - w) / 2;
+                    const y = (size - h) / 2;
+                    ctx.drawImage(img, x, y, w, h);
+                    
+                    // Download
+                    canvas.toBlob(blob => {
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `icon-${size}x${size}.png`;
+                        a.click();
+                    });
+                });
+                
+                result.innerHTML = '<p class="success">✅ Icons generated from your logo!</p><p>Copy all icon-*.png files to:<br><strong>apps/frontend/public/</strong></p>';
+            };
+            
+            img.src = URL.createObjectURL(file);
+        }
+    </script>
+</body>
+</html>
