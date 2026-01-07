@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'icon-*.png', 'logo.jpeg'],
+      includeAssets: ['favicon.ico', 'icon.svg', 'logo.jpeg'],
       manifest: {
         name: 'Javelin Security Systems',
         short_name: 'Javelin',
@@ -21,21 +21,15 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: '/icon-192x192.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'any maskable'
-          },
-          {
-            src: '/icon-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
+            src: '/icon.svg',
+            sizes: '192x192 512x512',
+            type: 'image/svg+xml',
             purpose: 'any maskable'
           }
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,svg}'],
+        globPatterns: ['**/*.{js,css,html,svg}'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/api\./i,
