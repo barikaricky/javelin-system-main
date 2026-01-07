@@ -24,7 +24,7 @@ import toast from 'react-hot-toast';
 import { api } from '../../../lib/api';
 import { useNavigate } from 'react-router-dom';
 import { nigerianStates, nigerianLGAs } from '@/data/nigeriaStatesLGA';
-import logoImage from '../../../logo.jpeg';
+import logoImage from '../../../logo.png';
 import QRCode from 'qrcode';
 
 // Image compression utility

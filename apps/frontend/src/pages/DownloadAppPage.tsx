@@ -12,7 +12,7 @@ import {
   Wifi,
   Bell
 } from 'lucide-react';
-import logoImage from '../logo.jpeg';
+import logoImage from '../logo.png';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -29,10 +29,12 @@ export default function DownloadAppPage() {
     // Check if app is already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
+      console.log('✅ App is already installed');
     }
 
     // Listen for the beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
+      console.log('🎉 beforeinstallprompt event fired!');
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setIsInstallable(true);
@@ -42,10 +44,18 @@ export default function DownloadAppPage() {
 
     // Listen for successful installation
     window.addEventListener('appinstalled', () => {
+      console.log('✅ App installed successfully!');
       setIsInstalled(true);
       setIsInstallable(false);
       setDeferredPrompt(null);
     });
+
+    // Debug info
+    console.log('🔍 PWA Debug Info:');
+    console.log('- Display mode:', window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser');
+    console.log('- Is HTTPS:', window.location.protocol === 'https:');
+    console.log('- Is localhost:', window.location.hostname === 'localhost');
+    console.log('- Service Worker supported:', 'serviceWorker' in navigator);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);

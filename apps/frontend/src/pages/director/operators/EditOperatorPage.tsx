@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Save, X, User, AlertTriangle, CheckCircle, Printer, Camera, Upload, Shield } from 'lucide-react';
 import api from '../../../lib/api';
 import toast from 'react-hot-toast';
-import logoImage from '../../../logo.jpeg';
+import logoImage from '../../../logo.png';
 
 interface OperatorData {
   _id: string;
