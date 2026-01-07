@@ -146,9 +146,11 @@ export default function GSRegisterSupervisorPage() {
   const loadLocations = async () => {
     try {
       const response = await api.get('/supervisors/locations');
-      setLocations(response.data);
+      const locationsData = response.data.locations || response.data || [];
+      setLocations(locationsData);
     } catch (error) {
       console.error('Error loading locations:', error);
+      toast.error('Failed to load locations');
     }
   };
 
