@@ -78,8 +78,8 @@ export default function LocationsList() {
       console.log('📍 Locations Response:', locationsResponse.data);
       console.log('🛡️ Bits Response:', bitsResponse.data);
       
-      setLocations(locationsResponse.data || []);
-      setBits(bitsResponse.data?.bits || bitsResponse.data || []);
+      setLocations(locationsResponse.data.locations || []);
+      setBits(bitsResponse.data?.bits || []);
       toast.success('Data loaded successfully');
     } catch (error: any) {
       console.error('Error fetching data:', error);
