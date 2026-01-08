@@ -28,7 +28,7 @@ router.get('/all', asyncHandler(async (req: AuthRequest, res: Response) => {
         select: 'employeeId userId',
         populate: {
           path: 'userId',
-          select: 'firstName lastName email phone',
+          select: 'firstName lastName email phone passportPhoto',
         },
       })
       .sort({ createdAt: -1 })

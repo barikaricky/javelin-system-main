@@ -66,31 +66,64 @@ export default function PendingApprovalsPage() {
   };
 
   const handleApprove = async (supervisor: Supervisor) => {
+    console.log('🔵 STARTING APPROVAL PROCESS');
+    console.log('🔵 Supervisor ID:', supervisor.id);
+    console.log('🔵 Supervisor Name:', supervisor.fullName);
+    
     setProcessingId(supervisor.id);
     try {
-      console.log('Approving supervisor:', supervisor.id, supervisor.fullName);
+      console.log('🟡 Calling API approve...');
       const result = await supervisorService.approve(supervisor.id);
-      console.log('Approval result:', result);
       
-      toast.success(`${supervisor.fullName} has been approved!`);
+      console.log('🟢 API RESPONSE RECEIVED:');
+      console.log('🟢 Full result object:', result);
+      console.log('🟢 Result type:', typeof result);
+      console.log('🟢 Result keys:', Object.keys(result || {}));
+      console.log('🟢 Message:', result?.message);
+      console.log('🟢 Credentials:', result?.credentials);
+      console.log('🟢 Credentials type:', typeof result?.credentials);
       
-      if (result.credentials) {
-        setApprovedCredentials({
-          supervisorName: supervisor.fullName,
-          credentials: result.credentials,
+      if (result?.credentials) {
+        console.log('🟢 Credentials object:', {
+          employeeId: result.credentials.employeeId,
+          email: result.credentials.email,
+          username: result.credentials.username,
+          hasPassword: !!result.credentials.temporaryPassword,
         });
+      } else {
+        console.log('🔴 NO CREDENTIALS IN RESPONSE!');
+        console.log('🔴 Checking for credentials in other locations...');
+        console.log('🔴 result.supervisor?.credentials:', result?.supervisor);
       }
       
+      // Set credentials modal data
+      if (result.credentials) {
+        console.log('🟢 SETTING APPROVED CREDENTIALS STATE');
+        const credentialsData = {
+          supervisorName: supervisor.fullName,
+          credentials: result.credentials,
+        };
+        console.log('🟢 Setting state with:', credentialsData);
+        setApprovedCredentials(credentialsData);
+        
+        // Verify state was set
+        setTimeout(() => {
+          console.log('🟢 State should be set now. Check component render.');
+        }, 100);
+      } else {
+        console.log('🔴 SKIPPING CREDENTIALS MODAL - No credentials in response');
+        toast.error('Approval successful but credentials were not generated');
+      }
+      
+      console.log('🟡 Reloading data...');
       loadData();
     } catch (error: any) {
-      console.error('Error approving supervisor:', error);
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response,
-        status: error.response?.status,
-        data: error.response?.data,
-        code: error.code,
-      });
+      console.error('🔴 ERROR APPROVING SUPERVISOR:', error);
+      console.error('🔴 Error message:', error.message);
+      console.error('🔴 Error response:', error.response);
+      console.error('🔴 Error status:', error.response?.status);
+      console.error('🔴 Error data:', error.response?.data);
+      console.error('🔴 Error code:', error.code);
       
       const errorMessage = error.response?.data?.error 
         || error.response?.data?.message 
@@ -99,6 +132,7 @@ export default function PendingApprovalsPage() {
       
       toast.error(errorMessage);
     } finally {
+      console.log('🔵 APPROVAL PROCESS COMPLETE - Clearing processing ID');
       setProcessingId(null);
     }
   };
@@ -597,8 +631,18 @@ export default function PendingApprovalsPage() {
 
       {/* Rejection Modal - Mobile Optimized */}
       {showRejectModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-[9999]">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-4 sm:p-6 max-h-[90vh] overflow-y-auto animate-slide-up sm:animate-none relative z-[10000]">
+        <div 
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center z-[9999] pointer-events-auto"
+          onClick={() => {
+            setShowRejectModal(false);
+            setRejectingId(null);
+            setRejectionReason('');
+          }}
+        >
+          <div 
+            className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-4 sm:p-6 max-h-[90vh] overflow-y-auto animate-slide-up sm:animate-none relative z-[10000] pointer-events-auto shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Handle bar for mobile */}
             <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4 sm:hidden" />
             
@@ -642,34 +686,55 @@ export default function PendingApprovalsPage() {
         </div>
       )}
 
-      {/* Approved Credentials Modal - Mobile Optimized */}
-      {approvedCredentials && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-[9999]">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-4 sm:p-6 max-h-[90vh] overflow-y-auto animate-slide-up sm:animate-none relative z-[10000]">
-            {/* Handle bar for mobile */}
-            <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4 sm:hidden" />
-            
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-green-100 rounded-full">
-                <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+      {/* Approved Credentials Modal - Redesigned */}
+      {(() => {
+        console.log('🎨 MODAL RENDER CHECK:', {
+          approvedCredentials,
+          hasCredentials: !!approvedCredentials,
+          supervisorName: approvedCredentials?.supervisorName,
+          employeeId: approvedCredentials?.credentials?.employeeId,
+        });
+        return approvedCredentials;
+      })() && (
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[9999] pointer-events-auto p-4"
+          onClick={() => {
+            console.log('🔴 BACKDROP CLICKED - Closing modal');
+            setApprovedCredentials(null);
+          }}
+        >
+          <div 
+            className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl border-2 border-green-500 pointer-events-auto max-h-[90vh] overflow-y-auto"
+            onClick={(e) => {
+              console.log('🟢 MODAL CONTENT CLICKED - Preventing close');
+              e.stopPropagation();
+            }}
+          >
+            {/* Success Header */}
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-10 h-10 text-green-600" />
               </div>
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900">General Supervisor Approved!</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Supervisor Approved Successfully!</h3>
+              <p className="text-gray-600">
+                <span className="font-semibold text-green-600">{approvedCredentials.supervisorName}</span> has been approved.
+              </p>
             </div>
-            <p className="text-sm text-gray-600 mb-4">
-              <span className="font-medium">{approvedCredentials.supervisorName}</span> has been approved. 
-              The manager has been notified with the login credentials.
-            </p>
             
-            <div className="bg-gray-50 rounded-xl p-3 space-y-3 mb-4">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs text-gray-500">Employee ID</span>
-                <div className="flex items-center gap-2">
-                  <code className="bg-white px-2 py-1 rounded text-xs font-mono border border-gray-200">
-                    {approvedCredentials.credentials.employeeId}
-                  </code>
+            {/* Login Credentials Section */}
+            <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-xl p-5 mb-6 border border-green-200">
+              <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                <BadgeCheck className="w-4 h-4 text-green-600" />
+                Login Credentials Generated
+              </h4>
+              
+              {/* Employee ID */}
+              <div className="bg-white rounded-lg p-4 mb-3 border border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Employee ID</span>
                   <button
                     onClick={() => copyToClipboard(approvedCredentials.credentials.employeeId, 'employeeId')}
-                    className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded active:bg-gray-300"
+                    className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
                   >
                     {copiedField === 'employeeId' ? (
                       <Check className="w-4 h-4 text-green-600" />
@@ -678,16 +743,18 @@ export default function PendingApprovalsPage() {
                     )}
                   </button>
                 </div>
+                <code className="text-lg font-mono font-bold text-gray-900 block">
+                  {approvedCredentials.credentials.employeeId}
+                </code>
               </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs text-gray-500">Email</span>
-                <div className="flex items-center gap-2">
-                  <code className="bg-white px-2 py-1 rounded text-xs border border-gray-200 truncate max-w-[140px]">
-                    {approvedCredentials.credentials.email}
-                  </code>
+              
+              {/* Email */}
+              <div className="bg-white rounded-lg p-4 mb-3 border border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email Address</span>
                   <button
                     onClick={() => copyToClipboard(approvedCredentials.credentials.email, 'email')}
-                    className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded active:bg-gray-300"
+                    className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
                   >
                     {copiedField === 'email' ? (
                       <Check className="w-4 h-4 text-green-600" />
@@ -696,16 +763,18 @@ export default function PendingApprovalsPage() {
                     )}
                   </button>
                 </div>
+                <code className="text-sm font-mono text-gray-900 block break-all">
+                  {approvedCredentials.credentials.email}
+                </code>
               </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs text-gray-500">Password</span>
-                <div className="flex items-center gap-2">
-                  <code className="bg-white px-2 py-1 rounded text-xs font-mono border border-gray-200">
-                    {approvedCredentials.credentials.temporaryPassword}
-                  </code>
+              
+              {/* Temporary Password */}
+              <div className="bg-white rounded-lg p-4 border border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Temporary Password</span>
                   <button
                     onClick={() => copyToClipboard(approvedCredentials.credentials.temporaryPassword, 'password')}
-                    className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded active:bg-gray-300"
+                    className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
                   >
                     {copiedField === 'password' ? (
                       <Check className="w-4 h-4 text-green-600" />
@@ -714,19 +783,26 @@ export default function PendingApprovalsPage() {
                     )}
                   </button>
                 </div>
+                <code className="text-sm font-mono font-bold text-gray-900 block break-all">
+                  {approvedCredentials.credentials.temporaryPassword}
+                </code>
               </div>
             </div>
-
-            <div className="flex items-start gap-2 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <p>These credentials have been sent to the manager. The General Supervisor must change their password on first login.</p>
+            
+            {/* Info Note */}
+            <div className="bg-blue-50 border-l-4 border-blue-500 rounded-r-lg p-4 mb-6">
+              <p className="text-sm text-blue-900 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-blue-600" />
+                <span>The manager who registered this supervisor has been automatically notified with these login credentials.</span>
+              </p>
             </div>
-
+            
+            {/* Close Button */}
             <button
               onClick={() => setApprovedCredentials(null)}
-              className="w-full px-4 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 active:bg-gray-700 text-sm font-medium"
+              className="w-full px-6 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 active:from-green-800 active:to-green-900 text-base font-semibold shadow-lg hover:shadow-xl transition-all"
             >
-              Done
+              Close
             </button>
           </div>
         </div>

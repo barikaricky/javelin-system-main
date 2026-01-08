@@ -27,6 +27,43 @@ import { nigerianStates, nigerianLGAs } from '@/data/nigeriaStatesLGA';
 import logoImage from '../../../logo.png';
 import QRCode from 'qrcode';
 
+// Nigerian Banks
+const NIGERIAN_BANKS = [
+  'Access Bank',
+  'Citibank Nigeria',
+  'Ecobank Nigeria',
+  'Fidelity Bank',
+  'First Bank of Nigeria',
+  'First City Monument Bank (FCMB)',
+  'Globus Bank',
+  'Guaranty Trust Bank (GTBank)',
+  'Heritage Bank',
+  'Jaiz Bank',
+  'Keystone Bank',
+  'Opay (OPay)',
+  'PalmPay',
+  'Parallex Bank',
+  'Polaris Bank',
+  'Providus Bank',
+  'Signature Bank',
+  'Stanbic IBTC Bank',
+  'Standard Chartered Bank',
+  'Sterling Bank',
+  'SunTrust Bank',
+  'TAJBank',
+  'Titan Trust Bank',
+  'Union Bank of Nigeria',
+  'United Bank for Africa (UBA)',
+  'Unity Bank',
+  'Wema Bank',
+  'Zenith Bank',
+  'Carbon (Formerly PAGA)',
+  'Kuda Bank',
+  'Moniepoint',
+  'Rubies Bank',
+  'VFD Microfinance Bank',
+].sort();
+
 interface Location {
   id: string;
   name: string;
@@ -960,21 +997,34 @@ export default function RegisterOperatorPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
-                  <input
-                    type="text"
+                  <select
                     value={formData.state}
-                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, state: e.target.value, lga: '' })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
+                  >
+                    <option value="">Select State</option>
+                    {nigerianStates.map((state) => (
+                      <option key={state} value={state}>
+                        {state}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">LGA</label>
-                  <input
-                    type="text"
+                  <label className="block text-sm font-medium text-gray-700 mb-1">LGA (Local Government Area)</label>
+                  <select
                     value={formData.lga}
                     onChange={(e) => setFormData({ ...formData, lga: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
+                    disabled={!formData.state}
+                  >
+                    <option value="">Select LGA</option>
+                    {formData.state && nigerianLGAs[formData.state]?.map((lga) => (
+                      <option key={lga} value={lga}>
+                        {lga}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
