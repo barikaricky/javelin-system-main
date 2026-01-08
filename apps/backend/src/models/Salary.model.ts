@@ -129,7 +129,7 @@ const SalarySchema = new Schema<ISalary>({
   },
   netSalary: { 
     type: Number, 
-    required: true 
+    default: 0  // Changed from required to default, since it's auto-calculated by pre-save hook
   },
   status: { 
     type: String, 

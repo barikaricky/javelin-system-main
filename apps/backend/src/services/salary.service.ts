@@ -13,6 +13,8 @@ interface CreateSalaryDTO {
   allowances?: Array<{ name: string; amount: number; description?: string }>;
   notes?: string;
   createdBy: string;
+  status?: SalaryStatus;
+  approvedBy?: string;
 }
 
 interface AddDeductionDTO {
@@ -22,6 +24,13 @@ interface AddDeductionDTO {
   reason: string;
   approvedBy: string; // Must be MD
   isSystemGenerated?: boolean;
+}
+
+interface AddAllowanceDTO {
+  salaryId: string;
+  name: string;
+  amount: number;
+  description?: string;
 }
 
 interface UpdateSalaryDTO {
@@ -56,7 +65,9 @@ export class SalaryService {
       deductions: [],
       notes: data.notes,
       createdBy: new mongoose.Types.ObjectId(data.createdBy),
-      status: SalaryStatus.PENDING
+      status: data.status || SalaryStatus.PENDING,
+      approvedBy: data.approvedBy ? new mongoose.Types.ObjectId(data.approvedBy) : undefined,
+      approvedAt: data.status === SalaryStatus.APPROVED ? new Date() : undefined
     });
 
     await salary.save();
@@ -133,6 +144,18 @@ export class SalaryService {
   }
 
   /**
+   * Get salary by worker ID and period (month/year)
+   */
+  static async getSalaryByWorkerAndPeriod(workerId: string, month: number, year: number): Promise<ISalary | null> {
+    return Salary.findOne({
+      worker: new mongoose.Types.ObjectId(workerId),
+      month,
+      year,
+      isDeleted: false
+    });
+  }
+
+  /**
    * Update salary record (MD only, only PENDING status)
    */
   static async updateSalary(salaryId: string, data: UpdateSalaryDTO): Promise<ISalary | null> {
@@ -197,6 +220,33 @@ export class SalaryService {
       metadata: { workerName: salary.workerName, type: data.type, amount: data.amount }
     });
 
+    return salary.populate('worker createdBy approvedBy paidBy');
+  }
+
+  /**
+   * Add allowance to salary (MD only)
+   */
+  static async addAllowance(data: AddAllowanceDTO): Promise<ISalary> {
+    const salary = await Salary.findOne({ 
+      _id: data.salaryId, 
+      isDeleted: false 
+    });
+
+    if (!salary) {
+      throw new Error('Salary record not found');
+    }
+
+    salary.allowances.push({
+      name: data.name,
+      amount: data.amount,
+      description: data.description || ''
+    });
+
+    await salary.save();
+
+    // Audit log - Note: We'll need to get the user ID from context
+    // For now, we'll skip audit log or add it in the route handler
+    
     return salary.populate('worker createdBy approvedBy paidBy');
   }
 
