@@ -667,7 +667,7 @@ const SalaryManagement: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                salaries.map((salary) => (
+                salaries.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((salary) => (
                   <tr key={salary._id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center gap-2">
@@ -756,7 +756,7 @@ const SalaryManagement: React.FC = () => {
             <p className="text-blue-600 text-xs mt-2">Click "Approve Monthly Salary" to create records</p>
           </div>
         ) : (
-          salaries.map((salary) => (
+          salaries.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((salary) => (
             <div key={salary._id} className="bg-white rounded-lg shadow p-4 space-y-3">
               <div className="flex items-start gap-3">
                 <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold">

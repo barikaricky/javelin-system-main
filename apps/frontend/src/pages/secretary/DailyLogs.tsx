@@ -78,9 +78,23 @@ const DailyLogs: React.FC = () => {
   };
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('en-US', {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
     });
   };
 
@@ -234,7 +248,7 @@ const DailyLogs: React.FC = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
@@ -242,10 +256,10 @@ const DailyLogs: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {dailyLog?.moneyInEntries.map((entry) => (
+                  {dailyLog?.moneyInEntries.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((entry) => (
                     <tr key={entry._id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatTime(entry.createdAt)}
+                        {formatDateTime(entry.createdAt)}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">{entry.description}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -297,7 +311,7 @@ const DailyLogs: React.FC = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</th>
@@ -306,10 +320,10 @@ const DailyLogs: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {dailyLog?.moneyOutEntries.map((entry) => (
+                  {dailyLog?.moneyOutEntries.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((entry) => (
                     <tr key={entry._id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatTime(entry.createdAt)}
+                        {formatDateTime(entry.createdAt)}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">{entry.description}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
