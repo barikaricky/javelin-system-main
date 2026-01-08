@@ -217,10 +217,14 @@ export default function RegisterAdminPage() {
 
   const fetchLocations = async () => {
     try {
+      console.log('📍 Fetching locations...');
       const response = await api.get('/locations?isActive=true');
-      setLocations(response.data.locations || []);
+      console.log('📍 Locations response:', response.data);
+      const locationsList = response.data.locations || [];
+      console.log('📍 Locations list:', locationsList);
+      setLocations(locationsList);
     } catch (error) {
-      console.error('Error fetching locations:', error);
+      console.error('❌ Error fetching locations:', error);
       toast.error('Failed to load locations');
     }
   };
