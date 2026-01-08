@@ -145,10 +145,14 @@ const MoneyOutList: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {records.map((record: any) => (
+                {records.sort((a: any, b: any) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()).map((record: any) => (
                   <tr key={record._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {new Date(record.paymentDate).toLocaleDateString()}
+                      {new Date(record.paymentDate).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       {record.category.replace(/_/g, ' ')}

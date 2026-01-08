@@ -352,7 +352,7 @@ const SalaryPanel: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                salaries.map((salary) => (
+                salaries.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((salary) => (
                   <tr key={salary._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="text-sm font-medium text-gray-900">
@@ -438,7 +438,7 @@ const SalaryPanel: React.FC = () => {
               No workers found for {months[selectedMonth - 1]} {selectedYear}
             </div>
           ) : (
-            salaries.map((salary) => (
+            salaries.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((salary) => (
               <div key={salary._id} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                 <div className="flex items-start justify-between mb-2">
                   <div>
