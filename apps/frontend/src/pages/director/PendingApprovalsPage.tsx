@@ -597,8 +597,8 @@ export default function PendingApprovalsPage() {
 
       {/* Rejection Modal - Mobile Optimized */}
       {showRejectModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-4 sm:p-6 max-h-[90vh] overflow-y-auto animate-slide-up sm:animate-none">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-[9999]">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-4 sm:p-6 max-h-[90vh] overflow-y-auto animate-slide-up sm:animate-none relative z-[10000]">
             {/* Handle bar for mobile */}
             <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4 sm:hidden" />
             
@@ -644,8 +644,8 @@ export default function PendingApprovalsPage() {
 
       {/* Approved Credentials Modal - Mobile Optimized */}
       {approvedCredentials && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-4 sm:p-6 max-h-[90vh] overflow-y-auto animate-slide-up sm:animate-none">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-[9999]">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-4 sm:p-6 max-h-[90vh] overflow-y-auto animate-slide-up sm:animate-none relative z-[10000]">
             {/* Handle bar for mobile */}
             <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4 sm:hidden" />
             
