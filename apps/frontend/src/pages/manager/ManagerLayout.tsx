@@ -344,10 +344,23 @@ export default function ManagerLayout() {
     }
   }, [navigate, authUser, isAuthenticated]);
 
-  // Poll for new notifications every 30 seconds
+  // Poll for new notifications every 15 seconds
   useEffect(() => {
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchNotifications, 15000);
+    
+    // Fetch notifications when user returns to the page
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchNotifications();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const fetchNotifications = async () => {

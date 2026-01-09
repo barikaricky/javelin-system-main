@@ -22,12 +22,24 @@ export default function NotificationPanel() {
   useEffect(() => {
     fetchNotifications();
 
-    // Poll for new notifications every 30 seconds
+    // Poll for new notifications every 15 seconds (was 30s)
     const pollInterval = setInterval(() => {
       fetchNotifications();
-    }, 30000);
+    }, 15000);
 
-    return () => clearInterval(pollInterval);
+    // Fetch notifications when user returns to the page
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchNotifications();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(pollInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [fetchNotifications]);
 
   useEffect(() => {

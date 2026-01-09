@@ -41,8 +41,21 @@ export default function NotificationCard() {
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000); // Refresh every 30s
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchNotifications, 15000); // Refresh every 15s (was 30s)
+    
+    // Fetch notifications when user returns to the page
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchNotifications();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const fetchNotifications = async () => {
