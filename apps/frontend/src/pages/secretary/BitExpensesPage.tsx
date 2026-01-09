@@ -18,8 +18,8 @@ import { api } from '../../lib/api';
 
 interface BitExpense {
   id: string;
-  beatId?: string;
-  beatName: string;
+  bitId?: string;
+  bitName: string;
   clientName?: string;
   locationName?: string;
   category: string;
@@ -94,7 +94,7 @@ export default function BeatExpensesPage() {
 
   const [formData, setFormData] = useState({
     locationId: '',
-    beatId: '',
+    bitId: '',
     category: 'EQUIPMENT',
     description: '',
     amount: '',
@@ -161,7 +161,7 @@ export default function BeatExpensesPage() {
         sortBy: 'date',
         sortOrder: 'desc',
       };
-      if (selectedBit) params.beatId = selectedBit;
+      if (selectedBit) params.bitId = selectedBit;
       if (categoryFilter) params.category = categoryFilter;
       if (paymentFilter) params.paymentMethod = paymentFilter;
       if (dateRange.start) params.startDate = dateRange.start;
@@ -217,7 +217,7 @@ export default function BeatExpensesPage() {
     const headers = ['Date', 'BEAT', 'Client', 'Category', 'Description', 'Amount', 'Payment Method', 'Added By'];
     const rows = expenses.map(exp => [
       new Date(exp.dateIncurred).toLocaleDateString(),
-      exp.beatName,
+      exp.bitName,
       exp.clientName || '',
       CATEGORIES[exp.category as keyof typeof CATEGORIES],
       exp.description,
@@ -240,7 +240,7 @@ export default function BeatExpensesPage() {
     setSelectedLocationId('');
     setFormData({
       locationId: '',
-      beatId: '',
+      bitId: '',
       category: 'EQUIPMENT',
       description: '',
       amount: '',
@@ -253,7 +253,7 @@ export default function BeatExpensesPage() {
   const openEditModal = (expense: BitExpense) => {
     setSelectedExpense(expense);
     setFormData({
-      beatId: expense.beatId || '',
+      bitId: expense.bitId || '',
       category: expense.category,
       description: expense.description,
       amount: expense.amount.toString(),
@@ -491,7 +491,7 @@ export default function BeatExpensesPage() {
                           <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">
                             {expense.locationName || 'No Location'}
                           </p>
-                          <p className="font-medium text-gray-900">{expense.beatName}</p>
+                          <p className="font-medium text-gray-900">{expense.bitName}</p>
                           {expense.clientName && <p className="text-xs text-gray-500">{expense.clientName}</p>}
                         </div>
                       </td>
@@ -554,7 +554,7 @@ export default function BeatExpensesPage() {
                       value={selectedLocationId}
                       onChange={e => {
                         setSelectedLocationId(e.target.value);
-                        setFormData({ ...formData, locationId: e.target.value, beatId: '' });
+                        setFormData({ ...formData, locationId: e.target.value, bitId: '' });
                       }}
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                       required
@@ -571,14 +571,14 @@ export default function BeatExpensesPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">BEAT</label>
                     <select
-                      value={formData.beatId}
-                      onChange={e => setFormData({ ...formData, beatId: e.target.value })}
+                      value={formData.bitId}
+                      onChange={e => setFormData({ ...formData, bitId: e.target.value })}
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                       disabled={!selectedLocationId}
                     >
                       <option value="">Unallocated</option>
                       {filteredBits.map(bit => (
-                        <option key={bit._id} value={bit._id}>{bit.beatName} - {bit.clientId?.companyName || 'No Client'}</option>
+                        <option key={bit._id} value={bit._id}>{bit.bitName} - {bit.clientId?.companyName || 'No Client'}</option>
                       ))}
                     </select>
                   </div>

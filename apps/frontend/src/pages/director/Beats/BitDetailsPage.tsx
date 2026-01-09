@@ -10,8 +10,8 @@ import { getApiBaseURL } from '../../../lib/api';
 
 interface Beat {
   _id: string;
-  beatName: string;
-  beatCode: string;
+  bitName: string;
+  bitCode: string;
   locationId: {
     _id: string;
     locationName: string;
@@ -178,8 +178,8 @@ export const BitDetailsPage = () => {
                   <Shield className="h-8 w-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">{bit.beatName}</h1>
-                  <span className="text-sm text-gray-500 font-mono">{bit.beatCode}</span>
+                  <h1 className="text-3xl font-bold text-gray-900">{bit.bitName}</h1>
+                  <span className="text-sm text-gray-500 font-mono">{bit.bitCode}</span>
                 </div>
               </div>
             </div>

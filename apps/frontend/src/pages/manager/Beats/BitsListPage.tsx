@@ -6,8 +6,8 @@ import { getApiBaseURL } from '../../../lib/api';
 
 interface Beat {
   _id: string;
-  beatName: string;
-  beatCode: string;
+  bitName: string;
+  bitCode: string;
   locationId: {
     _id: string;
     locationName: string;
@@ -194,9 +194,9 @@ export const ManagerBitsListPage = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900 line-clamp-1">
-                        {bit.beatName}
+                        {bit.bitName}
                       </h3>
-                      <span className="text-xs text-gray-500 font-mono">{bit.beatCode}</span>
+                      <span className="text-xs text-gray-500 font-mono">{bit.bitCode}</span>
                     </div>
                   </div>
                   <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${

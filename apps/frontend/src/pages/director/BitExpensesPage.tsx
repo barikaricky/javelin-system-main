@@ -22,8 +22,8 @@ import { api } from '../../lib/api';
 
 interface BitExpense {
   id: string;
-  beatId?: string;
-  beatName: string;
+  bitId?: string;
+  bitName: string;
   clientName?: string;
   locationName?: string;
   category: string;
@@ -99,7 +99,7 @@ export default function BeatExpensesPage() {
   // Form state
   const [formData, setFormData] = useState({
     locationId: '',
-    beatId: '',
+    bitId: '',
     category: 'EQUIPMENT',
     description: '',
     amount: '',
@@ -175,7 +175,7 @@ export default function BeatExpensesPage() {
         sortBy: 'date',
         sortOrder: 'desc',
       };
-      if (selectedBit) params.beatId = selectedBit;
+      if (selectedBit) params.bitId = selectedBit;
       if (categoryFilter) params.category = categoryFilter;
       if (paymentFilter) params.paymentMethod = paymentFilter;
       if (dateRange.start) params.startDate = dateRange.start;
@@ -194,7 +194,7 @@ export default function BeatExpensesPage() {
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Prepare payload - only include beatId if it's not empty
+      // Prepare payload - only include bitId if it's not empty
       const payload: any = {
         category: formData.category,
         description: formData.description,
@@ -204,9 +204,9 @@ export default function BeatExpensesPage() {
         notes: formData.notes,
       };
       
-      // Only add beatId if it's not empty string
-      if (formData.beatId && formData.beatId !== '') {
-        payload.beatId = formData.beatId;
+      // Only add bitId if it's not empty string
+      if (formData.bitId && formData.bitId !== '') {
+        payload.bitId = formData.bitId;
       }
       
       // Only add locationId if it's not empty string
@@ -261,7 +261,7 @@ export default function BeatExpensesPage() {
     const headers = ['Date', 'BEAT', 'Client', 'Category', 'Description', 'Amount', 'Payment Method', 'Added By'];
     const rows = expenses.map(exp => [
       new Date(exp.dateIncurred).toLocaleDateString(),
-      exp.beatName,
+      exp.bitName,
       exp.clientName || '',
       CATEGORIES[exp.category as keyof typeof CATEGORIES],
       exp.description,
@@ -284,7 +284,7 @@ export default function BeatExpensesPage() {
     setSelectedLocationId('');
     setFormData({
       locationId: '',
-      beatId: '',
+      bitId: '',
       category: 'EQUIPMENT',
       description: '',
       amount: '',
@@ -297,7 +297,7 @@ export default function BeatExpensesPage() {
   const openEditModal = (expense: BitExpense) => {
     setSelectedExpense(expense);
     setFormData({
-      beatId: expense.beatId || '',
+      bitId: expense.bitId || '',
       category: expense.category,
       description: expense.description,
       amount: expense.amount.toString(),
@@ -314,7 +314,7 @@ export default function BeatExpensesPage() {
     // Load expenses for this specific BEAT
     try {
       const response = await api.get('/beat-expenses', {
-        params: { beatId: summary.id }
+        params: { bitId: summary.id }
       });
       setExpenses(response.data.expenses || []);
     } catch (error) {
@@ -578,7 +578,7 @@ export default function BeatExpensesPage() {
                             <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">
                               {expense.locationName || 'No Location'}
                             </p>
-                            <p className="font-medium text-gray-900">{expense.beatName}</p>
+                            <p className="font-medium text-gray-900">{expense.bitName}</p>
                             {expense.clientName && <p className="text-xs text-gray-500">{expense.clientName}</p>}
                           </div>
                         </td>
@@ -634,7 +634,7 @@ export default function BeatExpensesPage() {
                         <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">
                           {expense.locationName || 'No Location'}
                         </p>
-                        <h3 className="font-bold text-gray-900 text-sm truncate">{expense.beatName}</h3>
+                        <h3 className="font-bold text-gray-900 text-sm truncate">{expense.bitName}</h3>
                         {expense.clientName && (
                           <p className="text-xs text-gray-500 truncate">{expense.clientName}</p>
                         )}
@@ -727,7 +727,7 @@ export default function BeatExpensesPage() {
                       value={selectedLocationId}
                       onChange={e => {
                         setSelectedLocationId(e.target.value);
-                        setFormData({ ...formData, locationId: e.target.value, beatId: '' });
+                        setFormData({ ...formData, locationId: e.target.value, bitId: '' });
                       }}
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                       required
@@ -747,13 +747,13 @@ export default function BeatExpensesPage() {
                       BEAT {selectedLocationId ? '(filtered by location)' : '(select location first)'}
                     </label>
                     <select
-                      value={formData.beatId}
-                      onChange={e => setFormData({ ...formData, beatId: e.target.value })}
+                      value={formData.bitId}
+                      onChange={e => setFormData({ ...formData, bitId: e.target.value })}
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Unallocated</option>
                       {filteredBits.map(bit => (
-                        <option key={bit._id} value={bit._id}>{bit.beatName} - {bit.clientId?.companyName || 'No Client'}</option>
+                        <option key={bit._id} value={bit._id}>{bit.bitName} - {bit.clientId?.companyName || 'No Client'}</option>
                       ))}
                     </select>
                   </div>

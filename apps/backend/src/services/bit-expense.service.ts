@@ -22,7 +22,7 @@ export const EXPENSE_CATEGORIES = {
 
 // Create expense
 export async function createBitExpense(data: {
-  beatId?: string;
+  bitId?: string;
   locationId?: string;
   category: string;
   description: string;
@@ -39,27 +39,27 @@ export async function createBitExpense(data: {
       throw new Error('User not found');
     }
 
-    logger.info('Creating BitExpense with data:', { beatId: data.beatId, locationId: data.locationId });
+    logger.info('Creating BitExpense with data:', { bitId: data.bitId, locationId: data.locationId });
 
     let bitData: any = {};
     let isUnallocated = false;
 
-    if (data.beatId) {
-      logger.info('Looking up BEAT with ID:', data.beatId);
-      const bit = await Beat.findById(data.beatId)
+    if (data.bitId) {
+      logger.info('Looking up BEAT with ID:', data.bitId);
+      const bit = await Beat.findById(data.bitId)
         .populate('clientId', 'companyName')
         .populate('locationId', 'locationName city state');
       
       logger.info('BEAT lookup result:', { 
         found: !!bit, 
-        beatName: bit?.beatName,
+        bitName: bit?.bitName,
         locationId: bit?.locationId,
         locationPopulated: bit?.locationId ? typeof bit.locationId === 'object' : false
       });
       
       if (!bit) {
-        logger.error('BEAT not found for ID:', data.beatId);
-        throw new Error(`BEAT not found with ID: ${data.beatId}`);
+        logger.error('BEAT not found for ID:', data.bitId);
+        throw new Error(`BEAT not found with ID: ${data.bitId}`);
       }
       
       const populatedLocation = bit.locationId as any;
@@ -72,8 +72,8 @@ export async function createBitExpense(data: {
       });
       
       bitData = {
-        beatId: bit._id,
-        beatName: bit.beatName,
+        bitId: bit._id,
+        bitName: bit.bitName,
         clientName: (bit.clientId as any)?.companyName || 'Unknown Client',
         locationName: locationName,
       };
@@ -85,14 +85,14 @@ export async function createBitExpense(data: {
       }
       isUnallocated = true;
       bitData = {
-        beatName: 'Unallocated',
+        bitName: 'Unallocated',
         locationName: location.locationName,
       };
     } else {
       // No BEAT and no location
       isUnallocated = true;
       bitData = {
-        beatName: 'Unallocated',
+        bitName: 'Unallocated',
         locationName: 'No Location',
       };
     }
@@ -124,7 +124,7 @@ export async function createBitExpense(data: {
 
 // Get expenses with filters
 export async function getBitExpenses(filters: {
-  beatId?: string;
+  bitId?: string;
   category?: string;
   startDate?: Date;
   endDate?: Date;
@@ -138,7 +138,7 @@ export async function getBitExpenses(filters: {
 }) {
   try {
     const {
-      beatId,
+      bitId,
       category,
       startDate,
       endDate,
@@ -153,7 +153,7 @@ export async function getBitExpenses(filters: {
 
     const query: any = { isDeleted: false };
 
-    if (beatId) query.beatId = beatId;
+    if (bitId) query.bitId = bitId;
     if (category) query.category = category;
     if (paymentMethod) query.paymentMethod = paymentMethod;
     if (isUnallocated !== undefined) query.isUnallocated = isUnallocated;
@@ -167,7 +167,7 @@ export async function getBitExpenses(filters: {
     if (search) {
       query.$or = [
         { description: new RegExp(search, 'i') },
-        { beatName: new RegExp(search, 'i') },
+        { bitName: new RegExp(search, 'i') },
         { clientName: new RegExp(search, 'i') },
         { category: new RegExp(search, 'i') },
       ];
@@ -217,7 +217,7 @@ export async function getBitExpenseById(id: string) {
 export async function updateBitExpense(
   id: string,
   data: {
-    beatId?: string;
+    bitId?: string;
     locationId?: string;
     category?: string;
     description?: string;
@@ -241,23 +241,23 @@ export async function updateBitExpense(
     }
 
     // If BEAT is being changed
-    if (data.beatId && data.beatId !== expense.beatId?.toString()) {
-      const bit = await Beat.findById(data.beatId).populate('clientId', 'companyName').populate('locationId', 'locationName');
+    if (data.bitId && data.bitId !== expense.bitId?.toString()) {
+      const bit = await Beat.findById(data.bitId).populate('clientId', 'companyName').populate('locationId', 'locationName');
       if (!bit) {
         throw new Error('BEAT not found');
       }
-      expense.beatId = bit._id as any;
-      expense.beatName = bit.beatName;
+      expense.bitId = bit._id as any;
+      expense.bitName = bit.bitName;
       expense.clientName = (bit.clientId as any)?.companyName || 'Unknown Client';
       expense.locationName = (bit.locationId as any)?.locationName || 'Unknown Location';
       expense.isUnallocated = false;
-    } else if (data.locationId && (!data.beatId || data.beatId === '')) {
+    } else if (data.locationId && (!data.bitId || data.bitId === '')) {
       // Location changed but no BEAT (unallocated)
       const location = await Location.findById(data.locationId);
       if (location) {
         expense.locationName = location.locationName;
-        expense.beatId = undefined;
-        expense.beatName = 'Unallocated';
+        expense.bitId = undefined;
+        expense.bitName = 'Unallocated';
         expense.clientName = undefined;
         expense.isUnallocated = true;
       }
@@ -316,7 +316,7 @@ export async function deleteBitExpense(id: string, userId: string) {
 }
 
 // Delete all expenses for a BEAT (soft delete - Director only)
-export async function deleteAllBitExpenses(beatId: string, userId: string) {
+export async function deleteAllBitExpenses(bitId: string, userId: string) {
   try {
     const user = await User.findById(userId).select('firstName lastName role');
     if (!user) {
@@ -328,7 +328,7 @@ export async function deleteAllBitExpenses(beatId: string, userId: string) {
     }
 
     const result = await BitExpense.updateMany(
-      { beatId, isDeleted: false },
+      { bitId, isDeleted: false },
       {
         $set: {
           isDeleted: true,
@@ -339,7 +339,7 @@ export async function deleteAllBitExpenses(beatId: string, userId: string) {
       }
     );
 
-    logger.info(`Deleted ${result.modifiedCount} expenses for BEAT ${beatId}`);
+    logger.info(`Deleted ${result.modifiedCount} expenses for BEAT ${bitId}`);
     return { count: result.modifiedCount, message: `${result.modifiedCount} expenses deleted successfully` };
   } catch (error) {
     logger.error('Delete all BEAT expenses error:', error);
@@ -348,7 +348,7 @@ export async function deleteAllBitExpenses(beatId: string, userId: string) {
 }
 
 // Get BEAT summary
-export async function getBitExpenseSummary(beatId: string, period: 'week' | 'month' | 'year' = 'month') {
+export async function getBitExpenseSummary(bitId: string, period: 'week' | 'month' | 'year' = 'month') {
   try {
     const now = new Date();
     let startDate: Date;
@@ -366,7 +366,7 @@ export async function getBitExpenseSummary(beatId: string, period: 'week' | 'mon
     }
 
     const expenses = await BitExpense.find({
-      beatId,
+      bitId,
       isDeleted: false,
       dateIncurred: { $gte: startDate },
     }).lean();
@@ -416,7 +416,7 @@ export async function getBitsWithExpenseSummary(period: 'week' | 'month' | 'year
         const summary = await getBitExpenseSummary(bit._id.toString(), period);
         return {
           id: bit._id.toString(),
-          name: bit.beatName,
+          name: bit.bitName,
           clientName: (bit.clientId as any)?.companyName || 'Unknown Client',
           locationName: (bit.locationId as any)?.locationName || 'Unknown Location',
           ...summary,
@@ -436,13 +436,13 @@ export async function getBitsWithExpenseSummary(period: 'week' | 'month' | 'year
 
 // Get expense statistics
 export async function getExpenseStatistics(filters: {
-  beatId?: string;
+  bitId?: string;
   startDate?: Date;
   endDate?: Date;
 }) {
   try {
     const query: any = { isDeleted: false };
-    if (filters.beatId) query.beatId = filters.beatId;
+    if (filters.bitId) query.bitId = filters.bitId;
     if (filters.startDate || filters.endDate) {
       query.dateIncurred = {};
       if (filters.startDate) query.dateIncurred.$gte = new Date(filters.startDate);

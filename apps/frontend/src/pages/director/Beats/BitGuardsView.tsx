@@ -44,8 +44,8 @@ interface Guard {
 
 interface Beat {
   _id: string;
-  beatCode: string;
-  beatName: string;
+  bitCode: string;
+  bitName: string;
   clientId?: {
     clientName: string;
   };
@@ -143,20 +143,20 @@ export default function BitGuardsView() {
     }
   };
 
-  const toggleExpand = (beatId: string) => {
+  const toggleExpand = (bitId: string) => {
     const newExpanded = new Set(expandedBits);
-    if (newExpanded.has(beatId)) {
-      newExpanded.delete(beatId);
+    if (newExpanded.has(bitId)) {
+      newExpanded.delete(bitId);
     } else {
-      newExpanded.add(beatId);
+      newExpanded.add(bitId);
     }
     setExpandedBits(newExpanded);
   };
 
   const filteredBits = beats.filter(
     (bit) =>
-      bit.beatName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bit.beatCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      bit.bitName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      bit.bitCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bit.client?.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bit.location?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -280,9 +280,9 @@ export default function BitGuardsView() {
                     <div className="flex items-start flex-1 min-w-0">
                       <Building2 className="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <h3 className="text-base font-semibold text-gray-800 truncate">{bit.beatName}</h3>
+                        <h3 className="text-base font-semibold text-gray-800 truncate">{bit.bitName}</h3>
                         <p className="text-xs text-gray-600 truncate">
-                          {bit.beatCode}
+                          {bit.bitCode}
                         </p>
                         <p className="text-xs text-gray-500 truncate mt-0.5">
                           {bit.client?.clientName || 'No Client'}
@@ -317,9 +317,9 @@ export default function BitGuardsView() {
                     <div className="flex items-center">
                       <Building2 className="w-5 h-5 text-blue-600 mr-3" />
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-800">{bit.beatName}</h3>
+                        <h3 className="text-lg font-semibold text-gray-800">{bit.bitName}</h3>
                         <p className="text-sm text-gray-600">
-                          {bit.beatCode} • {bit.client?.clientName || 'No Client'}
+                          {bit.bitCode} • {bit.client?.clientName || 'No Client'}
                         </p>
                       </div>
                     </div>

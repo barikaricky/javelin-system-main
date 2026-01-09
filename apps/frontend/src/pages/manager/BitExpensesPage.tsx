@@ -15,8 +15,8 @@ import { api } from '../../lib/api';
 
 interface BitExpense {
   id: string;
-  beatId?: string;
-  beatName: string;
+  bitId?: string;
+  bitName: string;
   clientName?: string;
   locationName?: string;
   category: string;
@@ -122,7 +122,7 @@ export default function BeatExpensesPage() {
         sortBy: 'date',
         sortOrder: 'desc',
       };
-      if (selectedBit) params.beatId = selectedBit;
+      if (selectedBit) params.bitId = selectedBit;
       if (categoryFilter) params.category = categoryFilter;
       if (paymentFilter) params.paymentMethod = paymentFilter;
       if (dateRange.start) params.startDate = dateRange.start;
@@ -350,7 +350,7 @@ export default function BeatExpensesPage() {
                           <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">
                             {expense.locationName || 'No Location'}
                           </p>
-                          <p className="font-medium text-gray-900">{expense.beatName}</p>
+                          <p className="font-medium text-gray-900">{expense.bitName}</p>
                           {expense.clientName && <p className="text-xs text-gray-500">{expense.clientName}</p>}
                         </div>
                       </td>

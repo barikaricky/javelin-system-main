@@ -17,7 +17,7 @@ export class AssignmentService {
    */
   async createAssignment(data: {
     operatorId: string;
-    beatId: string;
+    bitId: string;
     supervisorId: string;
     shiftType: 'DAY' | 'NIGHT' | '24_HOURS' | 'ROTATING';
     startDate: Date;
@@ -46,7 +46,7 @@ export class AssignmentService {
     }
 
     // Validate BEAT exists and is active
-    const bit = await Beat.findById(data.beatId);
+    const bit = await Beat.findById(data.bitId);
     if (!bit) {
       throw new Error('BEAT not found');
     }
@@ -56,7 +56,7 @@ export class AssignmentService {
 
     // Check BEAT capacity
     const activeAssignmentsCount = await GuardAssignment.countDocuments({
-      beatId: data.beatId,
+      bitId: data.bitId,
       status: 'ACTIVE',
     });
     if (activeAssignmentsCount >= bit.numberOfOperators) {
@@ -108,7 +108,7 @@ export class AssignmentService {
     // Create assignment
     const assignment = new GuardAssignment({
       operatorId: data.operatorId,
-      beatId: data.beatId,
+      bitId: data.bitId,
       locationId,
       supervisorId: data.supervisorId,
       assignmentType: data.assignmentType || 'PERMANENT',
@@ -136,8 +136,8 @@ export class AssignmentService {
       {
         operatorId: data.operatorId,
         operatorName: `${(operator.userId as any).firstName} ${(operator.userId as any).lastName}`,
-        beatId: data.beatId,
-        beatName: bit.beatName,
+        bitId: data.bitId,
+        bitName: bit.bitName,
         status,
         shiftType: data.shiftType,
       }
@@ -149,7 +149,7 @@ export class AssignmentService {
         path: 'operatorId',
         populate: { path: 'userId' },
       })
-      .populate('beatId')
+      .populate('bitId')
       .populate('locationId')
       .populate({
         path: 'supervisorId',
@@ -184,7 +184,7 @@ export class AssignmentService {
         path: 'operatorId',
         populate: { path: 'userId' },
       })
-      .populate('beatId')
+      .populate('bitId')
       .populate({
         path: 'supervisorId',
         populate: { path: 'userId' },
@@ -213,8 +213,8 @@ export class AssignmentService {
       {
         operatorId: assignment.operatorId._id.toString(),
         operatorName: `${(assignment.operatorId as any).userId.firstName} ${(assignment.operatorId as any).userId.lastName}`,
-        beatId: assignment.beatId._id.toString(),
-        beatName: (assignment.beatId as any).beatName,
+        bitId: assignment.bitId._id.toString(),
+        bitName: (assignment.bitId as any).bitName,
       }
     );
 
@@ -237,7 +237,7 @@ export class AssignmentService {
         path: 'operatorId',
         populate: { path: 'userId' },
       })
-      .populate('beatId')
+      .populate('bitId')
       .populate({
         path: 'supervisorId',
         populate: { path: 'userId' },
@@ -266,8 +266,8 @@ export class AssignmentService {
       {
         operatorId: assignment.operatorId._id.toString(),
         operatorName: `${(assignment.operatorId as any).userId.firstName} ${(assignment.operatorId as any).userId.lastName}`,
-        beatId: assignment.beatId._id.toString(),
-        beatName: (assignment.beatId as any).beatName,
+        bitId: assignment.bitId._id.toString(),
+        bitName: (assignment.bitId as any).bitName,
         reason: rejectionReason,
       }
     );
@@ -310,7 +310,7 @@ export class AssignmentService {
     // Create new assignment
     const newAssignment = await this.createAssignment({
       operatorId: data.operatorId,
-      beatId: data.newBitId,
+      bitId: data.newBitId,
       supervisorId: data.newSupervisorId,
       shiftType: data.newShiftType,
       startDate: data.transferDate,
@@ -332,7 +332,7 @@ export class AssignmentService {
       newAssignment._id.toString(),
       {
         operatorId: data.operatorId,
-        oldBitId: currentAssignment.beatId.toString(),
+        oldBitId: currentAssignment.bitId.toString(),
         newBitId: data.newBitId,
         reason: data.transferReason,
       }
@@ -373,7 +373,7 @@ export class AssignmentService {
       assignmentId,
       {
         operatorId: assignment.operatorId.toString(),
-        beatId: assignment.beatId.toString(),
+        bitId: assignment.bitId.toString(),
         reason: endReason,
         endDate,
       }
@@ -395,7 +395,7 @@ export class AssignmentService {
         path: 'operatorId',
         populate: { path: 'userId' },
       })
-      .populate('beatId')
+      .populate('bitId')
       .populate('locationId')
       .populate({
         path: 'supervisorId',
@@ -406,8 +406,8 @@ export class AssignmentService {
   /**
    * Get all assignments for a BEAT
    */
-  async getBitAssignments(beatId: string, status?: string): Promise<IGuardAssignment[]> {
-    const query: any = { beatId };
+  async getBitAssignments(bitId: string, status?: string): Promise<IGuardAssignment[]> {
+    const query: any = { bitId };
     if (status) {
       query.status = status;
     }
@@ -422,7 +422,7 @@ export class AssignmentService {
         populate: { path: 'userId', select: 'firstName lastName email phone' },
       })
       .populate('locationId')
-      .populate('beatId')
+      .populate('bitId')
       .sort({ startDate: -1 });
   }
 
@@ -431,7 +431,7 @@ export class AssignmentService {
    */
   async getOperatorHistory(operatorId: string): Promise<IGuardAssignment[]> {
     return await GuardAssignment.find({ operatorId })
-      .populate('beatId')
+      .populate('bitId')
       .populate('locationId')
       .populate({
         path: 'supervisorId',
@@ -456,7 +456,7 @@ export class AssignmentService {
         path: 'operatorId',
         populate: { path: 'userId' },
       })
-      .populate('beatId')
+      .populate('bitId')
       .populate('locationId')
       .populate({
         path: 'supervisorId',
@@ -499,7 +499,7 @@ export class AssignmentService {
    */
   private async notifyAssignmentActive(assignment: IGuardAssignment) {
     const operator = assignment.operatorId as any;
-    const bit = assignment.beatId as any;
+    const bit = assignment.bitId as any;
     const location = assignment.locationId as any;
     
     // Safely get operator userId
@@ -513,7 +513,7 @@ export class AssignmentService {
     await notificationService.sendNotification({
       recipientId: operatorUserId.toString(),
       title: 'New Assignment',
-      message: `You have been assigned to ${bit?.beatName || 'a BEAT'}. Your shift starts on ${new Date(assignment.startDate).toLocaleDateString()}.`,
+      message: `You have been assigned to ${bit?.bitName || 'a BEAT'}. Your shift starts on ${new Date(assignment.startDate).toLocaleDateString()}.`,
       type: 'ASSIGNMENT',
       priority: 'HIGH',
     });
@@ -532,14 +532,14 @@ export class AssignmentService {
           : 'an operator';
         
         const locationName = location?.locationName || 'a location';
-        const beatName = bit?.beatName || 'a BEAT';
+        const bitName = bit?.bitName || 'a BEAT';
 
         // Send notification to each director and manager
         const notificationPromises = directorsAndManagers.map(user =>
           notificationService.sendNotification({
             recipientId: user._id.toString(),
             title: 'New Guard Assignment by Secretary',
-            message: `${assignment.assignedBy.name} (Secretary) has assigned ${operatorName} to ${beatName} at ${locationName}.`,
+            message: `${assignment.assignedBy.name} (Secretary) has assigned ${operatorName} to ${bitName} at ${locationName}.`,
             type: 'ASSIGNMENT',
             priority: 'MEDIUM',
           })
@@ -576,7 +576,7 @@ export class AssignmentService {
 
   private async notifyAssignmentApproved(assignment: IGuardAssignment) {
     const operator = assignment.operatorId as any;
-    const bit = assignment.beatId as any;
+    const bit = assignment.bitId as any;
     
     const operatorUserId = operator?.userId?._id || operator?.userId;
     if (operatorUserId) {
@@ -584,7 +584,7 @@ export class AssignmentService {
       await notificationService.sendNotification({
         recipientId: operatorUserId.toString(),
         title: 'Assignment Approved',
-        message: `Your assignment to ${bit?.beatName || 'a BEAT'} has been approved. Your shift starts on ${new Date(assignment.startDate).toLocaleDateString()}.`,
+        message: `Your assignment to ${bit?.bitName || 'a BEAT'} has been approved. Your shift starts on ${new Date(assignment.startDate).toLocaleDateString()}.`,
         type: 'ASSIGNMENT',
         priority: 'HIGH',
       });
@@ -629,7 +629,7 @@ export class AssignmentService {
     // Populate for return
     await assignment.populate([
       { path: 'operatorId', populate: { path: 'userId' } },
-      { path: 'beatId' },
+      { path: 'bitId' },
       { path: 'locationId' },
       { path: 'supervisorId', populate: { path: 'userId' } },
     ]);

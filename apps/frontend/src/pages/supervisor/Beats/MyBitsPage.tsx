@@ -44,8 +44,8 @@ interface BitWithOperators extends Beat {
 
 interface Beat {
   _id: string;
-  beatCode: string;
-  beatName: string;
+  bitCode: string;
+  bitName: string;
   description?: string;
   numberOfOperators?: number;
   isActive: boolean;
@@ -122,7 +122,7 @@ export default function MyBitsPage() {
         params: { 
           locationId, 
           status: 'ACTIVE',
-          populate: 'operatorId,beatId'
+          populate: 'operatorId,bitId'
         }
       });
 
@@ -141,7 +141,7 @@ export default function MyBitsPage() {
         locationBits.map(async (bit: Beat) => {
           // Get assignments for this bit
           const bitAssignments = assignments.filter((a: any) => {
-            const assignmentBitId = typeof a.beatId === 'string' ? a.beatId : a.beatId?._id;
+            const assignmentBitId = typeof a.bitId === 'string' ? a.bitId : a.bitId?._id;
             return assignmentBitId === bit._id;
           });
 
@@ -157,7 +157,7 @@ export default function MyBitsPage() {
             };
           }).filter((op: any) => op);
 
-          console.log(`🎯 Beat ${bit.beatName}: ${operators.length} operators`, operators);
+          console.log(`🎯 Beat ${bit.bitName}: ${operators.length} operators`, operators);
 
           return {
             ...bit,
@@ -200,7 +200,7 @@ export default function MyBitsPage() {
             ...loc,
             beats: loc.beats.map((bit, bIdx) => {
               if (bIdx === bitIndex) {
-                console.log('✅ Toggling bit:', bit.beatName, 'from', bit.expanded, 'to', !bit.expanded);
+                console.log('✅ Toggling bit:', bit.bitName, 'from', bit.expanded, 'to', !bit.expanded);
                 return { ...bit, expanded: !bit.expanded };
               }
               return bit;
@@ -407,8 +407,8 @@ export default function MyBitsPage() {
                                   <Grid3x3 className="h-5 w-5 text-blue-600" />
                                 </div>
                                 <div className="flex-1">
-                                  <h4 className="font-semibold text-gray-900">{bit.beatName}</h4>
-                                  <p className="text-xs text-gray-500">Code: {bit.beatCode}</p>
+                                  <h4 className="font-semibold text-gray-900">{bit.bitName}</h4>
+                                  <p className="text-xs text-gray-500">Code: {bit.bitCode}</p>
                                 </div>
                                 <div className="flex items-center gap-3">
                                   <span
