@@ -126,7 +126,7 @@ OperatorSchema.virtual('currentAssignment', {
 OperatorSchema.methods.getAssignmentHistory = async function() {
   const GuardAssignment = mongoose.model('GuardAssignment');
   return await GuardAssignment.find({ operatorId: this._id })
-    .populate('bitId')
+    .populate('beatId')
     .populate('locationId')
     .sort({ startDate: -1 });
 };

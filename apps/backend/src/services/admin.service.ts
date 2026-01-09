@@ -1,4 +1,4 @@
-import { Admin, User, Bit, Location, Operator, Supervisor } from '../models';
+import { Admin, User, Beat, Location, Operator, Supervisor } from '../models';
 import { AppError } from '../middlewares/error.middleware';
 import { logger } from '../utils/logger';
 import bcrypt from 'bcryptjs';
@@ -422,8 +422,8 @@ export async function getDashboardStats() {
       totalSupervisors,
       totalGeneralSupervisors,
     ] = await Promise.all([
-      Bit.countDocuments(),
-      Bit.countDocuments({ isActive: true }),
+      Beat.countDocuments(),
+      Beat.countDocuments({ isActive: true }),
       Location.countDocuments(),
       Operator.countDocuments({ isActive: true }),
       User.countDocuments({ role: 'SUPERVISOR' }),

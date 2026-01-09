@@ -14,5 +14,5 @@ export { default as RegisterOperatorPage } from './operators/RegisterOperatorPag
 export { default as RequestAssignmentPage } from './assignments/RequestAssignmentPage';
 export { default as PendingAssignmentsPage } from './assignments/PendingAssignmentsPage';
 
-// Bits
-export { default as MyBitsPage } from './bits/MyBitsPage';
+// Beats
+export { default as MyBitsPage } from './beats/MyBitsPage';

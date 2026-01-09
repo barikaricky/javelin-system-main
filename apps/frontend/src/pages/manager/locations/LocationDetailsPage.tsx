@@ -24,10 +24,10 @@ interface Location {
   updatedAt: string;
 }
 
-interface Bit {
+interface Beat {
   _id: string;
-  bitName: string;
-  bitCode: string;
+  beatName: string;
+  beatCode: string;
   shiftType: string;
   numberOfOperators: number;
   isActive: boolean;
@@ -37,7 +37,7 @@ export const ManagerLocationDetailsPage = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [location, setLocation] = useState<Location | null>(null);
-  const [bits, setBits] = useState<Bit[]>([]);
+  const [beats, setBits] = useState<Beat[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -64,12 +64,12 @@ export const ManagerLocationDetailsPage = () => {
     try {
       const token = localStorage.getItem('token');
       const API_URL = getApiBaseURL();
-      const response = await axios.get(`${API_URL}/api/bits?locationId=${id}`, {
+      const response = await axios.get(`${API_URL}/api/beats?locationId=${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setBits(response.data.bits || []);
+      setBits(response.data.beats || []);
     } catch (error) {
-      console.error('Error fetching location bits:', error);
+      console.error('Error fetching location beats:', error);
     }
   };
 
@@ -170,7 +170,7 @@ export const ManagerLocationDetailsPage = () => {
           <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-purple-500 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Total Bits</p>
+                <p className="text-sm text-gray-600 mb-1">Total Beats</p>
                 <p className="text-3xl font-bold text-gray-900">{location.totalBits}</p>
               </div>
               <div className="p-3 bg-purple-100 rounded-lg">
@@ -182,9 +182,9 @@ export const ManagerLocationDetailsPage = () => {
           <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Active Bits</p>
+                <p className="text-sm text-gray-600 mb-1">Active Beats</p>
                 <p className="text-3xl font-bold text-gray-900">
-                  {bits.filter(b => b.isActive).length}
+                  {beats.filter(b => b.isActive).length}
                 </p>
               </div>
               <div className="p-3 bg-blue-100 rounded-lg">
@@ -282,31 +282,31 @@ export const ManagerLocationDetailsPage = () => {
             </div>
           </div>
 
-          {/* Assigned Bits */}
+          {/* Assigned Beats */}
           <div className="bg-white rounded-xl shadow-md p-6 animate-slideInRight" style={{ animationDelay: '0.2s' }}>
             <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
               <Shield className="h-6 w-6 text-purple-600" />
-              Assigned Bits ({bits.length})
+              Assigned Beats ({beats.length})
             </h2>
             
-            {bits.length === 0 ? (
+            {beats.length === 0 ? (
               <div className="text-center py-12">
                 <Shield className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">No security bits assigned to this location</p>
+                <p className="text-gray-500">No security beats assigned to this location</p>
               </div>
             ) : (
               <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                {bits.map((bit, index) => (
+                {beats.map((bit, index) => (
                   <div
                     key={bit._id}
                     className="p-4 bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border border-purple-100 hover:shadow-md transition-all transform hover:-translate-y-0.5 cursor-pointer"
-                    onClick={() => navigate(`/manager/bits/${bit._id}/details`)}
+                    onClick={() => navigate(`/manager/beats/${bit._id}/details`)}
                     style={{ animation: `fadeIn 0.3s ease-out ${index * 0.05}s both` }}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 truncate">{bit.bitName}</h3>
-                        <span className="text-xs text-gray-500 font-mono">{bit.bitCode}</span>
+                        <h3 className="font-semibold text-gray-900 truncate">{bit.beatName}</h3>
+                        <span className="text-xs text-gray-500 font-mono">{bit.beatCode}</span>
                       </div>
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
                         bit.isActive 

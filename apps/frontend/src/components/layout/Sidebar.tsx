@@ -81,11 +81,11 @@ const directorMenuItems: MenuItem[] = [
     ]
   },
   { 
-    name: 'Locations / Bits', 
+    name: 'Locations / Beats', 
     icon: MapPin,
     children: [
       { name: 'All Locations', icon: Map, path: '/director/locations' },
-      { name: 'All Bits', icon: Shield, path: '/director/bits' },
+      { name: 'All Beats', icon: Shield, path: '/director/beats' },
       { name: 'Understaffed', icon: AlertTriangle, path: '/director/locations/understaffed' },
       { name: 'Overstaffed', icon: Users2, path: '/director/locations/overstaffed' },
       { name: 'Create Location', icon: PlusCircle, path: '/director/locations/new' },

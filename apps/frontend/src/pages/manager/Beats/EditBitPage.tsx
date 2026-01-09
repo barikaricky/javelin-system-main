@@ -5,7 +5,7 @@ import axios from 'axios';
 import { getApiBaseURL } from '../../../lib/api';
 
 interface BitFormData {
-  bitName: string;
+  beatName: string;
   locationId: string;
   description: string;
   clientId: string;
@@ -57,7 +57,7 @@ export const ManagerEditBitPage = () => {
   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<BitFormData>({
-    bitName: '',
+    beatName: '',
     locationId: '',
     description: '',
     clientId: '',
@@ -82,7 +82,7 @@ export const ManagerEditBitPage = () => {
       const API_URL = getApiBaseURL();
 
       const [bitRes, locationsRes, clientsRes, supervisorsRes] = await Promise.all([
-        axios.get(`${API_URL}/api/bits/${id}`, { headers }),
+        axios.get(`${API_URL}/api/beats/${id}`, { headers }),
         axios.get(`${API_URL}/api/locations?isActive=true`, { headers }),
         axios.get(`${API_URL}/api/clients`, { headers }),
         axios.get(`${API_URL}/api/supervisors`, { headers }),
@@ -90,7 +90,7 @@ export const ManagerEditBitPage = () => {
 
       const bit = bitRes.data.bit;
       setFormData({
-        bitName: bit.bitName || '',
+        beatName: bit.beatName || '',
         locationId: bit.locationId?._id || bit.locationId || '',
         description: bit.description || '',
         clientId: bit.clientId?._id || bit.clientId || '',
@@ -141,7 +141,7 @@ export const ManagerEditBitPage = () => {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.bitName.trim()) newErrors.bitName = 'Bit name is required';
+    if (!formData.beatName.trim()) newErrors.beatName = 'Beat name is required';
     if (!formData.locationId) newErrors.locationId = 'Location is required';
     if (formData.securityType.length === 0) newErrors.securityType = 'Select at least one security type';
     if (formData.numberOfOperators < 1) newErrors.numberOfOperators = 'At least 1 operator required';
@@ -172,11 +172,11 @@ export const ManagerEditBitPage = () => {
         specialInstructions: formData.specialInstructions || undefined,
       };
 
-      await axios.put(`${API_URL}/api/bits/${id}`, payload, {
+      await axios.put(`${API_URL}/api/beats/${id}`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      navigate('/manager/bits');
+      navigate('/manager/beats');
     } catch (error: any) {
       console.error('Error updating bit:', error);
       if (error.response?.data?.message) {
@@ -202,13 +202,13 @@ export const ManagerEditBitPage = () => {
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
           <button
-            onClick={() => navigate('/manager/bits')}
+            onClick={() => navigate('/manager/beats')}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
           >
             <ArrowLeft className="h-5 w-5" />
-            Back to Bits
+            Back to Beats
           </button>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Edit Bit</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Edit Beat</h1>
           <p className="text-gray-600 mt-2">Update security post information</p>
         </div>
 
@@ -219,25 +219,25 @@ export const ManagerEditBitPage = () => {
             </div>
           )}
 
-          {/* Bit Name */}
+          {/* Beat Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Bit Name *
+              Beat Name *
             </label>
             <div className="relative">
               <Shield className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
-                name="bitName"
-                value={formData.bitName}
+                name="beatName"
+                value={formData.beatName}
                 onChange={handleChange}
                 placeholder="e.g., Main Gate Security Post"
                 className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                  errors.bitName ? 'border-red-500' : 'border-gray-300'
+                  errors.beatName ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
             </div>
-            {errors.bitName && <p className="mt-1 text-sm text-red-600">{errors.bitName}</p>}
+            {errors.beatName && <p className="mt-1 text-sm text-red-600">{errors.beatName}</p>}
           </div>
 
           {/* Location */}
@@ -466,7 +466,7 @@ export const ManagerEditBitPage = () => {
           <div className="flex gap-4 pt-4">
             <button
               type="button"
-              onClick={() => navigate('/manager/bits')}
+              onClick={() => navigate('/manager/beats')}
               className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
             >
               Cancel
@@ -484,7 +484,7 @@ export const ManagerEditBitPage = () => {
               ) : (
                 <>
                   <Save className="h-5 w-5" />
-                  Update Bit
+                  Update Beat
                 </>
               )}
             </button>

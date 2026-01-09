@@ -74,10 +74,10 @@ interface Location {
   address: string;
 }
 
-interface Bit {
+interface Beat {
   _id: string;
-  bitCode: string;
-  bitName: string;
+  beatCode: string;
+  beatName: string;
   locationId: string | { _id: string; locationName: string };
   numberOfOperators: number;
 }
@@ -96,8 +96,8 @@ export default function RegisterOperatorPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [locations, setLocations] = useState<Location[]>([]);
-  const [bits, setBits] = useState<Bit[]>([]);
-  const [filteredBits, setFilteredBits] = useState<Bit[]>([]);
+  const [beats, setBits] = useState<Beat[]>([]);
+  const [filteredBits, setFilteredBits] = useState<Beat[]>([]);
   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
   const [registeredOperator, setRegisteredOperator] = useState<any>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState('');
@@ -120,7 +120,7 @@ export default function RegisterOperatorPage() {
     
     // Work Assignment
     locationId: '',
-    bitId: '',
+    beatId: '',
     supervisorId: '',
     shiftType: 'DAY',
     
@@ -235,19 +235,19 @@ export default function RegisterOperatorPage() {
 
   const fetchBits = async () => {
     try {
-      const response = await api.get('/bits', {
+      const response = await api.get('/beats', {
         params: {
           isActive: 'all',
           limit: 500,
         }
       });
       
-      const bitsList = response.data.bits || [];
-      console.log('Fetched bits:', bitsList);
+      const bitsList = response.data.beats || [];
+      console.log('Fetched beats:', bitsList);
       setBits(bitsList);
     } catch (error) {
-      console.error('Failed to fetch bits:', error);
-      toast.error('Failed to load BITs');
+      console.error('Failed to fetch beats:', error);
+      toast.error('Failed to load BEATs');
     }
   };
 
@@ -269,10 +269,10 @@ export default function RegisterOperatorPage() {
     }
   };
 
-  // Filter bits when location changes
+  // Filter beats when location changes
   useEffect(() => {
     if (formData.locationId) {
-      const filtered = bits.filter(bit => {
+      const filtered = beats.filter(bit => {
         const bitLocationId = typeof bit.locationId === 'string' 
           ? bit.locationId 
           : bit.locationId._id;
@@ -280,15 +280,15 @@ export default function RegisterOperatorPage() {
       });
       setFilteredBits(filtered);
       
-      // Reset bitId if currently selected bit is not in filtered list
-      if (formData.bitId && !filtered.find(b => b._id === formData.bitId)) {
-        setFormData(prev => ({ ...prev, bitId: '' }));
+      // Reset beatId if currently selected bit is not in filtered list
+      if (formData.beatId && !filtered.find(b => b._id === formData.beatId)) {
+        setFormData(prev => ({ ...prev, beatId: '' }));
       }
     } else {
       setFilteredBits([]);
-      setFormData(prev => ({ ...prev, bitId: '' }));
+      setFormData(prev => ({ ...prev, beatId: '' }));
     }
-  }, [formData.locationId, bits]);
+  }, [formData.locationId, beats]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -548,9 +548,9 @@ export default function RegisterOperatorPage() {
         allowIncomplete, // Send the allow incomplete flag to backend
       };
 
-      // Only send bitId if it's not empty
-      if (!formData.bitId || formData.bitId === '') {
-        delete submitData.bitId;
+      // Only send beatId if it's not empty
+      if (!formData.beatId || formData.beatId === '') {
+        delete submitData.beatId;
       }
 
       // Only send supervisorId if it's not empty
@@ -559,7 +559,7 @@ export default function RegisterOperatorPage() {
       }
 
       console.log('Submitting operator registration:', {
-        hasBitId: !!submitData.bitId,
+        hasBitId: !!submitData.beatId,
         hasLocationId: !!submitData.locationId,
         hasSupervisorId: !!submitData.supervisorId,
         allowIncomplete,
@@ -1225,27 +1225,27 @@ export default function RegisterOperatorPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Assigned BIT (Optional)
+                    Assigned BEAT (Optional)
                   </label>
                   <div className="relative">
                     <Shield className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                     <select
-                      name="bitId"
-                      value={formData.bitId}
+                      name="beatId"
+                      value={formData.beatId}
                       onChange={handleChange}
                       className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       disabled={!formData.locationId}
                     >
-                      <option value="">No specific BIT (Location only)</option>
+                      <option value="">No specific BEAT (Location only)</option>
                       {filteredBits.map((bit) => (
                         <option key={bit._id} value={bit._id}>
-                          {bit.bitName} ({bit.bitCode}) - {bit.numberOfOperators} operator(s) required
+                          {bit.beatName} ({bit.beatCode}) - {bit.numberOfOperators} operator(s) required
                         </option>
                       ))}
                     </select>
                   </div>
                   {!formData.locationId && (
-                    <p className="text-xs text-gray-500 mt-1">Select a location first to see available BITs</p>
+                    <p className="text-xs text-gray-500 mt-1">Select a location first to see available BEATs</p>
                   )}
                 </div>
 

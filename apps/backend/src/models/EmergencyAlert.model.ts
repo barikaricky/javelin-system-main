@@ -23,7 +23,7 @@ export interface IEmergencyAlert extends Document {
   status: EmergencyAlertStatus;
   
   // Context
-  bitId?: mongoose.Types.ObjectId;
+  beatId?: mongoose.Types.ObjectId;
   locationId?: mongoose.Types.ObjectId;
   
   // Workflow
@@ -71,9 +71,9 @@ const EmergencyAlertSchema = new Schema<IEmergencyAlert>(
       enum: Object.values(EmergencyAlertStatus),
       default: EmergencyAlertStatus.PENDING,
     },
-    bitId: {
+    beatId: {
       type: Schema.Types.ObjectId,
-      ref: 'Bit',
+      ref: 'Beat',
     },
     locationId: {
       type: Schema.Types.ObjectId,
@@ -131,7 +131,7 @@ const EmergencyAlertSchema = new Schema<IEmergencyAlert>(
 EmergencyAlertSchema.index({ status: 1, createdAt: -1 });
 EmergencyAlertSchema.index({ triggeredById: 1 });
 EmergencyAlertSchema.index({ approvedById: 1 });
-EmergencyAlertSchema.index({ bitId: 1 });
+EmergencyAlertSchema.index({ beatId: 1 });
 EmergencyAlertSchema.index({ locationId: 1 });
 EmergencyAlertSchema.index({ isActive: 1, sentAt: -1 });
 

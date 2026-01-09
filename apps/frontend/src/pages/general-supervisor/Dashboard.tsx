@@ -82,9 +82,9 @@ interface OnDutyPerson {
     _id: string;
     locationName: string;
   };
-  bitId?: {
+  beatId?: {
     _id: string;
-    bitName: string;
+    beatName: string;
   };
   shiftType: string;
   status: string;
@@ -352,7 +352,7 @@ export default function GSDashboard() {
             linkTo="/general-supervisor/operators"
           />
           <StatsCard
-            title="Active Bits"
+            title="Active Beats"
             value={stats.activeBits}
             subtitle="Locations monitored"
             icon={MapPin}

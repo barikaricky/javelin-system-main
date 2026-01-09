@@ -20,7 +20,7 @@ import {
   Attendance, 
   Expense, 
   Notification,
-  Bit,
+  Beat,
   Invoice,
   Transaction,
   GuardAssignment
@@ -102,7 +102,7 @@ router.get('/dashboard/stats', async (req: Request & { user?: any }, res, next) 
           select: 'firstName lastName email phone profilePhoto passportPhoto' 
         }
       })
-      .populate('bitId', 'bitName bitCode')
+      .populate('beatId', 'beatName beatCode')
       .populate('locationId', 'locationName address city state')
       .sort({ startDate: -1 })
       .limit(50)
@@ -238,9 +238,9 @@ router.get('/dashboard/stats', async (req: Request & { user?: any }, res, next) 
         .populate('userId', 'firstName lastName profilePhoto')
         .lean(),
       // Total Bits
-      Bit.countDocuments(),
+      Beat.countDocuments(),
       // Active Bits
-      Bit.countDocuments({ isActive: true }),
+      Beat.countDocuments({ isActive: true }),
       // All active users
       User.countDocuments({ status: 'ACTIVE' }),
     ]);
@@ -276,13 +276,13 @@ router.get('/dashboard/stats', async (req: Request & { user?: any }, res, next) 
       })
     );
 
-    // Calculate understaffed BITs (BITs where assigned operators < required numberOfOperators)
-    const allBits = await Bit.find({ isActive: true }).lean();
+    // Calculate understaffed BEATs (BEATs where assigned operators < required numberOfOperators)
+    const allBits = await Beat.find({ isActive: true }).lean();
     let understaffedLocations = 0;
     
     for (const bit of allBits) {
       const assignedCount = await GuardAssignment.countDocuments({ 
-        bitId: bit._id, 
+        beatId: bit._id, 
         status: 'ACTIVE' 
       });
       if (assignedCount < bit.numberOfOperators) {
@@ -634,7 +634,7 @@ router.get('/operators', async (req: Request, res) => {
         operatorId: { $in: operatorIds },
         status: 'ACTIVE'
       })
-        .populate('bitId')
+        .populate('beatId')
         .populate('locationId')
         .populate('supervisorId')
         .populate({
@@ -693,7 +693,7 @@ router.get('/operators/incomplete', async (req: Request, res) => {
       operatorId: { $in: operatorIds },
       status: 'ACTIVE'
     })
-      .populate('bitId')
+      .populate('beatId')
       .populate('locationId')
       .populate('supervisorId')
       .lean();
@@ -742,7 +742,7 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
       state,
       lga,
       locationId,
-      bitId,
+      beatId,
       supervisorId,
       shiftType,
       guarantor1Name,
@@ -775,7 +775,7 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
     console.log('🔷 Director registering operator:', {
       email,
       locationId,
-      bitId,
+      beatId,
       supervisorId,
       directorId: directorUserId,
       allowIncomplete,
@@ -958,21 +958,21 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
 
     // Log what values we have for assignment
     console.log('📋 Assignment data check:', {
-      hasBitId: !!bitId,
+      hasBitId: !!beatId,
       hasLocationId: !!locationId,
       hasSupervisorId: !!supervisorId,
-      bitIdValue: bitId,
+      bitIdValue: beatId,
       locationIdValue: locationId,
       supervisorIdValue: supervisorId,
     });
 
-    // Create GuardAssignment if BIT, location, and supervisor are specified (not empty strings)
+    // Create GuardAssignment if BEAT, location, and supervisor are specified (not empty strings)
     let guardAssignment = null;
-    if (bitId && bitId !== '' && locationId && locationId !== '' && supervisorId && supervisorId !== '') {
+    if (beatId && beatId !== '' && locationId && locationId !== '' && supervisorId && supervisorId !== '') {
       try {
         console.log('🔹 Creating GuardAssignment for operator:', {
           operatorId: newOperator._id,
-          bitId,
+          beatId,
           locationId,
           supervisorId,
           shiftType,
@@ -980,7 +980,7 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
 
         guardAssignment = new GuardAssignment({
           operatorId: newOperator._id,
-          bitId,
+          beatId,
           locationId,
           supervisorId,
           assignmentType: 'PERMANENT',
@@ -1007,13 +1007,13 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
         // Don't fail the registration if assignment creation fails
         // The operator can be assigned later through the assignment page
       }
-    } else if (bitId || supervisorId) {
+    } else if (beatId || supervisorId) {
       console.warn('⚠️ Partial assignment data provided:', {
-        hasbitId: !!bitId,
+        hasbitId: !!beatId,
         hasLocationId: !!locationId,
         hasSupervisorId: !!supervisorId,
       });
-      console.warn('⚠️ GuardAssignment requires bitId, locationId, and supervisorId. Skipping assignment creation.');
+      console.warn('⚠️ GuardAssignment requires beatId, locationId, and supervisorId. Skipping assignment creation.');
     }
 
     // Get location details for SMS
@@ -1066,7 +1066,7 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
           employeeId,
           missingFields: missingFieldLabels,
           locationId,
-          bitId,
+          beatId,
         },
         priority: 'HIGH',
       });
@@ -1087,7 +1087,7 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
             employeeId,
             missingFields: missingFieldLabels,
             locationId,
-            bitId,
+            beatId,
           },
           priority: 'HIGH',
         });
@@ -1111,7 +1111,7 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
               missingFields: missingFieldLabels,
               locationId,
               locationName,
-              bitId,
+              beatId,
             },
             priority: 'MEDIUM',
           });
@@ -1128,7 +1128,7 @@ router.post('/operators/register', async (req: Request & { user?: any }, res, ne
     res.status(201).json({
       success: true,
       message: guardAssignment 
-        ? 'Operator registered, activated, and assigned to BIT successfully.'
+        ? 'Operator registered, activated, and assigned to BEAT successfully.'
         : 'Operator registered and activated successfully.',
       operator: {
         id: newOperator._id,

@@ -59,7 +59,7 @@ interface EmergencyAlert {
     firstName: string;
     lastName: string;
   };
-  bitId?: {
+  beatId?: {
     name: string;
     code: string;
   };
@@ -423,9 +423,9 @@ export default function DirectorCommunicationPage() {
                                 <Users className="w-3 h-3 sm:w-4 sm:h-4" />
                                 <strong>By:</strong> {alert.triggeredById.firstName} {alert.triggeredById.lastName} ({alert.triggeredById.role})
                               </span>
-                              {alert.bitId && (
+                              {alert.beatId && (
                                 <span className="flex items-center gap-1">
-                                  <strong>BIT:</strong> {alert.bitId.name} ({alert.bitId.code})
+                                  <strong>BEAT:</strong> {alert.beatId.name} ({alert.beatId.code})
                                 </span>
                               )}
                               {alert.approvedById && (

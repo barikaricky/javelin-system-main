@@ -1,8 +1,8 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export interface IBit extends Document {
-  bitCode: string;
-  bitName: string;
+export interface IBeat extends Document {
+  beatCode: string;
+  beatName: string;
   locationId: mongoose.Types.ObjectId;
   description?: string;
   clientId?: mongoose.Types.ObjectId;
@@ -19,10 +19,10 @@ export interface IBit extends Document {
   updatedAt: Date;
 }
 
-const BitSchema = new Schema<IBit>(
+const BeatSchema = new Schema<IBeat>(
   {
-    bitCode: { type: String, required: true, unique: true },
-    bitName: { type: String, required: true },
+    beatCode: { type: String, required: true, unique: true },
+    beatName: { type: String, required: true },
     locationId: { type: Schema.Types.ObjectId, ref: 'Location', required: true },
     description: { type: String },
     clientId: { type: Schema.Types.ObjectId, ref: 'Client' },
@@ -43,7 +43,7 @@ const BitSchema = new Schema<IBit>(
   { timestamps: true }
 );
 
-BitSchema.index({ locationId: 1 });
-BitSchema.index({ isActive: 1 });
+BeatSchema.index({ locationId: 1 });
+BeatSchema.index({ isActive: 1 });
 
-export const Bit = mongoose.model<IBit>('Bit', BitSchema);
+export const Beat = mongoose.model<IBeat>('Beat', BeatSchema);

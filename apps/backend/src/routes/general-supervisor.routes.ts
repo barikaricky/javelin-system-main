@@ -171,7 +171,7 @@ router.get('/dashboard', asyncHandler(async (req: any, res) => {
         path: 'supervisorId',
         populate: { path: 'userId', select: 'firstName lastName email phone phoneNumber profilePhoto passportPhoto' }
       })
-      .populate('bitId', 'bitName bitCode')
+      .populate('beatId', 'beatName beatCode')
       .populate('locationId', 'locationName address city state')
       .sort({ startDate: -1 })
       .limit(50)
@@ -831,14 +831,14 @@ router.get('/locations', asyncHandler(async (req: any, res) => {
   res.json({ locations });
 }));
 
-// Get all BITs for reports
-router.get('/bits', asyncHandler(async (req: any, res) => {
-  const { Bit } = require('../models');
-  const bits = await Bit.find({ isActive: true })
-    .select('bitName bitCode isActive')
-    .sort({ bitName: 1 })
+// Get all BEATs for reports
+router.get('/beats', asyncHandler(async (req: any, res) => {
+  const { Beat } = require('../models');
+  const beats = await Beat.find({ isActive: true })
+    .select('beatName beatCode isActive')
+    .sort({ beatName: 1 })
     .lean();
-  res.json({ bits });
+  res.json({ beats });
 }));
 
 // Get attendance for operators under GS supervision
@@ -1117,7 +1117,7 @@ router.post('/operators/register', asyncHandler(async (req: any, res) => {
     state,
     lga,
     locationId,
-    bitId,
+    beatId,
     supervisorId,
     shiftType,
     guarantor1Name,
@@ -1218,13 +1218,13 @@ router.post('/operators/register', asyncHandler(async (req: any, res) => {
 
   await newOperator.save();
 
-  // Create GuardAssignment if BIT, location, and supervisor are specified
+  // Create GuardAssignment if BEAT, location, and supervisor are specified
   let guardAssignment = null;
-  if (bitId && bitId !== '' && locationId && locationId !== '' && supervisorId && supervisorId !== '') {
+  if (beatId && beatId !== '' && locationId && locationId !== '' && supervisorId && supervisorId !== '') {
     try {
       guardAssignment = new GuardAssignment({
         operatorId: newOperator._id,
-        bitId,
+        beatId,
         locationId,
         supervisorId,
         assignmentType: 'PERMANENT',

@@ -19,10 +19,10 @@ interface Location {
   contactPhone?: string;
 }
 
-interface Bit {
+interface Beat {
   _id: string;
-  bitCode: string;
-  bitName: string;
+  beatCode: string;
+  beatName: string;
   locationId: string | { _id: string; locationName: string };
   numberOfOperators: number;
   shift: string;
@@ -48,7 +48,7 @@ export const LocationsListPage = () => {
   const [filterState, setFilterState] = useState('');
   const [filterActive, setFilterActive] = useState<string>('all');
   const [expandedLocations, setExpandedLocations] = useState<Set<string>>(new Set());
-  const [locationBits, setLocationBits] = useState<{ [key: string]: Bit[] }>({});
+  const [locationBits, setLocationBits] = useState<{ [key: string]: Beat[] }>({});
   const [loadingBits, setLoadingBits] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
@@ -141,47 +141,47 @@ export const LocationsListPage = () => {
       setLoadingBits(prev => ({ ...prev, [locationId]: true }));
       const token = localStorage.getItem('token');
       const API_URL = getApiBaseURL();
-      const response = await axios.get(`${API_URL}/api/bits?locationId=${locationId}`, {
+      const response = await axios.get(`${API_URL}/api/beats?locationId=${locationId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const bits = response.data.bits || response.data.data || [];
-      setLocationBits(prev => ({ ...prev, [locationId]: bits }));
+      const beats = response.data.beats || response.data.data || [];
+      setLocationBits(prev => ({ ...prev, [locationId]: beats }));
     } catch (error) {
-      console.error('Error fetching bits:', error);
-      toast.error('Failed to load BITs');
+      console.error('Error fetching beats:', error);
+      toast.error('Failed to load BEATs');
       setLocationBits(prev => ({ ...prev, [locationId]: [] }));
     } finally {
       setLoadingBits(prev => ({ ...prev, [locationId]: false }));
     }
   };
 
-  const handleDeleteBit = async (bitId: string, bitName: string, locationId: string) => {
+  const handleDeleteBit = async (beatId: string, beatName: string, locationId: string) => {
     if (!isDirector) {
-      toast.error('Only Directors can delete BITs');
+      toast.error('Only Directors can delete BEATs');
       return;
     }
 
-    const confirmMessage = `Are you sure you want to delete "${bitName}"? This action cannot be undone.`;
+    const confirmMessage = `Are you sure you want to delete "${beatName}"? This action cannot be undone.`;
     if (!window.confirm(confirmMessage)) return;
 
     try {
       const token = localStorage.getItem('token');
       const API_URL = getApiBaseURL();
-      await axios.delete(`${API_URL}/api/bits/${bitId}`, {
+      await axios.delete(`${API_URL}/api/beats/${beatId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      toast.success('BIT deleted successfully');
+      toast.success('BEAT deleted successfully');
       
       setLocationBits(prev => ({
         ...prev,
-        [locationId]: prev[locationId].filter(bit => bit._id !== bitId)
+        [locationId]: prev[locationId].filter(bit => bit._id !== beatId)
       }));
       
       fetchStats();
     } catch (error: any) {
-      console.error('Error deleting BIT:', error);
-      toast.error(error.response?.data?.message || 'Failed to delete BIT');
+      console.error('Error deleting BEAT:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete BEAT');
     }
   };
 
@@ -250,7 +250,7 @@ export const LocationsListPage = () => {
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Total Bits</p>
+                  <p className="text-sm text-gray-600">Total Beats</p>
                   <p className="text-2xl font-bold text-blue-600 mt-1">{stats.totalBits}</p>
                 </div>
                 <MapPin className="h-10 w-10 text-blue-600" />
@@ -349,7 +349,7 @@ export const LocationsListPage = () => {
                             {location.locationName}
                             {location.totalBits > 0 && (
                               <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">
-                                {location.totalBits} BIT{location.totalBits !== 1 ? 's' : ''}
+                                {location.totalBits} BEAT{location.totalBits !== 1 ? 's' : ''}
                               </span>
                             )}
                           </button>
@@ -397,7 +397,7 @@ export const LocationsListPage = () => {
                         </td>
                       </tr>
                       
-                      {/* Expanded BITs Section */}
+                      {/* Expanded BEATs Section */}
                       {expandedLocations.has(location._id) && (
                         <tr>
                           <td colSpan={7} className="px-4 py-3 bg-gray-50">
@@ -407,17 +407,17 @@ export const LocationsListPage = () => {
                               </div>
                             ) : locationBits[location._id]?.length > 0 ? (
                               <div className="space-y-2">
-                                <h4 className="text-sm font-semibold text-gray-700 mb-3">BITs at this location:</h4>
+                                <h4 className="text-sm font-semibold text-gray-700 mb-3">BEATs at this location:</h4>
                                 {locationBits[location._id].map(bit => (
                                   <div key={bit._id} className="bg-white p-3 rounded-lg border border-gray-200 flex items-center justify-between">
                                     <div className="flex-1 grid grid-cols-4 gap-4">
                                       <div>
-                                        <span className="text-xs text-gray-500">BIT Code</span>
-                                        <p className="text-sm font-medium text-gray-900">{bit.bitCode}</p>
+                                        <span className="text-xs text-gray-500">BEAT Code</span>
+                                        <p className="text-sm font-medium text-gray-900">{bit.beatCode}</p>
                                       </div>
                                       <div>
-                                        <span className="text-xs text-gray-500">BIT Name</span>
-                                        <p className="text-sm font-medium text-gray-900">{bit.bitName}</p>
+                                        <span className="text-xs text-gray-500">BEAT Name</span>
+                                        <p className="text-sm font-medium text-gray-900">{bit.beatName}</p>
                                       </div>
                                       <div>
                                         <span className="text-xs text-gray-500">Operators</span>
@@ -433,7 +433,7 @@ export const LocationsListPage = () => {
                                     </div>
                                     <div className="flex items-center gap-2 ml-4">
                                       <button
-                                        onClick={() => navigate(`/secretary/bits/${bit._id}/edit`)}
+                                        onClick={() => navigate(`/secretary/beats/${bit._id}/edit`)}
                                         className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 transition-colors"
                                       >
                                         <Edit className="w-3 h-3" />
@@ -441,7 +441,7 @@ export const LocationsListPage = () => {
                                       </button>
                                       {isDirector && (
                                         <button
-                                          onClick={() => handleDeleteBit(bit._id, bit.bitName, location._id)}
+                                          onClick={() => handleDeleteBit(bit._id, bit.beatName, location._id)}
                                           className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
                                         >
                                           <Trash2 className="w-3 h-3" />
@@ -453,7 +453,7 @@ export const LocationsListPage = () => {
                                 ))}
                               </div>
                             ) : (
-                              <p className="text-sm text-gray-500 text-center py-3">No BITs found at this location</p>
+                              <p className="text-sm text-gray-500 text-center py-3">No BEATs found at this location</p>
                             )}
                           </td>
                         </tr>
@@ -493,7 +493,7 @@ export const LocationsListPage = () => {
                         </span>
                         {location.totalBits > 0 && (
                           <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
-                            {location.totalBits} BIT{location.totalBits !== 1 ? 's' : ''}
+                            {location.totalBits} BEAT{location.totalBits !== 1 ? 's' : ''}
                           </span>
                         )}
                       </div>
@@ -548,7 +548,7 @@ export const LocationsListPage = () => {
                     )}
                   </div>
 
-                  {/* Expanded BITs for Mobile */}
+                  {/* Expanded BEATs for Mobile */}
                   {expandedLocations.has(location._id) && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
                       {loadingBits[location._id] ? (
@@ -557,13 +557,13 @@ export const LocationsListPage = () => {
                         </div>
                       ) : locationBits[location._id]?.length > 0 ? (
                         <div className="space-y-3">
-                          <h4 className="text-sm font-semibold text-gray-700">BITs at this location:</h4>
+                          <h4 className="text-sm font-semibold text-gray-700">BEATs at this location:</h4>
                           {locationBits[location._id].map(bit => (
                             <div key={bit._id} className="bg-gray-50 p-3 rounded-lg space-y-2">
                               <div className="flex items-start justify-between">
                                 <div className="flex-1">
-                                  <p className="text-sm font-medium text-gray-900">{bit.bitCode}</p>
-                                  <p className="text-xs text-gray-600">{bit.bitName}</p>
+                                  <p className="text-sm font-medium text-gray-900">{bit.beatCode}</p>
+                                  <p className="text-xs text-gray-600">{bit.beatName}</p>
                                 </div>
                               </div>
                               <div className="grid grid-cols-2 gap-2 text-xs">
@@ -578,7 +578,7 @@ export const LocationsListPage = () => {
                               </div>
                               <div className="flex gap-2 pt-2">
                                 <button
-                                  onClick={() => navigate(`/secretary/bits/${bit._id}/edit`)}
+                                  onClick={() => navigate(`/secretary/beats/${bit._id}/edit`)}
                                   className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 transition-colors"
                                 >
                                   <Edit className="w-3 h-3" />
@@ -586,7 +586,7 @@ export const LocationsListPage = () => {
                                 </button>
                                 {isDirector && (
                                   <button
-                                    onClick={() => handleDeleteBit(bit._id, bit.bitName, location._id)}
+                                    onClick={() => handleDeleteBit(bit._id, bit.beatName, location._id)}
                                     className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
                                   >
                                     <Trash2 className="w-3 h-3" />
@@ -598,7 +598,7 @@ export const LocationsListPage = () => {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-sm text-gray-500 text-center py-3">No BITs found at this location</p>
+                        <p className="text-sm text-gray-500 text-center py-3">No BEATs found at this location</p>
                       )}
                     </div>
                   )}

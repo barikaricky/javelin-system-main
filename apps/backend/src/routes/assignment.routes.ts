@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { assignmentService } from '../services/assignment.service';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 import { User } from '../models/User.model';
-import { Bit } from '../models/Bit.model';
+import { Beat } from "./Beat.model';
 import { Secretary } from '../models/Secretary.model';
 import { Supervisor, SupervisorType, ApprovalStatus } from '../models/Supervisor.model';
 import { GuardAssignment } from '../models/GuardAssignment.model';
@@ -22,7 +22,7 @@ router.post(
     try {
       const {
         operatorId,
-        bitId,
+        beatId,
         supervisorId,
         shiftType,
         startDate,
@@ -33,10 +33,10 @@ router.post(
       } = req.body;
 
       // Validate required fields
-      if (!operatorId || !bitId || !supervisorId || !shiftType || !startDate) {
+      if (!operatorId || !beatId || !supervisorId || !shiftType || !startDate) {
         return res.status(400).json({
           success: false,
-          message: 'Missing required fields: operatorId, bitId, supervisorId, shiftType, startDate',
+          message: 'Missing required fields: operatorId, beatId, supervisorId, shiftType, startDate',
         });
       }
 
@@ -59,7 +59,7 @@ router.post(
 
       const assignment = await assignmentService.createAssignment({
         operatorId,
-        bitId,
+        beatId,
         supervisorId,
         shiftType,
         startDate: new Date(startDate),
@@ -96,10 +96,10 @@ router.post(
 router.get('/', authenticate, async (req: Request, res: Response) => {
   try {
     console.log('📋 GET /api/assignments - Manager fetching assignments');
-    const { bitId, operatorId, supervisorId, status, startDate, endDate } = req.query;
+    const { beatId, operatorId, supervisorId, status, startDate, endDate } = req.query;
 
     const query: any = {};
-    if (bitId) query.bitId = bitId;
+    if (beatId) query.beatId = beatId;
     if (operatorId) query.operatorId = operatorId;
     if (supervisorId) query.supervisorId = supervisorId;
     if (status) query.status = status;
@@ -113,7 +113,7 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
         path: 'operatorId',
         populate: { path: 'userId', select: 'firstName lastName email phone phoneNumber profilePhoto passportPhoto state status' },
       })
-      .populate('bitId')
+      .populate('beatId')
       .populate('locationId')
       .populate({
         path: 'supervisorId',
@@ -162,7 +162,7 @@ router.get(
             path: 'operatorId',
             populate: { path: 'userId' },
           })
-          .populate('bitId')
+          .populate('beatId')
           .populate('locationId')
           .populate({
             path: 'supervisorId',
@@ -215,7 +215,7 @@ router.get('/:id', authenticate, async (req: Request, res: Response) => {
           select: 'firstName lastName email phone phoneNumber profilePhoto state' 
         },
       })
-      .populate('bitId')
+      .populate('beatId')
       .populate('locationId')
       .populate({
         path: 'supervisorId',
@@ -339,7 +339,7 @@ router.patch(
 
 /**
  * @route   POST /api/assignments/:id/transfer
- * @desc    Transfer operator to a new BIT
+ * @desc    Transfer operator to a new BEAT
  * @access  Private (Manager, General Supervisor)
  */
 router.post(
@@ -448,15 +448,15 @@ router.patch(
 );
 
 /**
- * @route   GET /api/bits/:bitId/assignments
- * @desc    Get all assignments for a specific BIT
+ * @route   GET /api/beats/:beatId/assignments
+ * @desc    Get all assignments for a specific BEAT
  * @access  Private (All authenticated users)
  */
-router.get('/bits/:bitId/assignments', authenticate, async (req: Request, res: Response) => {
+router.get('/beats/:beatId/assignments', authenticate, async (req: Request, res: Response) => {
   try {
     const { status } = req.query;
     const assignments = await assignmentService.getBitAssignments(
-      req.params.bitId,
+      req.params.beatId,
       status as string
     );
 
@@ -466,10 +466,10 @@ router.get('/bits/:bitId/assignments', authenticate, async (req: Request, res: R
       assignments,
     });
   } catch (error: any) {
-    console.error('Error fetching BIT assignments:', error);
+    console.error('Error fetching BEAT assignments:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch BIT assignments',
+      message: 'Failed to fetch BEAT assignments',
     });
   }
 });
@@ -568,7 +568,7 @@ router.post(
 
 /**
  * @route   POST /api/assignments/assign
- * @desc    Assign a guard to a BIT (simplified endpoint for director)
+ * @desc    Assign a guard to a BEAT (simplified endpoint for director)
  * @access  Private (Director, Secretary, Manager, General Supervisor, Developer)
  */
 router.post(
@@ -579,18 +579,18 @@ router.post(
     try {
       const {
         operatorId,
-        bitId,
+        beatId,
         supervisorId,
         shiftType,
         assignmentType,
         startDate,
       } = req.body;
 
-      // Validate required fields (locationId not needed - gets from BIT)
-      if (!operatorId || !bitId) {
+      // Validate required fields (locationId not needed - gets from BEAT)
+      if (!operatorId || !beatId) {
         return res.status(400).json({
           success: false,
-          message: 'Missing required fields: operatorId, bitId',
+          message: 'Missing required fields: operatorId, beatId',
         });
       }
 
@@ -598,16 +598,16 @@ router.post(
 
       console.log('🔍 Assignment request user:', user);
 
-      // Fetch BIT details to resolve supervisor automatically
-      const bit = await Bit.findById(bitId).lean();
+      // Fetch BEAT details to resolve supervisor automatically
+      const bit = await Beat.findById(beatId).lean();
       if (!bit) {
         return res.status(404).json({
           success: false,
-          message: 'Bit not found',
+          message: 'Beat not found',
         });
       }
 
-      // Determine supervisor (explicit selection -> BIT assignment -> fallback supervisor)
+      // Determine supervisor (explicit selection -> BEAT assignment -> fallback supervisor)
       let finalSupervisorId = supervisorId || (bit.supervisorId ? bit.supervisorId.toString() : undefined);
       let supervisorDoc = null;
 
@@ -669,7 +669,7 @@ router.post(
       if (!supervisorDoc || !finalSupervisorId) {
         return res.status(404).json({
           success: false,
-          message: 'No approved supervisor available for this assignment. Please assign a supervisor to the BIT first.',
+          message: 'No approved supervisor available for this assignment. Please assign a supervisor to the BEAT first.',
         });
       }
 
@@ -710,7 +710,7 @@ router.post(
 
       const assignment = await assignmentService.createAssignment({
         operatorId,
-        bitId,
+        beatId,
         supervisorId: resolvedSupervisorId,
         shiftType: shiftType || 'DAY',
         startDate: startDate ? new Date(startDate) : new Date(),
@@ -721,7 +721,7 @@ router.post(
       console.log('✅ Assignment created successfully:', {
         assignmentId: assignment._id,
         operatorId: assignment.operatorId,
-        bitId: assignment.bitId,
+        beatId: assignment.beatId,
         supervisorId: assignment.supervisorId,
         status: assignment.status,
       });
@@ -754,7 +754,7 @@ router.put(
     try {
       const {
         locationId,
-        bitId,
+        beatId,
         supervisorId,
         shiftType,
         assignmentType,
@@ -790,7 +790,7 @@ router.put(
       // Update the assignment
       const updateData: any = {};
       if (locationId) updateData.locationId = locationId;
-      if (bitId) updateData.bitId = bitId;
+      if (beatId) updateData.beatId = beatId;
       if (supervisorId) updateData.supervisorId = supervisorId;
       if (shiftType) updateData.shiftType = shiftType;
       if (assignmentType) updateData.assignmentType = assignmentType;

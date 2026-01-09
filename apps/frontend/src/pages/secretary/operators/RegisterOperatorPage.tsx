@@ -74,10 +74,10 @@ interface Location {
   address: string;
 }
 
-interface Bit {
+interface Beat {
   _id: string;
-  bitCode: string;
-  bitName: string;
+  beatCode: string;
+  beatName: string;
   locationId: string | { _id: string; locationName: string };
   numberOfOperators: number;
 }
@@ -98,8 +98,8 @@ export default function RegisterOperatorPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [locations, setLocations] = useState<Location[]>([]);
-  const [bits, setBits] = useState<Bit[]>([]);
-  const [filteredBits, setFilteredBits] = useState<Bit[]>([]);
+  const [beats, setBits] = useState<Beat[]>([]);
+  const [filteredBits, setFilteredBits] = useState<Beat[]>([]);
   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
   const [registeredOperator, setRegisteredOperator] = useState<any>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState('');
@@ -121,7 +121,7 @@ export default function RegisterOperatorPage() {
     
     // Employment Details
     locationId: '',
-    bitId: '',
+    beatId: '',
     supervisorId: '',
     
     // Bank Details
@@ -205,7 +205,7 @@ export default function RegisterOperatorPage() {
 
   useEffect(() => {
     if (formData.locationId) {
-      const filtered = bits.filter(bit => {
+      const filtered = beats.filter(bit => {
         const locationId = typeof bit.locationId === 'string' 
           ? bit.locationId 
           : bit.locationId._id;
@@ -213,9 +213,9 @@ export default function RegisterOperatorPage() {
       });
       setFilteredBits(filtered);
     } else {
-      setFilteredBits(bits);
+      setFilteredBits(beats);
     }
-  }, [formData.locationId, bits]);
+  }, [formData.locationId, beats]);
 
   const fetchLocations = async () => {
     try {
@@ -229,11 +229,11 @@ export default function RegisterOperatorPage() {
 
   const fetchBits = async () => {
     try {
-      const response = await api.get('/bits?limit=500');
-      setBits(response.data.bits || []);
+      const response = await api.get('/beats?limit=500');
+      setBits(response.data.beats || []);
     } catch (error) {
-      console.error('Failed to fetch bits:', error);
-      toast.error('Failed to load BITs');
+      console.error('Failed to fetch beats:', error);
+      toast.error('Failed to load BEATs');
     }
   };
 
@@ -999,7 +999,7 @@ export default function RegisterOperatorPage() {
                     <select
                       required
                       value={formData.locationId}
-                      onChange={(e) => setFormData({ ...formData, locationId: e.target.value, bitId: '' })}
+                      onChange={(e) => setFormData({ ...formData, locationId: e.target.value, beatId: '' })}
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="">Select Location</option>
@@ -1013,21 +1013,21 @@ export default function RegisterOperatorPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    BIT *
+                    BEAT *
                   </label>
                   <div className="relative">
                     <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <select
                       required
-                      value={formData.bitId}
-                      onChange={(e) => setFormData({ ...formData, bitId: e.target.value })}
+                      value={formData.beatId}
+                      onChange={(e) => setFormData({ ...formData, beatId: e.target.value })}
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       disabled={!formData.locationId}
                     >
-                      <option value="">Select BIT</option>
+                      <option value="">Select BEAT</option>
                       {filteredBits.map((bit) => (
                         <option key={bit._id} value={bit._id}>
-                          {bit.bitName} ({bit.bitCode})
+                          {bit.beatName} ({bit.beatCode})
                         </option>
                       ))}
                     </select>

@@ -506,7 +506,7 @@ export default function PendingApprovalsPage() {
                           )}
                           {supervisor.bitsAssigned && supervisor.bitsAssigned.length > 0 && (
                             <div className="pt-2 border-t border-gray-100">
-                              <span className="text-gray-500 text-xs">Assigned Bits:</span>
+                              <span className="text-gray-500 text-xs">Assigned Beats:</span>
                               <div className="flex flex-wrap gap-1 mt-1">
                                 {supervisor.bitsAssigned.map((bit, index) => (
                                   <span key={index} className="bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded text-xs">

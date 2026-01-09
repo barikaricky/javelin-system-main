@@ -1,4 +1,4 @@
-import { Bit, Location, Operator, Supervisor } from '../models';
+import { Beat, Location, Operator, Supervisor } from '../models';
 import { AppError } from '../middlewares/error.middleware';
 import { logger } from '../utils/logger';
 
@@ -12,16 +12,16 @@ async function generateUniqueBitCode(locationName: string, locationId: string): 
     .substring(0, 3);
   
   // Find all existing bit codes for this location to get the highest number
-  const existingBits = await Bit.find({ locationId })
-    .select('bitCode')
-    .sort({ bitCode: -1 })
+  const existingBits = await Beat.find({ locationId })
+    .select('beatCode')
+    .sort({ beatCode: -1 })
     .lean();
   
   let maxNumber = 0;
-  const pattern = new RegExp(`^BIT-${prefix}-(\\d+)$`);
+  const pattern = new RegExp(`^BEAT-${prefix}-(\\d+)$`);
   
   for (const bit of existingBits) {
-    const match = bit.bitCode.match(pattern);
+    const match = bit.beatCode.match(pattern);
     if (match) {
       const num = parseInt(match[1], 10);
       if (num > maxNumber) {
@@ -32,14 +32,14 @@ async function generateUniqueBitCode(locationName: string, locationId: string): 
   
   // Generate new code with next number
   const nextNumber = maxNumber + 1;
-  const code = `BIT-${prefix}-${String(nextNumber).padStart(3, '0')}`;
+  const code = `BEAT-${prefix}-${String(nextNumber).padStart(3, '0')}`;
   
   // Double-check uniqueness (race condition protection)
-  const exists = await Bit.findOne({ bitCode: code });
+  const exists = await Beat.findOne({ beatCode: code });
   if (exists) {
     // If somehow it exists, try with a timestamp suffix
     const timestamp = Date.now().toString().slice(-4);
-    return `BIT-${prefix}-${String(nextNumber).padStart(3, '0')}-${timestamp}`;
+    return `BEAT-${prefix}-${String(nextNumber).padStart(3, '0')}-${timestamp}`;
   }
   
   return code;
@@ -47,7 +47,7 @@ async function generateUniqueBitCode(locationName: string, locationId: string): 
 
 // Create bit
 interface CreateBitData {
-  bitName: string;
+  beatName: string;
   locationId: string;
   description?: string;
   clientId?: string;
@@ -63,7 +63,7 @@ interface CreateBitData {
 
 export async function createBit(data: CreateBitData) {
   try {
-    logger.info('Creating new bit', { bitName: data.bitName });
+    logger.info('Creating new bit', { beatName: data.beatName });
 
     // Verify location exists
     const location = await Location.findById(data.locationId);
@@ -72,19 +72,19 @@ export async function createBit(data: CreateBitData) {
     }
 
     // Generate unique bit code
-    const bitCode = await generateUniqueBitCode(location.locationName, data.locationId);
+    const beatCode = await generateUniqueBitCode(location.locationName, data.locationId);
 
-    const bit = await Bit.create({
+    const bit = await Beat.create({
       ...data,
-      bitCode,
+      beatCode,
     });
 
-    // Update location total bits count
+    // Update location total beats count
     await Location.findByIdAndUpdate(data.locationId, {
       $inc: { totalBits: 1 },
     });
 
-    logger.info('Bit created successfully', { bitId: bit._id, bitCode });
+    logger.info('Beat created successfully', { beatId: bit._id, beatCode });
     return bit;
   } catch (error: any) {
     logger.error('Error creating bit:', error);
@@ -93,7 +93,7 @@ export async function createBit(data: CreateBitData) {
   }
 }
 
-// Get all bits
+// Get all beats
 export async function getAllBits(filters?: {
   locationId?: string;
   isActive?: boolean;
@@ -109,16 +109,16 @@ export async function getAllBits(filters?: {
   if (isActive !== undefined) filter.isActive = isActive;
   if (search) {
     filter.$or = [
-      { bitName: { $regex: search, $options: 'i' } },
-      { bitCode: { $regex: search, $options: 'i' } },
+      { beatName: { $regex: search, $options: 'i' } },
+      { beatCode: { $regex: search, $options: 'i' } },
       { description: { $regex: search, $options: 'i' } },
     ];
   }
 
   const skip = (page - 1) * limit;
 
-  const [bits, total] = await Promise.all([
-    Bit.find(filter)
+  const [beats, total] = await Promise.all([
+    Beat.find(filter)
       .populate('locationId', 'locationName city state address')
       .populate('clientId', 'clientName companyName')
       .populate('supervisorId')
@@ -127,11 +127,11 @@ export async function getAllBits(filters?: {
       .skip(skip)
       .limit(limit)
       .lean(),
-    Bit.countDocuments(filter),
+    Beat.countDocuments(filter),
   ]);
 
   return {
-    bits,
+    beats,
     pagination: {
       total,
       page,
@@ -141,7 +141,7 @@ export async function getAllBits(filters?: {
   };
 }
 
-// Get all bits with full details (location, supervisor, operators)
+// Get all beats with full details (location, supervisor, operators)
 export async function getAllBitsWithDetails(options?: {
   includeOperators?: boolean;
   includeSupervisor?: boolean;
@@ -150,7 +150,7 @@ export async function getAllBitsWithDetails(options?: {
   try {
     const { includeOperators = false, includeSupervisor = false, includeLocation = false } = options || {};
 
-    let query = Bit.find({ isActive: true }).sort({ createdAt: -1 });
+    let query = Beat.find({ isActive: true }).sort({ createdAt: -1 });
 
     // Populate location if requested
     if (includeLocation) {
@@ -169,12 +169,12 @@ export async function getAllBitsWithDetails(options?: {
       });
     }
 
-    const bits = await query.lean();
+    const beats = await query.lean();
 
     // If operators are requested, fetch them separately for each bit's location
-    if (includeOperators && bits.length > 0) {
+    if (includeOperators && beats.length > 0) {
       const bitsWithOperators = await Promise.all(
-        bits.map(async (bit: any) => {
+        beats.map(async (bit: any) => {
           if (bit.locationId?._id) {
             const operators = await Operator.find({
               locationId: bit.locationId._id,
@@ -186,8 +186,8 @@ export async function getAllBitsWithDetails(options?: {
             // Transform location to match frontend expectations (name instead of locationName)
             const transformedBit = {
               ...bit,
-              bitId: bit.bitCode,
-              name: bit.bitName,
+              beatId: bit.beatCode,
+              name: bit.beatName,
               locationId: bit.locationId ? {
                 _id: bit.locationId._id,
                 name: bit.locationId.locationName,
@@ -215,8 +215,8 @@ export async function getAllBitsWithDetails(options?: {
           // Transform even if no operators
           return {
             ...bit,
-            bitId: bit.bitCode,
-            name: bit.bitName,
+            beatId: bit.beatCode,
+            name: bit.beatName,
             locationId: bit.locationId ? {
               _id: bit.locationId._id,
               name: bit.locationId.locationName,
@@ -233,11 +233,11 @@ export async function getAllBitsWithDetails(options?: {
       return bitsWithOperators;
     }
 
-    // Transform bits even without operators
-    const transformedBits = bits.map((bit: any) => ({
+    // Transform beats even without operators
+    const transformedBits = beats.map((bit: any) => ({
       ...bit,
-      bitId: bit.bitCode,
-      name: bit.bitName,
+      beatId: bit.beatCode,
+      name: bit.beatName,
       locationId: bit.locationId ? {
         _id: bit.locationId._id,
         name: bit.locationId.locationName,
@@ -251,14 +251,14 @@ export async function getAllBitsWithDetails(options?: {
 
     return transformedBits;
   } catch (error: any) {
-    logger.error('Error getting bits with details:', error);
-    throw new AppError(error.message || 'Failed to get bits', 500);
+    logger.error('Error getting beats with details:', error);
+    throw new AppError(error.message || 'Failed to get beats', 500);
   }
 }
 
 // Get bit by ID
-export async function getBitById(bitId: string) {
-  const bit = await Bit.findById(bitId)
+export async function getBitById(beatId: string) {
+  const bit = await Beat.findById(beatId)
     .populate('locationId')
     .populate('clientId')
     .populate('supervisorId')
@@ -266,16 +266,16 @@ export async function getBitById(bitId: string) {
     .lean();
 
   if (!bit) {
-    throw new AppError('Bit not found', 404);
+    throw new AppError('Beat not found', 404);
   }
 
   return bit;
 }
 
 // Update bit
-export async function updateBit(bitId: string, updates: Partial<CreateBitData>) {
-  const bit = await Bit.findByIdAndUpdate(
-    bitId,
+export async function updateBit(beatId: string, updates: Partial<CreateBitData>) {
+  const bit = await Beat.findByIdAndUpdate(
+    beatId,
     { ...updates, updatedAt: new Date() },
     { new: true, runValidators: true }
   )
@@ -284,29 +284,29 @@ export async function updateBit(bitId: string, updates: Partial<CreateBitData>) 
     .lean();
 
   if (!bit) {
-    throw new AppError('Bit not found', 404);
+    throw new AppError('Beat not found', 404);
   }
 
-  logger.info('Bit updated', { bitId });
+  logger.info('Beat updated', { beatId });
   return bit;
 }
 
 // Delete bit
-export async function deleteBit(bitId: string) {
-  const bit = await Bit.findById(bitId);
+export async function deleteBit(beatId: string) {
+  const bit = await Beat.findById(beatId);
   
   if (!bit) {
-    throw new AppError('Bit not found', 404);
+    throw new AppError('Beat not found', 404);
   }
 
-  await Bit.findByIdAndDelete(bitId);
+  await Beat.findByIdAndDelete(beatId);
 
-  // Update location total bits count
+  // Update location total beats count
   await Location.findByIdAndUpdate(bit.locationId, {
     $inc: { totalBits: -1 },
   });
 
-  logger.info('Bit deleted', { bitId });
+  logger.info('Beat deleted', { beatId });
   return { success: true };
 }
 
@@ -318,12 +318,12 @@ export async function getBitStats() {
     bitsByShift,
     bitsByLocation,
   ] = await Promise.all([
-    Bit.countDocuments(),
-    Bit.countDocuments({ isActive: true }),
-    Bit.aggregate([
+    Beat.countDocuments(),
+    Beat.countDocuments({ isActive: true }),
+    Beat.aggregate([
       { $group: { _id: '$shiftType', count: { $sum: 1 } } },
     ]),
-    Bit.aggregate([
+    Beat.aggregate([
       { $group: { _id: '$locationId', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 10 },

@@ -36,10 +36,10 @@ interface Assignment {
       profilePhoto?: string;
     };
   };
-  bitId: {
+  beatId: {
     _id: string;
-    bitCode: string;
-    bitName: string;
+    beatCode: string;
+    beatName: string;
     client?: {
       clientName: string;
     };
@@ -250,27 +250,27 @@ export default function AssignmentDetailsPage() {
 
       {/* Assignment Details */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* BIT Information */}
+        {/* BEAT Information */}
         <div className="bg-white rounded-xl shadow-md overflow-hidden animate-slide-in-bottom">
           <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4">
             <h2 className="text-xl font-semibold text-white flex items-center">
               <Shield className="w-6 h-6 mr-2" />
-              BIT Information
+              BEAT Information
             </h2>
           </div>
           <div className="p-6 space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-500">BIT Name</label>
-              <p className="text-lg font-semibold text-gray-900">{assignment.bitId?.bitName || 'N/A'}</p>
+              <label className="text-sm font-medium text-gray-500">BEAT Name</label>
+              <p className="text-lg font-semibold text-gray-900">{assignment.beatId?.beatName || 'N/A'}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">BIT Code</label>
-              <p className="text-lg text-gray-900">{assignment.bitId?.bitCode || 'N/A'}</p>
+              <label className="text-sm font-medium text-gray-500">BEAT Code</label>
+              <p className="text-lg text-gray-900">{assignment.beatId?.beatCode || 'N/A'}</p>
             </div>
-            {assignment.bitId?.client && (
+            {assignment.beatId?.client && (
               <div>
                 <label className="text-sm font-medium text-gray-500">Client</label>
-                <p className="text-lg text-gray-900">{assignment.bitId.client.clientName}</p>
+                <p className="text-lg text-gray-900">{assignment.beatId.client.clientName}</p>
               </div>
             )}
           </div>

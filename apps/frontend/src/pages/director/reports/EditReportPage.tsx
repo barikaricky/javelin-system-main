@@ -42,10 +42,10 @@ interface Location {
   city: string;
 }
 
-interface BIT {
+interface BEAT {
   _id: string;
-  bitName: string;
-  bitCode: string;
+  beatName: string;
+  beatCode: string;
 }
 
 interface Supervisor {
@@ -70,7 +70,7 @@ export default function EditReportPage() {
     reportType: '',
     priority: 'MEDIUM',
     locationId: '',
-    bitId: '',
+    beatId: '',
     supervisorId: '',
     occurrenceDate: '',
     occurrenceTime: '',
@@ -98,7 +98,7 @@ export default function EditReportPage() {
 
   // Options
   const [locations, setLocations] = useState<Location[]>([]);
-  const [bits, setBits] = useState<BIT[]>([]);
+  const [beats, setBits] = useState<BEAT[]>([]);
   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
 
   const [loading, setLoading] = useState(true);
@@ -116,11 +116,11 @@ export default function EditReportPage() {
     try {
       const [locationsRes, bitsRes, supervisorsRes] = await Promise.all([
         api.get('/locations'),
-        api.get('/bits'),
+        api.get('/beats'),
         api.get('/supervisors'),
       ]);
       setLocations(locationsRes.data.locations || []);
-      setBits(bitsRes.data.bits || []);
+      setBits(bitsRes.data.beats || []);
       setSupervisors(supervisorsRes.data.supervisors || []);
     } catch (error) {
       console.error('Failed to fetch options:', error);
@@ -146,7 +146,7 @@ export default function EditReportPage() {
         reportType: report.reportType,
         priority: report.priority,
         locationId: report.locationId._id,
-        bitId: report.bitId._id,
+        beatId: report.beatId._id,
         supervisorId: report.supervisorId._id,
         occurrenceDate: report.occurrenceDate.split('T')[0],
         occurrenceTime: report.occurrenceTime,
@@ -300,8 +300,8 @@ export default function EditReportPage() {
       toast.error('Please select a location');
       return;
     }
-    if (!formData.bitId) {
-      toast.error('Please select a BIT');
+    if (!formData.beatId) {
+      toast.error('Please select a BEAT');
       return;
     }
     if (!formData.supervisorId) {
@@ -329,7 +329,7 @@ export default function EditReportPage() {
       data.append('reportType', formData.reportType);
       data.append('priority', formData.priority);
       data.append('locationId', formData.locationId);
-      data.append('bitId', formData.bitId);
+      data.append('beatId', formData.beatId);
       data.append('supervisorId', formData.supervisorId);
       data.append('occurrenceDate', formData.occurrenceDate);
       data.append('occurrenceTime', formData.occurrenceTime);
@@ -507,17 +507,17 @@ export default function EditReportPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                BIT *
+                BEAT *
               </label>
               <select
-                value={formData.bitId}
-                onChange={(e) => setFormData((prev) => ({ ...prev, bitId: e.target.value }))}
+                value={formData.beatId}
+                onChange={(e) => setFormData((prev) => ({ ...prev, beatId: e.target.value }))}
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="">Select BIT</option>
-                {bits.map((bit) => (
+                <option value="">Select BEAT</option>
+                {beats.map((bit) => (
                   <option key={bit._id} value={bit._id}>
-                    {bit.bitName} ({bit.bitCode})
+                    {bit.beatName} ({bit.beatCode})
                   </option>
                 ))}
               </select>

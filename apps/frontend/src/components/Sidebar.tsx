@@ -64,19 +64,19 @@ const menuItems: MenuItem[] = [
       { name: 'Register Manager', icon: UserPlus, path: '/director/personnel/register-manager' },
       { name: 'Register Admin', icon: Shield, path: '/director/admin/register' },
       { name: 'Register Operator', icon: UserPlus, path: '/director/operators/register' },
-      { name: 'Assign Guards to BITs', icon: Shield, path: '/director/operators/assign' },
+      { name: 'Assign Guards to BEATs', icon: Shield, path: '/director/operators/assign' },
       { name: 'Incomplete Operators', icon: AlertTriangle, path: '/director/operators/incomplete' },
       { name: 'Pending Approvals', icon: AlertCircle, path: '/director/personnel/pending-approvals', badge: 5 },
       { name: 'All Personnel', icon: UsersRound, path: '/director/personnel/all' },
     ]
   },
   { 
-    name: 'Locations & Bits', 
+    name: 'Locations & Beats', 
     icon: MapPin,
     children: [
       { name: 'All Locations', icon: Building2, path: '/director/locations' },
-      { name: 'All Bits', icon: Shield, path: '/director/bits' },
-      { name: 'BIT Guards Intelligence', icon: Users, path: '/director/bits/guards' },
+      { name: 'All Beats', icon: Shield, path: '/director/beats' },
+      { name: 'BEAT Guards Intelligence', icon: Users, path: '/director/beats/guards' },
     ]
   },
   { 
@@ -128,7 +128,7 @@ const menuItems: MenuItem[] = [
       { name: 'Money In Reports', icon: TrendingUp, path: '/director/financial/money-in' },
       { name: 'Money Out Reports', icon: TrendingDown, path: '/director/financial/money-out' },
       { name: 'Salary Management', icon: Users, path: '/director/salary' },
-      { name: 'BIT Expenses', icon: Receipt, path: '/director/bit-expenses' },
+      { name: 'BEAT Expenses', icon: Receipt, path: '/director/bit-expenses' },
     ]
   },
 ];

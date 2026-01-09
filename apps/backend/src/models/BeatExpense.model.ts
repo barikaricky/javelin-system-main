@@ -1,8 +1,8 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export interface IBitExpense extends Document {
-  bitId: mongoose.Types.ObjectId;
-  bitName: string;
+export interface IBeatExpense extends Document {
+  beatId: mongoose.Types.ObjectId;
+  beatName: string;
   clientName?: string;
   locationName?: string;
   category: 'EQUIPMENT' | 'UNIFORMS' | 'TRANSPORTATION' | 'FUEL' | 'MAINTENANCE' | 'REPAIRS' | 'LOGISTICS' | 'EMERGENCY' | 'UTILITIES' | 'CONSUMABLES' | 'OTHER';
@@ -27,16 +27,16 @@ export interface IBitExpense extends Document {
   updatedAt: Date;
 }
 
-const BitExpenseSchema = new Schema<IBitExpense>(
+const BeatExpenseSchema = new Schema<IBeatExpense>(
   {
-    bitId: {
+    beatId: {
       type: Schema.Types.ObjectId,
-      ref: 'Bit',
+      ref: 'Beat',
       required: function() {
         return !this.isUnallocated;
       },
     },
-    bitName: {
+    beatName: {
       type: String,
       required: true,
     },
@@ -128,12 +128,12 @@ const BitExpenseSchema = new Schema<IBitExpense>(
 );
 
 // Indexes for performance
-BitExpenseSchema.index({ bitId: 1, dateIncurred: -1 });
-BitExpenseSchema.index({ isDeleted: 1, dateIncurred: -1 });
-BitExpenseSchema.index({ category: 1 });
-BitExpenseSchema.index({ isUnallocated: 1 });
-BitExpenseSchema.index({ addedBy: 1 });
+BeatExpenseSchema.index({ beatId: 1, dateIncurred: -1 });
+BeatExpenseSchema.index({ isDeleted: 1, dateIncurred: -1 });
+BeatExpenseSchema.index({ category: 1 });
+BeatExpenseSchema.index({ isUnallocated: 1 });
+BeatExpenseSchema.index({ addedBy: 1 });
 
-const BitExpense = mongoose.model<IBitExpense>('BitExpense', BitExpenseSchema);
+const BeatExpense = mongoose.model<IBeatExpense>('BeatExpense', BeatExpenseSchema);
 
-export default BitExpense;
+export default BeatExpense;

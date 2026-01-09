@@ -57,7 +57,7 @@ const upload = multer({
 // Get all reports (with filters)
 router.get('/', authenticate, asyncHandler(async (req: any, res) => {
   const { role, userId } = req.user;
-  const { type, status, bitId, locationId, supervisorId, dateFrom, dateTo, search } = req.query;
+  const { type, status, beatId, locationId, supervisorId, dateFrom, dateTo, search } = req.query;
   
   let query: any = {};
   
@@ -81,7 +81,7 @@ router.get('/', authenticate, asyncHandler(async (req: any, res) => {
   // Apply filters
   if (type) query.reportType = type;
   if (status) query.status = status;
-  if (bitId) query.bitId = bitId;
+  if (beatId) query.beatId = beatId;
   if (locationId) query.locationId = locationId;
   if (supervisorId) query.supervisorId = supervisorId;
   
@@ -105,7 +105,7 @@ router.get('/', authenticate, asyncHandler(async (req: any, res) => {
       path: 'supervisorId',
       populate: { path: 'userId', select: 'firstName lastName email' }
     })
-    .populate('bitId', 'bitName bitCode')
+    .populate('beatId', 'beatName beatCode')
     .populate('locationId', 'locationName city state')
     .populate('createdBy', 'firstName lastName')
     .sort({ occurrenceDate: -1, createdAt: -1 })
@@ -133,7 +133,7 @@ router.get('/:id', authenticate, asyncHandler(async (req: any, res) => {
       path: 'supervisorId',
       populate: { path: 'userId', select: 'firstName lastName email phone' }
     })
-    .populate('bitId', 'bitName bitCode')
+    .populate('beatId', 'beatName beatCode')
     .populate('locationId', 'locationName address city state')
     .populate('createdBy', 'firstName lastName email')
     .populate('updatedBy', 'firstName lastName email')
@@ -181,7 +181,7 @@ router.post('/', (req, res, next) => {
   const {
     title,
     reportType,
-    bitId,
+    beatId,
     locationId,
     supervisorId,
     occurrenceDate,
@@ -248,7 +248,7 @@ router.post('/', (req, res, next) => {
   const report = await Report.create({
     title,
     reportType,
-    bitId: bitId || undefined,
+    beatId: beatId || undefined,
     locationId: locationId || undefined,
     supervisorId: supervisorId || req.supervisor?._id || req.generalSupervisor?._id || undefined,
     occurrenceDate,
@@ -274,7 +274,7 @@ router.post('/', (req, res, next) => {
       path: 'supervisorId',
       populate: { path: 'userId', select: 'firstName lastName email phone' }
     })
-    .populate('bitId', 'bitName bitCode')
+    .populate('beatId', 'beatName beatCode')
     .populate('locationId', 'locationName address city state')
     .populate('createdBy', 'firstName lastName email')
     .populate('approvedBy', 'firstName lastName email')
@@ -368,7 +368,7 @@ router.put('/:id', authenticate, upload.fields([
   const {
     title,
     reportType,
-    bitId,
+    beatId,
     locationId,
     occurrenceDate,
     occurrenceTime,
@@ -381,7 +381,7 @@ router.put('/:id', authenticate, upload.fields([
   // Update fields
   if (title) report.title = title;
   if (reportType) report.reportType = reportType;
-  if (bitId) report.bitId = bitId;
+  if (beatId) report.beatId = beatId;
   if (locationId) report.locationId = locationId;
   if (occurrenceDate) report.occurrenceDate = occurrenceDate;
   if (occurrenceTime) report.occurrenceTime = occurrenceTime;
@@ -429,7 +429,7 @@ router.put('/:id', authenticate, upload.fields([
   
   const updatedReport = await Report.findById(report._id)
     .populate('supervisorId')
-    .populate('bitId')
+    .populate('beatId')
     .populate('locationId')
     .populate('createdBy')
     .populate('updatedBy');
@@ -606,7 +606,7 @@ router.delete('/:id', authenticate, authorize('DIRECTOR'), asyncHandler(async (r
 router.get('/:id/export', authenticate, asyncHandler(async (req: any, res) => {
   const report = await Report.findById(req.params.id)
     .populate('supervisorId')
-    .populate('bitId')
+    .populate('beatId')
     .populate('locationId')
     .populate('createdBy')
     .populate('approvedBy');

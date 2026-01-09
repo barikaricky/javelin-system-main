@@ -145,10 +145,10 @@ const menuItems: MenuItem[] = [
         badge: 'View',
       },
       {
-        id: 'bits',
-        label: 'Bits',
+        id: 'beats',
+        label: 'Beats',
         icon: Building2,
-        path: '/manager/bits',
+        path: '/manager/beats',
         badge: 'View',
       },
       {
@@ -243,7 +243,7 @@ const menuItems: MenuItem[] = [
       },
       {
         id: 'bit-expenses',
-        label: 'BIT Expenses',
+        label: 'BEAT Expenses',
         icon: Receipt,
         path: '/manager/bit-expenses',
         badge: 'View',

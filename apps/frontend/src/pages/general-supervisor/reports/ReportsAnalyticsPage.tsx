@@ -140,7 +140,7 @@ export default function ReportsAnalyticsPage() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div>
               <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Reports Analytics</h1>
-              <p className="text-gray-600">Analytics for your assigned BITs</p>
+              <p className="text-gray-600">Analytics for your assigned BEATs</p>
             </div>
             <button
               onClick={exportAnalytics}
@@ -377,11 +377,11 @@ export default function ReportsAnalyticsPage() {
             </div>
           </div>
 
-          {/* Top BITs */}
+          {/* Top BEATs */}
           <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
             <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
               <Shield className="w-5 h-5 text-green-600" />
-              Top BITs
+              Top BEATs
             </h3>
             <div className="space-y-2">
               {analytics.byBIT.slice(0, 5).map((bit, index) => (

@@ -71,19 +71,19 @@ router.get('/analytics', authenticate, asyncHandler(async (req: any, res: Respon
     count: item.count,
   }));
 
-  // Reports by BIT
+  // Reports by BEAT
   const byBIT = await Report.aggregate([
     { $match: matchQuery },
     {
       $lookup: {
-        from: 'bits',
-        localField: 'bitId',
+        from: 'beats',
+        localField: 'beatId',
         foreignField: '_id',
         as: 'bit',
       },
     },
     { $unwind: { path: '$bit', preserveNullAndEmptyArrays: false } },
-    { $group: { _id: '$bit.bitName', count: { $sum: 1 } } },
+    { $group: { _id: '$bit.beatName', count: { $sum: 1 } } },
     { $sort: { count: -1 } },
     { $limit: 10 },
   ]);

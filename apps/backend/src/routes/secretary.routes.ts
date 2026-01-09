@@ -133,7 +133,7 @@ router.get('/operators', authorize('SECRETARY', 'DEVELOPER'), asyncHandler(async
       operatorId: { $in: operatorIds },
       status: 'ACTIVE'
     })
-      .populate('bitId', 'bitName')
+      .populate('beatId', 'beatName')
       .lean();
 
     // Map assignments to operators
@@ -148,7 +148,7 @@ router.get('/operators', authorize('SECRETARY', 'DEVELOPER'), asyncHandler(async
         return {
           ...op,
           status: op.userId?.status || op.approvalStatus || 'PENDING', // Use User status as primary
-          bitId: assignment?.bitId || null,
+          beatId: assignment?.beatId || null,
           userId: {
             ...op.userId,
             _id: op.userId._id,
@@ -221,7 +221,7 @@ router.post('/register-operator', authorize('SECRETARY', 'DEVELOPER'), asyncHand
     state,
     lga,
     locationId,
-    bitId,
+    beatId,
     supervisorId,
     salary,
     salaryCategory,
@@ -293,7 +293,7 @@ router.post('/register-operator', authorize('SECRETARY', 'DEVELOPER'), asyncHand
       state,
       lga,
       locationId: locationId || null,
-      bitId: bitId || null,
+      beatId: beatId || null,
       supervisorId: supervisorId || null,
       salary: salary || 0,
       salaryCategory: salaryCategory || 'STANDARD',

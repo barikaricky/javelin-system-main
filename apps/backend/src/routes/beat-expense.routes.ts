@@ -18,7 +18,7 @@ router.get(
   authorize('DIRECTOR', 'SECRETARY', 'MANAGER'),
   asyncHandler(async (req, res) => {
     const filters = {
-      bitId: req.query.bitId as string,
+      beatId: req.query.beatId as string,
       category: req.query.category as string,
       startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
       endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
@@ -38,7 +38,7 @@ router.get(
 
 /**
  * GET /api/bit-expenses/summary
- * Get BITs with expense summaries
+ * Get BEATs with expense summaries
  */
 router.get(
   '/summary',
@@ -59,7 +59,7 @@ router.get(
   authorize('DIRECTOR', 'SECRETARY', 'MANAGER'),
   asyncHandler(async (req, res) => {
     const filters = {
-      bitId: req.query.bitId as string,
+      beatId: req.query.beatId as string,
       startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
       endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
     };
@@ -70,16 +70,16 @@ router.get(
 );
 
 /**
- * GET /api/bit-expenses/bit/:bitId/summary
- * Get expense summary for a specific BIT
+ * GET /api/bit-expenses/bit/:beatId/summary
+ * Get expense summary for a specific BEAT
  */
 router.get(
-  '/bit/:bitId/summary',
+  '/bit/:beatId/summary',
   authorize('DIRECTOR', 'SECRETARY', 'MANAGER'),
   asyncHandler(async (req, res) => {
-    const { bitId } = req.params;
+    const { beatId } = req.params;
     const period = (req.query.period as 'week' | 'month' | 'year') || 'month';
-    const result = await bitExpenseService.getBitExpenseSummary(bitId, period);
+    const result = await bitExpenseService.getBitExpenseSummary(beatId, period);
     res.json(result);
   })
 );
@@ -108,7 +108,7 @@ router.post(
     logger.info('Creating expense - Request body:', req.body);
     
     const data = {
-      bitId: req.body.bitId && req.body.bitId !== '' ? req.body.bitId : undefined,
+      beatId: req.body.beatId && req.body.beatId !== '' ? req.body.beatId : undefined,
       locationId: req.body.locationId && req.body.locationId !== '' ? req.body.locationId : undefined,
       category: req.body.category,
       description: req.body.description,
@@ -137,7 +137,7 @@ router.put(
   authorize('DIRECTOR', 'SECRETARY'),
   asyncHandler(async (req, res) => {
     const data = {
-      bitId: req.body.bitId,
+      beatId: req.body.beatId,
       locationId: req.body.locationId,
       category: req.body.category,
       description: req.body.description,
@@ -155,16 +155,16 @@ router.put(
 );
 
 /**
- * DELETE /api/bit-expenses/bit/:bitId/all
- * Delete all expenses for a BIT (Director only)
+ * DELETE /api/bit-expenses/bit/:beatId/all
+ * Delete all expenses for a BEAT (Director only)
  * NOTE: This must come BEFORE the /:id route
  */
 router.delete(
-  '/bit/:bitId/all',
+  '/bit/:beatId/all',
   authorize('DIRECTOR'),
   asyncHandler(async (req, res) => {
-    const result = await bitExpenseService.deleteAllBitExpenses(req.params.bitId, req.user.userId);
-    logger.info('All BIT expenses deleted', { bitId: req.params.bitId, count: result.count, userId: req.user.userId });
+    const result = await bitExpenseService.deleteAllBitExpenses(req.params.beatId, req.user.userId);
+    logger.info('All BEAT expenses deleted', { beatId: req.params.beatId, count: result.count, userId: req.user.userId });
     res.json({ message: `${result.count} expenses deleted successfully`, count: result.count });
   })
 );

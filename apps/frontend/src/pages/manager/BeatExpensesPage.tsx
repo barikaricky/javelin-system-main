@@ -15,8 +15,8 @@ import { api } from '../../lib/api';
 
 interface BitExpense {
   id: string;
-  bitId?: string;
-  bitName: string;
+  beatId?: string;
+  beatName: string;
   clientName?: string;
   locationName?: string;
   category: string;
@@ -81,7 +81,7 @@ export default function BitExpensesPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedBitDetails, setSelectedBitDetails] = useState<BitSummary | null>(null);
-  const [bits, setBits] = useState<any[]>([]);
+  const [beats, setBits] = useState<any[]>([]);
 
   useEffect(() => {
     loadBits();
@@ -94,10 +94,10 @@ export default function BitExpensesPage() {
 
   const loadBits = async () => {
     try {
-      const response = await api.get('/bits');
-      setBits(response.data.bits || []);
+      const response = await api.get('/beats');
+      setBits(response.data.beats || []);
     } catch (error) {
-      console.error('Error loading BITs:', error);
+      console.error('Error loading BEATs:', error);
     }
   };
 
@@ -107,8 +107,8 @@ export default function BitExpensesPage() {
       const response = await api.get('/bit-expenses/summary', { params: { period } });
       setBitSummaries(response.data);
     } catch (error) {
-      console.error('Error loading BIT summaries:', error);
-      toast.error('Failed to load BIT expense summaries');
+      console.error('Error loading BEAT summaries:', error);
+      toast.error('Failed to load BEAT expense summaries');
     } finally {
       setIsLoading(false);
     }
@@ -122,7 +122,7 @@ export default function BitExpensesPage() {
         sortBy: 'date',
         sortOrder: 'desc',
       };
-      if (selectedBit) params.bitId = selectedBit;
+      if (selectedBit) params.beatId = selectedBit;
       if (categoryFilter) params.category = categoryFilter;
       if (paymentFilter) params.paymentMethod = paymentFilter;
       if (dateRange.start) params.startDate = dateRange.start;
@@ -160,7 +160,7 @@ export default function BitExpensesPage() {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Spending per BIT</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Spending per BEAT</h1>
               <p className="text-sm text-gray-600 mt-1">Track operational expenses (Expenses Only - No Salary)</p>
               <div className="flex items-center gap-2 mt-2">
                 <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-medium">
@@ -179,7 +179,7 @@ export default function BitExpensesPage() {
                   view === 'summary' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                BIT Summary
+                BEAT Summary
               </button>
               <button
                 onClick={() => setView('list')}
@@ -233,14 +233,14 @@ export default function BitExpensesPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">BIT</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">BEAT</label>
                 <select
                   value={selectedBit}
                   onChange={e => setSelectedBit(e.target.value)}
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">All BITs</option>
-                  {bits.map(bit => (
+                  <option value="">All BEATs</option>
+                  {beats.map(bit => (
                     <option key={bit.id} value={bit.id}>{bit.name}</option>
                   ))}
                 </select>
@@ -331,7 +331,7 @@ export default function BitExpensesPage() {
                 <thead className="bg-gray-50 border-b">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">BIT</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">BEAT</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
@@ -350,7 +350,7 @@ export default function BitExpensesPage() {
                           <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">
                             {expense.locationName || 'No Location'}
                           </p>
-                          <p className="font-medium text-gray-900">{expense.bitName}</p>
+                          <p className="font-medium text-gray-900">{expense.beatName}</p>
                           {expense.clientName && <p className="text-xs text-gray-500">{expense.clientName}</p>}
                         </div>
                       </td>

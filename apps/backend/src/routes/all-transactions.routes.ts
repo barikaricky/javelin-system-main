@@ -4,7 +4,7 @@ import { asyncHandler } from '../middlewares/error.middleware';
 import mongoose from 'mongoose';
 import { Transaction } from '../models/Transaction.model';
 import MoneyOut from '../models/MoneyOut.model';
-import BitExpense from '../models/BitExpense.model';
+import BitExpense from "./BeatExpense.model';
 import { Salary } from '../models/Salary.model';
 
 const router: Router = Router();
@@ -141,7 +141,7 @@ router.get(
       });
     }
 
-    // 3. BIT Expenses
+    // 3. BEAT Expenses
     if (!type || type === 'all' || type === 'bit_expense') {
       const bitExpenseQuery: any = { 
         isDeleted: false
@@ -152,7 +152,7 @@ router.get(
       if (search) {
         bitExpenseQuery.$or = [
           { description: { $regex: search, $options: 'i' } },
-          { bitName: { $regex: search, $options: 'i' } },
+          { beatName: { $regex: search, $options: 'i' } },
           { locationName: { $regex: search, $options: 'i' } }
         ];
       }
@@ -161,7 +161,7 @@ router.get(
         .populate('addedBy', 'firstName lastName')
         .lean();
 
-      console.log(`Found ${bitExpenses.length} BIT Expenses`);
+      console.log(`Found ${bitExpenses.length} BEAT Expenses`);
 
       bitExpenses.forEach((record: any) => {
         allTransactions.push({
@@ -176,7 +176,7 @@ router.get(
           beneficiary: record.clientName || 'UNALLOCATED',
           recordedBy: record.addedByName,
           status: 'PAID',
-          location: record.locationName || record.bitName || 'N/A',
+          location: record.locationName || record.beatName || 'N/A',
           createdAt: record.createdAt
         });
       });
@@ -244,7 +244,7 @@ router.get(
     console.log('Breakdown:');
     console.log('- Money In:', allTransactions.filter(t => t.type === 'MONEY_IN').length);
     console.log('- Money Out:', allTransactions.filter(t => t.type === 'MONEY_OUT').length);
-    console.log('- BIT Expenses:', allTransactions.filter(t => t.type === 'BIT_EXPENSE').length);
+    console.log('- BEAT Expenses:', allTransactions.filter(t => t.type === 'BIT_EXPENSE').length);
     console.log('- Salaries:', allTransactions.filter(t => t.type === 'SALARY').length);
 
     // Pagination
@@ -351,7 +351,7 @@ function generateFinancialSuggestions(metrics: any): string[] {
   if (expenseRatio > 0.90) {
     suggestions.push(`🔴 DANGER: For every ₦100 you earn, you're spending ₦${(expenseRatio * 100).toFixed(0)}! That's almost everything!\n\nImagine: You get ₦100 salary, but ₦${(expenseRatio * 100).toFixed(0)} goes to bills. Only ₦${(100 - expenseRatio * 100).toFixed(0)} left!\n\nEMERGENCY STEPS:\n• Stop all spending that's not absolutely necessary\n• Talk to your suppliers - ask for lower prices\n• Review how many people you're paying - do you need everyone?\n• Set a rule: Need approval before spending more than ₦10,000`);
   } else if (expenseRatio > 0.80 && expenseRatio <= 0.90) {
-    suggestions.push(`🟡 WARNING: You're spending ₦${(expenseRatio * 100).toFixed(0)} out of every ₦100 you earn. This is too much!\n\nBetter target: Spend only ₦70-75 out of every ₦100 you earn\n\nHow to improve:\n• Look at your biggest expenses - can you reduce them by 10%?\n• Review what locations/BITs are spending most money\n• Find cheaper suppliers for things you buy regularly\n• Check if you're wasting anything (fuel, electricity, supplies)`);
+    suggestions.push(`🟡 WARNING: You're spending ₦${(expenseRatio * 100).toFixed(0)} out of every ₦100 you earn. This is too much!\n\nBetter target: Spend only ₦70-75 out of every ₦100 you earn\n\nHow to improve:\n• Look at your biggest expenses - can you reduce them by 10%?\n• Review what locations/BEATs are spending most money\n• Find cheaper suppliers for things you buy regularly\n• Check if you're wasting anything (fuel, electricity, supplies)`);
   } else if (expenseRatio >= 0.65 && expenseRatio <= 0.80) {
     suggestions.push(`🟢 GOOD: You're spending ₦${(expenseRatio * 100).toFixed(0)} from every ₦100 you earn. This is okay, but can be better!\n\nHow to make it excellent:\n• Buy things in bulk to get discounts (uniforms, equipment)\n• Turn off lights and AC when not needed to save electricity\n• Make sure guards are using fuel wisely\n• Target: Bring spending down to ₦65-70 from every ₦100`);
   } else if (expenseRatio < 0.60 && metrics.totalExpenses > 0) {
@@ -359,13 +359,13 @@ function generateFinancialSuggestions(metrics: any): string[] {
   }
 
   // ========================================
-  // 3. LOCATION/BIT EXPENSES (SIMPLE)
+  // 3. LOCATION/BEAT EXPENSES (SIMPLE)
   // ========================================
   const bitExpenseRatio = metrics.totalExpenses > 0 ? metrics.bitExpensesTotal / metrics.totalExpenses : 0;
   
   if (bitExpenseRatio > 0.40 && metrics.bitExpensesTotal > 0) {
     const avgPerLocation = Math.round(metrics.bitExpensesTotal / 10);
-    suggestions.push(`💡 Your locations (BITs) are spending A LOT: ₦${metrics.bitExpensesTotal.toLocaleString()} total\n\nEach location spends about: ₦${avgPerLocation.toLocaleString()}\n\nCheck these:\n• Which location spends the most? Why?\n• Are they buying things at good prices?\n• Can you buy uniforms/equipment for ALL locations together (cheaper)?\n• Are they using too much fuel for vehicles?\n• Set a spending limit for each location`);
+    suggestions.push(`💡 Your locations (BEATs) are spending A LOT: ₦${metrics.bitExpensesTotal.toLocaleString()} total\n\nEach location spends about: ₦${avgPerLocation.toLocaleString()}\n\nCheck these:\n• Which location spends the most? Why?\n• Are they buying things at good prices?\n• Can you buy uniforms/equipment for ALL locations together (cheaper)?\n• Are they using too much fuel for vehicles?\n• Set a spending limit for each location`);
   } else if (bitExpenseRatio > 0.25 && bitExpenseRatio <= 0.40 && metrics.bitExpensesTotal > 0) {
     suggestions.push(`📊 Your locations are spending ₦${metrics.bitExpensesTotal.toLocaleString()}. This is normal.\n\nWays to spend less:\n• Buy supplies for all locations at once (get bulk discount)\n• Fix equipment regularly so it doesn't break (cheaper than buying new)\n• Share good ideas between locations - if one is saving money, others can copy`);
   }
@@ -409,7 +409,7 @@ function generateFinancialSuggestions(metrics: any): string[] {
   // 7. RECORD KEEPING (SIMPLE)
   // ========================================
   if (metrics.transactionCount < 20) {
-    suggestions.push(`📊 You only have ${metrics.transactionCount} transactions recorded. This seems LOW.\n\nWhy this matters: If you don't write down all money coming in and going out, you can't know if you're making or losing money!\n\nMake sure you record:\n• EVERY money you receive from clients (with receipt)\n• EVERY expense at locations/BITs\n• ALL salary payments\n• Train everyone: "No payment without recording it"\n• Check records every week - don't wait until month end`);
+    suggestions.push(`📊 You only have ${metrics.transactionCount} transactions recorded. This seems LOW.\n\nWhy this matters: If you don't write down all money coming in and going out, you can't know if you're making or losing money!\n\nMake sure you record:\n• EVERY money you receive from clients (with receipt)\n• EVERY expense at locations/BEATs\n• ALL salary payments\n• Train everyone: "No payment without recording it"\n• Check records every week - don't wait until month end`);
   }
 
   // ========================================

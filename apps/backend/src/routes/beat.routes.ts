@@ -23,7 +23,7 @@ router.post(
   })
 );
 
-// Get all bits
+// Get all beats
 router.get(
   '/',
   asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -47,9 +47,9 @@ router.get(
     }
     // If isActive is 'all' or undefined, don't filter by status
     
-    console.log('Bit filters:', filters);
+    console.log('Beat filters:', filters);
     const result = await bitService.getAllBits(filters);
-    console.log('Found bits:', result.bits?.length || 0);
+    console.log('Found beats:', result.beats?.length || 0);
     res.json(result);
   })
 );
@@ -63,7 +63,7 @@ router.get(
   })
 );
 
-// Get all bits with full details (MUST come before /:id)
+// Get all beats with full details (MUST come before /:id)
 router.get(
   '/all',
   asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -75,8 +75,8 @@ router.get(
       includeLocation: includeLocation === 'true',
     };
     
-    const bits = await bitService.getAllBitsWithDetails(options);
-    res.json(bits);
+    const beats = await bitService.getAllBitsWithDetails(options);
+    res.json(beats);
   })
 );
 
@@ -109,7 +109,7 @@ router.delete(
   requireRole(['DIRECTOR']),
   asyncHandler(async (req: AuthRequest, res: Response) => {
     await bitService.deleteBit(req.params.id);
-    res.json({ message: 'Bit deleted successfully' });
+    res.json({ message: 'Beat deleted successfully' });
   })
 );
 

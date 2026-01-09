@@ -52,10 +52,10 @@ interface OnDutyPerson {
       email: string;
     };
   };
-  bitId?: {
+  beatId?: {
     _id: string;
-    bitName: string;
-    bitCode: string;
+    beatName: string;
+    beatCode: string;
   };
   locationId?: {
     _id: string;
@@ -150,7 +150,7 @@ export default function ManagerOnDutyPage() {
         const fullName = user ? `${user.firstName} ${user.lastName}`.toLowerCase() : '';
         const employeeId = p.operatorId?.employeeId?.toLowerCase() || '';
         const location = p.locationId?.locationName?.toLowerCase() || '';
-        const bit = p.bitId?.bitName?.toLowerCase() || '';
+        const bit = p.beatId?.beatName?.toLowerCase() || '';
         
         return fullName.includes(searchTerm.toLowerCase()) ||
                employeeId.includes(searchTerm.toLowerCase()) ||
@@ -220,7 +220,7 @@ export default function ManagerOnDutyPage() {
         EmployeeID: p.operatorId?.employeeId || 'N/A',
         Shift: p.shiftType || 'N/A',
         Location: p.locationId?.locationName || 'N/A',
-        Bit: p.bitId?.bitName || 'N/A',
+        Beat: p.beatId?.beatName || 'N/A',
         Supervisor: p.supervisorId?.userId ? `${p.supervisorId.userId.firstName} ${p.supervisorId.userId.lastName}` : 'N/A',
         Status: p.status || 'N/A',
         StartDate: formatDate(p.startDate)
@@ -517,12 +517,12 @@ export default function ManagerOnDutyPage() {
                         </div>
                       )}
 
-                      {person.bitId && (
+                      {person.beatId && (
                         <div className="flex items-center gap-2 text-sm">
                           <Grid3x3 className="w-4 h-4 text-gray-400" />
                           <div>
-                            <p className="text-gray-700">{person.bitId.bitName}</p>
-                            <p className="text-xs text-gray-500">{person.bitId.bitCode}</p>
+                            <p className="text-gray-700">{person.beatId.beatName}</p>
+                            <p className="text-xs text-gray-500">{person.beatId.beatCode}</p>
                           </div>
                         </div>
                       )}
@@ -662,11 +662,11 @@ export default function ManagerOnDutyPage() {
                 </div>
               </div>
 
-              {/* Location & Bit */}
+              {/* Location & Beat */}
               <div>
                 <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                   <Building2 className="w-5 h-5 text-purple-600" />
-                  Location & Bit
+                  Location & Beat
                 </h3>
                 <div className="space-y-3">
                   {selectedPerson.locationId && (
@@ -682,13 +682,13 @@ export default function ManagerOnDutyPage() {
                     </div>
                   )}
 
-                  {selectedPerson.bitId && (
+                  {selectedPerson.beatId && (
                     <div className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-start gap-3">
                         <Grid3x3 className="w-5 h-5 text-purple-600" />
                         <div>
-                          <p className="font-semibold text-gray-900">{selectedPerson.bitId.bitName}</p>
-                          <p className="text-sm text-gray-600">Code: {selectedPerson.bitId.bitCode}</p>
+                          <p className="font-semibold text-gray-900">{selectedPerson.beatId.beatName}</p>
+                          <p className="text-sm text-gray-600">Code: {selectedPerson.beatId.beatCode}</p>
                         </div>
                       </div>
                     </div>

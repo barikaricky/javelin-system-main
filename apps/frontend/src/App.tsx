@@ -66,11 +66,11 @@ import ManagerPendingApprovalsPage from './pages/manager/PendingApprovalsPage';
 import OperatorApprovalsPage from './pages/manager/OperatorApprovalsPage';
 import RegisterSecretaryPage from './pages/manager/secretary/RegisterSecretaryPage';
 import RegisterAdminPage from './pages/director/RegisterAdminPage';
-import { ManagerBitsListPage } from './pages/manager/bits/BitsListPage';
+import { ManagerBitsListPage } from './pages/manager/beats/BitsListPage';
 import { ManagerLocationsListPage } from './pages/manager/locations/LocationsListPage';
-import { ManagerEditBitPage } from './pages/manager/bits/EditBitPage';
+import { ManagerEditBitPage } from './pages/manager/beats/EditBitPage';
 import { ManagerEditLocationPage } from './pages/manager/locations/EditLocationPage';
-import { ManagerBitDetailsPage } from './pages/manager/bits/BitDetailsPage';
+import { ManagerBitDetailsPage } from './pages/manager/beats/BitDetailsPage';
 import { ManagerLocationDetailsPage } from './pages/manager/locations/LocationDetailsPage';
 import ManagerMoneyInView from './pages/manager/MoneyInView';
 import ManagerBitExpensesPage from './pages/manager/BitExpensesPage';
@@ -146,9 +146,9 @@ import SecretaryDashboard from './pages/secretary/Dashboard';
 import { LocationsListPage } from './pages/secretary/locations/LocationsListPage';
 import { CreateLocationPage } from './pages/secretary/locations/CreateLocationPage';
 import { EditLocationPage } from './pages/secretary/locations/EditLocationPage';
-import { BitsListPage } from './pages/secretary/bits/BitsListPage';
-import { CreateBitPage } from './pages/secretary/bits/CreateBitPage';
-import { EditBitPage } from './pages/secretary/bits/EditBitPage';
+import { BitsListPage } from './pages/secretary/beats/BitsListPage';
+import { CreateBitPage } from './pages/secretary/beats/CreateBitPage';
+import { EditBitPage } from './pages/secretary/beats/EditBitPage';
 import { DocumentsListPage } from './pages/secretary/documents/DocumentsListPage';
 import { UploadDocumentPage } from './pages/secretary/documents/UploadDocumentPage';
 import RecordMoneyIn from './pages/secretary/money-in/RecordMoneyIn';
@@ -188,14 +188,14 @@ import AllTransactionsPage from './pages/director/transactions/AllTransactionsPa
 import SalaryManagement from './pages/director/salary/SalaryManagement';
 import SalaryView from './pages/manager/SalaryView';
 
-// Director Bits and Locations imports
-import { DirectorBitsListPage } from './pages/director/bits/BitsListPage';
+// Director Beats and Locations imports
+import { DirectorBitsListPage } from './pages/director/beats/BitsListPage';
 import { DirectorLocationsListPage } from './pages/director/locations/LocationsListPage';
-import { DirectorEditBitPage } from './pages/director/bits/EditBitPage';
+import { DirectorEditBitPage } from './pages/director/beats/EditBitPage';
 import { DirectorEditLocationPage } from './pages/director/locations/EditLocationPage';
-import { BitDetailsPage } from './pages/director/bits/BitDetailsPage';
+import { BitDetailsPage } from './pages/director/beats/BitDetailsPage';
 import { LocationDetailsPage } from './pages/director/locations/LocationDetailsPage';
-import BitGuardsView from './pages/director/bits/BitGuardsView';
+import BitGuardsView from './pages/director/beats/BitGuardsView';
 import IDCardGenerator from './pages/director/IDCardGenerator';
 import ManagerIDCardGenerator from './pages/manager/IDCardGenerator';
 import SecretaryIDCardGenerator from './pages/secretary/IDCardGenerator';
@@ -211,8 +211,8 @@ import AssignmentApprovalsPage from './pages/general-supervisor/assignments/Assi
 import RequestAssignmentPage from './pages/supervisor/assignments/RequestAssignmentPage';
 import PendingAssignmentsPage from './pages/supervisor/assignments/PendingAssignmentsPage';
 
-// Bits imports
-import MyBitsPage from './pages/supervisor/bits/MyBitsPage';
+// Beats imports
+import MyBitsPage from './pages/supervisor/beats/MyBitsPage';
 
 // Director Layout wrapper component
 function DirectorLayout({ children }: { children: React.ReactNode }) {
@@ -292,9 +292,9 @@ function App() {
         <Route path="locations" element={<LocationsListPage />} />
         <Route path="locations/create" element={<CreateLocationPage />} />
         <Route path="locations/:id/edit" element={<EditLocationPage />} />
-        <Route path="bits" element={<BitsListPage />} />
-        <Route path="bits/create" element={<CreateBitPage />} />
-        <Route path="bits/:id/edit" element={<EditBitPage />} />
+        <Route path="beats" element={<BitsListPage />} />
+        <Route path="beats/create" element={<CreateBitPage />} />
+        <Route path="beats/:id/edit" element={<EditBitPage />} />
         <Route path="documents" element={<DocumentsListPage />} />
         <Route path="documents/upload" element={<UploadDocumentPage />} />
         <Route path="money-in" element={<MoneyInList />} />
@@ -328,7 +328,7 @@ function App() {
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
-        <Route path="bits" element={<AdminBitsPage />} />
+        <Route path="beats" element={<AdminBitsPage />} />
         <Route path="operators" element={<AdminOperatorsPage />} />
         <Route path="supervisors" element={<AdminSupervisorsPage />} />
         <Route path="messages" element={<div className="p-8 text-center text-gray-500">Messages - Coming soon</div>} />
@@ -357,9 +357,9 @@ function App() {
         <Route path="locations" element={<ManagerLocationsListPage />} />
         <Route path="locations/:id/details" element={<ManagerLocationDetailsPage />} />
         <Route path="locations/:id/edit" element={<ManagerEditLocationPage />} />
-        <Route path="bits" element={<ManagerBitsListPage />} />
-        <Route path="bits/:id/details" element={<ManagerBitDetailsPage />} />
-        <Route path="bits/:id/edit" element={<ManagerEditBitPage />} />
+        <Route path="beats" element={<ManagerBitsListPage />} />
+        <Route path="beats/:id/details" element={<ManagerBitDetailsPage />} />
+        <Route path="beats/:id/edit" element={<ManagerEditBitPage />} />
         <Route path="messages" element={<ManagerMessagingPage />} />
         <Route path="communication" element={<ManagerCommunicationPage />} />
         <Route path="settings" element={<ManagerSettingsPage />} />
@@ -390,7 +390,7 @@ function App() {
         <Route path="settings" element={<SupervisorEnhancedSettingsPage />} />
         <Route path="assignments/request" element={<RequestAssignmentPage />} />
         <Route path="assignments/pending" element={<PendingAssignmentsPage />} />
-        <Route path="bits" element={<MyBitsPage />} />
+        <Route path="beats" element={<MyBitsPage />} />
         <Route path="reports" element={<SupervisorReportsListPage />} />
         <Route path="reports/create" element={<SupervisorCreateReportPage />} />
         <Route path="reports/analytics" element={<SupervisorReportsAnalyticsPage />} />
@@ -473,10 +473,10 @@ function App() {
       <Route path="/director/locations" element={<DirectorLayout><DirectorLocationsListPage /></DirectorLayout>} />
       <Route path="/director/locations/:id/details" element={<DirectorLayout><LocationDetailsPage /></DirectorLayout>} />
       <Route path="/director/locations/:id/edit" element={<DirectorLayout><DirectorEditLocationPage /></DirectorLayout>} />
-      <Route path="/director/bits" element={<DirectorLayout><DirectorBitsListPage /></DirectorLayout>} />
-      <Route path="/director/bits/:id/details" element={<DirectorLayout><BitDetailsPage /></DirectorLayout>} />
-      <Route path="/director/bits/:id/edit" element={<DirectorLayout><DirectorEditBitPage /></DirectorLayout>} />
-      <Route path="/director/bits/guards" element={<DirectorLayout><BitGuardsView /></DirectorLayout>} />
+      <Route path="/director/beats" element={<DirectorLayout><DirectorBitsListPage /></DirectorLayout>} />
+      <Route path="/director/beats/:id/details" element={<DirectorLayout><BitDetailsPage /></DirectorLayout>} />
+      <Route path="/director/beats/:id/edit" element={<DirectorLayout><DirectorEditBitPage /></DirectorLayout>} />
+      <Route path="/director/beats/guards" element={<DirectorLayout><BitGuardsView /></DirectorLayout>} />
       <Route path="/director/id-cards" element={<DirectorLayout><IDCardGenerator /></DirectorLayout>} />
       <Route path="/director/settings" element={<DirectorLayout><SettingsPage /></DirectorLayout>} />
       <Route path="/director/bit-expenses" element={<DirectorLayout><DirectorBitExpensesPage /></DirectorLayout>} />

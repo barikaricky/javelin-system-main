@@ -16,9 +16,9 @@ interface Operator {
     _id: string;
     locationName: string;
   };
-  bitId?: {
+  beatId?: {
     _id: string;
-    bitName: string;
+    beatName: string;
   };
   supervisorId?: {
     _id: string;
@@ -167,12 +167,12 @@ export default function OperatorDetailModal({ operator, isOpen, onClose }: Opera
                     <p className="text-sm text-gray-500 italic">No location assigned</p>
                   )}
                   
-                  {operator.bitId ? (
+                  {operator.beatId ? (
                     <div className="flex items-start gap-3">
                       <Grid3x3 className="w-5 h-5 text-gray-400 mt-0.5" />
                       <div>
-                        <p className="text-xs text-gray-500 mb-1">Bit</p>
-                        <p className="text-sm font-medium text-gray-900">{operator.bitId.bitName}</p>
+                        <p className="text-xs text-gray-500 mb-1">Beat</p>
+                        <p className="text-sm font-medium text-gray-900">{operator.beatId.beatName}</p>
                       </div>
                     </div>
                   ) : (

@@ -299,11 +299,11 @@ export default function OperatorProfile() {
               </div>
             </div>
 
-            {/* Location/Bit Information */}
+            {/* Location/Beat Information */}
             {operator.locationId && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Location / Bit Assignment</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Location / Beat Assignment</h3>
                   <Building className="h-5 w-5 text-blue-600" />
                 </div>
 

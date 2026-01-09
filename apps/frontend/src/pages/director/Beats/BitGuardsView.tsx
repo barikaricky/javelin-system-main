@@ -42,10 +42,10 @@ interface Guard {
   };
 }
 
-interface Bit {
+interface Beat {
   _id: string;
-  bitCode: string;
-  bitName: string;
+  beatCode: string;
+  beatName: string;
   clientId?: {
     clientName: string;
   };
@@ -71,7 +71,7 @@ interface Bit {
 }
 
 export default function BitGuardsView() {
-  const [bits, setBits] = useState<Bit[]>([]);
+  const [beats, setBits] = useState<Beat[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedBits, setExpandedBits] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
@@ -84,14 +84,14 @@ export default function BitGuardsView() {
   const fetchBitsWithGuards = async () => {
     try {
       setRefreshing(true);
-      const bitsResponse = await api.get('/bits');
-      const bitsData = bitsResponse.data.bits || [];
+      const bitsResponse = await api.get('/beats');
+      const bitsData = bitsResponse.data.beats || [];
 
-      // Fetch guards for each BIT
+      // Fetch guards for each BEAT
       const bitsWithGuards = await Promise.all(
         bitsData.map(async (bit: any) => {
           try {
-            const guardsResponse = await api.get(`/assignments/bits/${bit._id}/assignments?status=ACTIVE`);
+            const guardsResponse = await api.get(`/assignments/beats/${bit._id}/assignments?status=ACTIVE`);
             
             // Normalize location data - backend returns locationId when populated
             const location = bit.locationId ? {
@@ -112,7 +112,7 @@ export default function BitGuardsView() {
               guards: guardsResponse.data.assignments || [],
             };
           } catch (error) {
-            console.error(`Error fetching guards for BIT ${bit._id}:`, error);
+            console.error(`Error fetching guards for BEAT ${bit._id}:`, error);
             
             // Normalize even on error
             const location = bit.locationId ? {
@@ -135,42 +135,42 @@ export default function BitGuardsView() {
 
       setBits(bitsWithGuards);
     } catch (error: any) {
-      console.error('Error fetching BITs:', error);
-      toast.error('Failed to load BIT data');
+      console.error('Error fetching BEATs:', error);
+      toast.error('Failed to load BEAT data');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  const toggleExpand = (bitId: string) => {
+  const toggleExpand = (beatId: string) => {
     const newExpanded = new Set(expandedBits);
-    if (newExpanded.has(bitId)) {
-      newExpanded.delete(bitId);
+    if (newExpanded.has(beatId)) {
+      newExpanded.delete(beatId);
     } else {
-      newExpanded.add(bitId);
+      newExpanded.add(beatId);
     }
     setExpandedBits(newExpanded);
   };
 
-  const filteredBits = bits.filter(
+  const filteredBits = beats.filter(
     (bit) =>
-      bit.bitName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bit.bitCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      bit.beatName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      bit.beatCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bit.client?.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bit.location?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalGuards = bits.reduce((sum, bit) => sum + (bit.guards?.length || 0), 0);
-  const totalBits = bits.length;
-  const bitsWithGuards = bits.filter((b) => b.guards && b.guards.length > 0).length;
+  const totalGuards = beats.reduce((sum, bit) => sum + (bit.guards?.length || 0), 0);
+  const totalBits = beats.length;
+  const bitsWithGuards = beats.filter((b) => b.guards && b.guards.length > 0).length;
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <Shield className="w-12 h-12 text-gray-400 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading BIT intelligence...</p>
+          <p className="text-gray-600">Loading BEAT intelligence...</p>
         </div>
       </div>
     );
@@ -180,8 +180,8 @@ export default function BitGuardsView() {
     <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6">
       {/* Header */}
       <div className="mb-4 sm:mb-6 animate-fade-in">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">BIT Guards Intelligence</h1>
-        <p className="text-sm sm:text-base text-gray-600 mt-1">Comprehensive view of guard deployments across all BITs</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">BEAT Guards Intelligence</h1>
+        <p className="text-sm sm:text-base text-gray-600 mt-1">Comprehensive view of guard deployments across all BEATs</p>
       </div>
 
       {/* Stats Cards */}
@@ -189,7 +189,7 @@ export default function BitGuardsView() {
         <div className="bg-white rounded-lg shadow p-3 sm:p-4 transform transition-all duration-300 hover:scale-105 hover:shadow-lg animate-slide-in-left">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 text-xs sm:text-sm">Total BITs</p>
+              <p className="text-gray-600 text-xs sm:text-sm">Total BEATs</p>
               <p className="text-xl sm:text-2xl font-bold text-gray-800">{totalBits}</p>
             </div>
             <Building2 className="w-8 h-8 sm:w-10 sm:h-10 text-blue-600" />
@@ -216,7 +216,7 @@ export default function BitGuardsView() {
         <div className="bg-white rounded-lg shadow p-3 sm:p-4 transform transition-all duration-300 hover:scale-105 hover:shadow-lg animate-slide-in-left" style={{ animationDelay: '0.3s' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 text-xs sm:text-sm">Avg/BIT</p>
+              <p className="text-gray-600 text-xs sm:text-sm">Avg/BEAT</p>
               <p className="text-xl sm:text-2xl font-bold text-orange-600">
                 {totalBits > 0 ? (totalGuards / totalBits).toFixed(1) : '0'}
               </p>
@@ -236,7 +236,7 @@ export default function BitGuardsView() {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search BITs..."
+                placeholder="Search BEATs..."
                 className="w-full pl-9 sm:pl-10 pr-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
               />
             </div>
@@ -252,13 +252,13 @@ export default function BitGuardsView() {
         </div>
       </div>
 
-      {/* BITs List */}
+      {/* BEATs List */}
       {filteredBits.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-8 sm:p-12 text-center animate-fade-in">
           <Building2 className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-base sm:text-lg font-medium text-gray-800 mb-2">No BITs found</h3>
+          <h3 className="text-base sm:text-lg font-medium text-gray-800 mb-2">No BEATs found</h3>
           <p className="text-sm sm:text-base text-gray-600">
-            {searchTerm ? 'Try adjusting your search' : 'No BITs available'}
+            {searchTerm ? 'Try adjusting your search' : 'No BEATs available'}
           </p>
         </div>
       ) : (
@@ -269,7 +269,7 @@ export default function BitGuardsView() {
               className="bg-white rounded-lg shadow overflow-hidden transform transition-all duration-300 hover:shadow-xl animate-slide-up"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              {/* BIT Header */}
+              {/* BEAT Header */}
               <div
                 onClick={() => toggleExpand(bit._id)}
                 className="p-3 sm:p-4 cursor-pointer hover:bg-gray-50 transition-colors duration-200 active:bg-gray-100"
@@ -280,9 +280,9 @@ export default function BitGuardsView() {
                     <div className="flex items-start flex-1 min-w-0">
                       <Building2 className="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <h3 className="text-base font-semibold text-gray-800 truncate">{bit.bitName}</h3>
+                        <h3 className="text-base font-semibold text-gray-800 truncate">{bit.beatName}</h3>
                         <p className="text-xs text-gray-600 truncate">
-                          {bit.bitCode}
+                          {bit.beatCode}
                         </p>
                         <p className="text-xs text-gray-500 truncate mt-0.5">
                           {bit.client?.clientName || 'No Client'}
@@ -317,9 +317,9 @@ export default function BitGuardsView() {
                     <div className="flex items-center">
                       <Building2 className="w-5 h-5 text-blue-600 mr-3" />
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-800">{bit.bitName}</h3>
+                        <h3 className="text-lg font-semibold text-gray-800">{bit.beatName}</h3>
                         <p className="text-sm text-gray-600">
-                          {bit.bitCode} • {bit.client?.clientName || 'No Client'}
+                          {bit.beatCode} • {bit.client?.clientName || 'No Client'}
                         </p>
                       </div>
                     </div>
@@ -373,7 +373,7 @@ export default function BitGuardsView() {
                   {!bit.guards || bit.guards.length === 0 ? (
                     <div className="text-center py-6 sm:py-8">
                       <Users className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-2" />
-                      <p className="text-sm sm:text-base text-gray-600">No guards assigned to this BIT</p>
+                      <p className="text-sm sm:text-base text-gray-600">No guards assigned to this BEAT</p>
                     </div>
                   ) : (
                     <>

@@ -30,7 +30,7 @@ interface EmergencyAlert {
     lastName: string;
     role: string;
   };
-  bitId?: {
+  beatId?: {
     name: string;
     code: string;
   };
@@ -53,7 +53,7 @@ export default function ManagerCommunicationPage() {
     title: '',
     content: '',
     alertType: 'THREAT',
-    bitId: '',
+    beatId: '',
   });
 
   const [broadcastForm, setBroadcastForm] = useState({
@@ -86,7 +86,7 @@ export default function ManagerCommunicationPage() {
       await api.post('/emergency-alerts', alertForm);
       alert('Emergency alert sent successfully!');
       setShowCreateAlert(false);
-      setAlertForm({ title: '', content: '', alertType: 'THREAT', bitId: '' });
+      setAlertForm({ title: '', content: '', alertType: 'THREAT', beatId: '' });
       loadAlerts();
     } catch (error: any) {
       alert(error.response?.data?.error || 'Failed to create alert');
@@ -290,9 +290,9 @@ export default function ManagerCommunicationPage() {
                           <span>
                             <strong>From:</strong> {alert.triggeredById.firstName} {alert.triggeredById.lastName}
                           </span>
-                          {alert.bitId && (
+                          {alert.beatId && (
                             <span>
-                              <strong>BIT:</strong> {alert.bitId.name}
+                              <strong>BEAT:</strong> {alert.beatId.name}
                             </span>
                           )}
                         </div>
@@ -415,7 +415,7 @@ export default function ManagerCommunicationPage() {
                 >
                   <option value="ALL_GS">All General Supervisors</option>
                   <option value="ALL_SUPERVISORS">All Supervisors</option>
-                  <option value="BIT_SUPERVISORS">BIT Supervisors</option>
+                  <option value="BIT_SUPERVISORS">BEAT Supervisors</option>
                 </select>
               </div>
 

@@ -48,10 +48,10 @@ interface Location {
   city: string;
 }
 
-interface Bit {
+interface Beat {
   _id: string;
-  bitName: string;
-  bitCode: string;
+  beatName: string;
+  beatCode: string;
 }
 
 interface Supervisor {
@@ -73,7 +73,7 @@ export default function CreateReportPage() {
   const [formData, setFormData] = useState({
     title: '',
     reportType: '',
-    bitId: '',
+    beatId: '',
     locationId: '',
     supervisorId: '',
     occurrenceDate: new Date().toISOString().split('T')[0],
@@ -98,7 +98,7 @@ export default function CreateReportPage() {
 
   // Data state
   const [locations, setLocations] = useState<Location[]>([]);
-  const [bits, setBits] = useState<Bit[]>([]);
+  const [beats, setBits] = useState<Beat[]>([]);
   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -123,15 +123,15 @@ export default function CreateReportPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      // Fetch locations, bits, and current supervisor profile
+      // Fetch locations, beats, and current supervisor profile
       const [locationsRes, bitsRes, profileRes] = await Promise.all([
         api.get('/supervisors/locations'),
-        api.get('/supervisors/bits'),
+        api.get('/supervisors/beats'),
         api.get('/supervisors/my-profile'),
       ]);
       
       setLocations(locationsRes.data.locations || []);
-      setBits(bitsRes.data.bits || []);
+      setBits(bitsRes.data.beats || []);
       
       // Auto-populate supervisorId with current logged-in supervisor
       if (profileRes.data.supervisor?._id) {
@@ -263,8 +263,8 @@ export default function CreateReportPage() {
       toast.error('Please select a report type');
       return;
     }
-    if (!formData.bitId) {
-      toast.error('Please select a BIT');
+    if (!formData.beatId) {
+      toast.error('Please select a BEAT');
       return;
     }
     if (!formData.locationId) {
@@ -294,7 +294,7 @@ export default function CreateReportPage() {
       const submitData = new FormData();
       submitData.append('title', formData.title);
       submitData.append('reportType', formData.reportType);
-      submitData.append('bitId', formData.bitId);
+      submitData.append('beatId', formData.beatId);
       submitData.append('locationId', formData.locationId);
       if (formData.supervisorId) submitData.append('supervisorId', formData.supervisorId);
       submitData.append('occurrenceDate', formData.occurrenceDate);
@@ -449,7 +449,7 @@ export default function CreateReportPage() {
                 </div>
               </div>
 
-              {/* Location and BIT */}
+              {/* Location and BEAT */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -473,17 +473,17 @@ export default function CreateReportPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <Shield className="w-4 h-4 inline mr-1" />
-                    BIT *
+                    BEAT *
                   </label>
                   <select
-                    value={formData.bitId}
-                    onChange={(e) => setFormData(prev => ({ ...prev, bitId: e.target.value }))}
+                    value={formData.beatId}
+                    onChange={(e) => setFormData(prev => ({ ...prev, beatId: e.target.value }))}
                     className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="">Select BIT</option>
-                    {bits.map(bit => (
+                    <option value="">Select BEAT</option>
+                    {beats.map(bit => (
                       <option key={bit._id} value={bit._id}>
-                        {bit.bitName} ({bit.bitCode})
+                        {bit.beatName} ({bit.beatCode})
                       </option>
                     ))}
                   </select>

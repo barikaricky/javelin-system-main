@@ -84,7 +84,7 @@ const menuItems: MenuItem[] = [
       { name: 'Daily Logs', icon: Calendar, path: '/secretary/daily-logs' },
       { name: 'Monthly Logs', icon: CalendarDays, path: '/secretary/monthly-logs' },
       { name: 'Salary Panel', icon: Banknote, path: '/secretary/salary' },
-      { name: 'BIT Expenses', icon: Receipt, path: '/secretary/bit-expenses' },
+      { name: 'BEAT Expenses', icon: Receipt, path: '/secretary/bit-expenses' },
     ]
   },
   { 
@@ -127,13 +127,13 @@ const menuItems: MenuItem[] = [
     ]
   },
   { 
-    name: 'Locations & Bits', 
+    name: 'Locations & Beats', 
     icon: MapPin,
     children: [
       { name: 'All Locations', icon: Building2, path: '/secretary/locations' },
       { name: 'Add Location', icon: PlusCircle, path: '/secretary/locations/create' },
-      { name: 'All Bits', icon: Shield, path: '/secretary/bits' },
-      { name: 'Add Bit', icon: PlusCircle, path: '/secretary/bits/create' },
+      { name: 'All Beats', icon: Shield, path: '/secretary/beats' },
+      { name: 'Add Beat', icon: PlusCircle, path: '/secretary/beats/create' },
     ]
   },
   { 

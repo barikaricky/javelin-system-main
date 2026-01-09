@@ -70,18 +70,18 @@ const menuItems: MenuItem[] = [
       { name: 'Register Operator', icon: UserCheck, path: '/general-supervisor/operators/register' },
       { name: 'Operator Approval', icon: Shield, path: '/general-supervisor/operators/approval', badge: 0 },
       { name: 'Assignment Requests', icon: Clock, path: '/general-supervisor/assignments/requests', badge: 0 },
-      { name: 'Assign to BIT', icon: Target, path: '/general-supervisor/assignments/assign' },
+      { name: 'Assign to BEAT', icon: Target, path: '/general-supervisor/assignments/assign' },
       { name: 'Operator Attendance', icon: ClipboardCheck, path: '/general-supervisor/operators/attendance' },
       { name: 'Operator Incidents', icon: AlertTriangle, path: '/general-supervisor/operators/incidents' },
     ]
   },
   { 
-    name: 'Locations / Bits', 
+    name: 'Locations / Beats', 
     icon: MapPin,
     children: [
       { name: 'All Locations', icon: Map, path: '/general-supervisor/locations' },
       { name: 'Staffing Overview', icon: Users, path: '/general-supervisor/locations/staffing' },
-      { name: 'Understaffed Bits', icon: AlertTriangle, path: '/general-supervisor/locations/understaffed' },
+      { name: 'Understaffed Beats', icon: AlertTriangle, path: '/general-supervisor/locations/understaffed' },
       { name: 'Supervisor Assignment', icon: Target, path: '/general-supervisor/locations/assignments' },
       { name: 'Location Status', icon: Activity, path: '/general-supervisor/locations/status' },
     ]

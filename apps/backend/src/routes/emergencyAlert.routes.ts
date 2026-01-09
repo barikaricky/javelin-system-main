@@ -17,7 +17,7 @@ router.post(
   authorize('SUPERVISOR', 'GENERAL_SUPERVISOR', 'MANAGER', 'DIRECTOR'),
   async (req: any, res) => {
     try {
-      const { title, content, alertType, bitId, locationId, targetRoles, targetUserIds } = req.body;
+      const { title, content, alertType, beatId, locationId, targetRoles, targetUserIds } = req.body;
 
       if (!title || !content || !alertType) {
         return res.status(400).json({ 
@@ -31,7 +31,7 @@ router.post(
           content,
           alertType,
           triggeredById: req.user.userId,
-          bitId,
+          beatId,
           locationId,
           targetRoles,
           targetUserIds,
@@ -62,14 +62,14 @@ router.get(
   authorize('SUPERVISOR', 'GENERAL_SUPERVISOR', 'MANAGER', 'DIRECTOR'),
   async (req: any, res) => {
     try {
-      const { status, bitId, page, limit } = req.query;
+      const { status, beatId, page, limit } = req.query;
 
       const result = await emergencyAlertService.getEmergencyAlerts(
         req.user.userId,
         req.user.role,
         {
           status,
-          bitId,
+          beatId,
           page: parseInt(page) || 1,
           limit: parseInt(limit) || 50,
         }

@@ -191,7 +191,7 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
             icon={Building2}
-            label="Total BITs"
+            label="Total BEATs"
             value={stats.totalBits}
             color="text-blue-600"
             bgColor="bg-blue-50"
@@ -224,13 +224,13 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* BIT Status */}
+      {/* BEAT Status */}
       <div>
-        <h2 className="text-xl font-bold text-gray-900 mb-4">BIT Status</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">BEAT Status</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900">Active BITs</h3>
+              <h3 className="font-semibold text-gray-900">Active BEATs</h3>
               <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
             </div>
             <p className="text-4xl font-bold text-green-600">{stats.activeBits}</p>
@@ -238,7 +238,7 @@ export default function AdminDashboard() {
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900">Inactive BITs</h3>
+              <h3 className="font-semibold text-gray-900">Inactive BEATs</h3>
               <div className="w-3 h-3 bg-gray-400 rounded-full" />
             </div>
             <p className="text-4xl font-bold text-gray-600">{stats.inactiveBits}</p>
@@ -253,9 +253,9 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <QuickAccessCard
             icon={Building2}
-            title="View BITs & Locations"
-            description="Browse all BITs and their locations"
-            href="/admin/bits"
+            title="View BEATs & Locations"
+            description="Browse all BEATs and their locations"
+            href="/admin/beats"
             color="text-blue-600"
             bgColor="bg-blue-50"
           />

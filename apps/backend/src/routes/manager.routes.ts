@@ -100,7 +100,7 @@ router.get('/dashboard/stats', authenticate, async (_req: AuthRequest, res: Resp
           path: 'supervisorId',
           populate: { path: 'userId', select: 'firstName lastName email phone phoneNumber profilePhoto passportPhoto' }
         })
-        .populate('bitId', 'bitName bitCode')
+        .populate('beatId', 'beatName beatCode')
         .populate('locationId', 'locationName address city state')
         .sort({ startDate: -1 })
         .limit(50)
@@ -227,8 +227,8 @@ router.get('/locations', authenticate, async (_req: AuthRequest, res: Response, 
   }
 });
 
-// Get bits for dropdown
-router.get('/bits', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+// Get beats for dropdown
+router.get('/beats', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { page = '1', limit = '500', locationId } = req.query;
     
@@ -237,23 +237,23 @@ router.get('/bits', authenticate, async (req: AuthRequest, res: Response, next: 
       query.locationId = locationId;
     }
 
-    const bits = await Bit.find(query)
+    const beats = await Beat.find(query)
       .populate('locationId', 'name locationName')
       .limit(parseInt(limit as string))
       .skip((parseInt(page as string) - 1) * parseInt(limit as string))
       .lean();
 
-    const total = await Bit.countDocuments(query);
+    const total = await Beat.countDocuments(query);
 
     res.json({
       success: true,
-      bits,
+      beats,
       total,
       page: parseInt(page as string),
       limit: parseInt(limit as string),
     });
   } catch (error) {
-    console.error('Error fetching bits:', error);
+    console.error('Error fetching beats:', error);
     next(error);
   }
 });
@@ -822,7 +822,7 @@ router.post('/register-operator', authenticate, async (req: AuthRequest, res: Re
       state,
       lga,
       locationId,
-      bitId,
+      beatId,
       supervisorId,
       salary,
       salaryCategory,
@@ -852,7 +852,7 @@ router.post('/register-operator', authenticate, async (req: AuthRequest, res: Re
     console.log('🔷 Manager registering operator:', {
       email,
       locationId,
-      bitId,
+      beatId,
       supervisorId,
       managerId: managerUserId,
     });
@@ -955,16 +955,16 @@ router.post('/register-operator', authenticate, async (req: AuthRequest, res: Re
 
     // Log what values we have for assignment
     console.log('📋 Assignment data check:', {
-      hasBitId: !!bitId,
+      hasBitId: !!beatId,
       hasLocationId: !!locationId,
       hasSupervisorId: !!supervisorId,
-      bitIdValue: bitId,
+      bitIdValue: beatId,
       locationIdValue: locationId,
       supervisorIdValue: supervisorId,
     });
 
     let guardAssignment = null;
-    if (bitId && bitId !== '' && locationId && locationId !== '' && supervisorId && supervisorId !== '') {
+    if (beatId && beatId !== '' && locationId && locationId !== '' && supervisorId && supervisorId !== '') {
       try {
         const managerName = managerUser
           ? `${managerUser.firstName || ''} ${managerUser.lastName || ''}`.trim() || 'Manager'
@@ -972,7 +972,7 @@ router.post('/register-operator', authenticate, async (req: AuthRequest, res: Re
 
         guardAssignment = new GuardAssignment({
           operatorId: newOperator._id,
-          bitId,
+          beatId,
           locationId,
           supervisorId,
           assignmentType: 'PERMANENT',
@@ -997,13 +997,13 @@ router.post('/register-operator', authenticate, async (req: AuthRequest, res: Re
       } catch (assignmentError) {
         console.error('❌ Failed to create GuardAssignment:', assignmentError);
       }
-    } else if (bitId || supervisorId) {
+    } else if (beatId || supervisorId) {
       console.warn('⚠️ Partial assignment data provided:', {
-        hasBitId: !!bitId,
+        hasBitId: !!beatId,
         hasLocationId: !!locationId,
         hasSupervisorId: !!supervisorId,
       });
-      console.warn('⚠️ GuardAssignment requires bitId, locationId, and supervisorId. Skipping assignment creation.');
+      console.warn('⚠️ GuardAssignment requires beatId, locationId, and supervisorId. Skipping assignment creation.');
     }
 
     let locationName = 'Unassigned';

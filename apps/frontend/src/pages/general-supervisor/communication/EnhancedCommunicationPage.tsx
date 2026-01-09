@@ -30,7 +30,7 @@ interface EmergencyAlert {
     lastName: string;
     role: string;
   };
-  bitId?: {
+  beatId?: {
     name: string;
     code: string;
   };
@@ -277,9 +277,9 @@ export default function GSEnhancedCommunicationPage() {
                                   <span className="break-words">
                                     <strong>Submitted by:</strong> {alert.triggeredById.firstName} {alert.triggeredById.lastName} ({alert.triggeredById.role})
                                   </span>
-                                  {alert.bitId && (
+                                  {alert.beatId && (
                                     <span className="break-words">
-                                      <strong>BIT:</strong> {alert.bitId.name}
+                                      <strong>BEAT:</strong> {alert.beatId.name}
                                     </span>
                                   )}
                                   <span className="break-words">
@@ -442,7 +442,7 @@ export default function GSEnhancedCommunicationPage() {
                   className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
                 >
                   <option value="ALL_SUPERVISORS">All Supervisors</option>
-                  <option value="BIT_SUPERVISORS">BIT Supervisors</option>
+                  <option value="BIT_SUPERVISORS">BEAT Supervisors</option>
                 </select>
               </div>
 

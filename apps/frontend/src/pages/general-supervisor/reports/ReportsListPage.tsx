@@ -56,10 +56,10 @@ interface Report {
   title: string;
   reportType: string;
   status: keyof typeof STATUS_CONFIG;
-  bitId: {
+  beatId: {
     _id: string;
-    bitName: string;
-    bitCode: string;
+    beatName: string;
+    beatCode: string;
   };
   locationId: {
     _id: string;
@@ -126,7 +126,7 @@ export default function GeneralSupervisorReportsListPage() {
       const response = await api.get('/reports');
       console.log('✅ Reports fetched:', response.data);
       
-      // Filter reports to show only those from assigned BITs
+      // Filter reports to show only those from assigned BEATs
       // The backend should handle this filtering, but we can add frontend filtering if needed
       setReports(response.data.reports || []);
 
@@ -150,7 +150,7 @@ export default function GeneralSupervisorReportsListPage() {
     if (searchTerm) {
       filtered = filtered.filter(report => 
         report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        report.bitId?.bitName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        report.beatId?.beatName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         report.locationId?.locationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         `${report.supervisorId?.userId.firstName} ${report.supervisorId?.userId.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -351,7 +351,7 @@ export default function GeneralSupervisorReportsListPage() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
-                  placeholder="Search by title, BIT, location, or supervisor..."
+                  placeholder="Search by title, BEAT, location, or supervisor..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
@@ -513,8 +513,8 @@ export default function GeneralSupervisorReportsListPage() {
                       <div className="flex items-center gap-2 text-sm">
                         <Shield className="w-4 h-4 text-gray-400" />
                         <div>
-                          <p className="text-xs text-gray-500">BIT</p>
-                          <p className="font-medium text-gray-900">{report.bitId?.bitName}</p>
+                          <p className="text-xs text-gray-500">BEAT</p>
+                          <p className="font-medium text-gray-900">{report.beatId?.beatName}</p>
                         </div>
                       </div>
 

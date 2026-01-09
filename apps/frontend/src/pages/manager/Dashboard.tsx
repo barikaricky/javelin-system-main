@@ -267,10 +267,10 @@ interface OnDutyPerson {
       lastName: string;
     };
   };
-  bitId?: {
+  beatId?: {
     _id: string;
-    bitName: string;
-    bitCode: string;
+    beatName: string;
+    beatCode: string;
   };
   locationId?: {
     _id: string;
@@ -516,9 +516,9 @@ export default function ManagerDashboard() {
                             {assignment.shiftType}
                           </span>
                         )}
-                        {assignment.bitId && (
+                        {assignment.beatId && (
                           <span className="text-[10px] text-gray-600 truncate">
-                            @ {assignment.bitId.bitName}
+                            @ {assignment.beatId.beatName}
                           </span>
                         )}
                       </div>

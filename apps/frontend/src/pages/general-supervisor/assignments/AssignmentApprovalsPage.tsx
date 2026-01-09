@@ -26,10 +26,10 @@ interface Assignment {
       profilePhoto?: string;
     };
   };
-  bitId: {
+  beatId: {
     _id: string;
-    bitCode: string;
-    bitName: string;
+    beatCode: string;
+    beatName: string;
   };
   locationId: {
     _id: string;
@@ -239,14 +239,14 @@ export default function AssignmentApprovalsPage() {
                   </div>
                 </div>
 
-                {/* BIT Info */}
+                {/* BEAT Info */}
                 <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Assigned to BIT</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Assigned to BEAT</p>
                   <div className="flex items-start">
                     <Building2 className="w-5 h-5 text-blue-600 mr-2 mt-0.5" />
                     <div>
-                      <p className="font-semibold text-gray-800">{assignment.bitId.bitName}</p>
-                      <p className="text-sm text-gray-600">{assignment.bitId.bitCode}</p>
+                      <p className="font-semibold text-gray-800">{assignment.beatId.beatName}</p>
+                      <p className="text-sm text-gray-600">{assignment.beatId.beatCode}</p>
                     </div>
                   </div>
                 </div>

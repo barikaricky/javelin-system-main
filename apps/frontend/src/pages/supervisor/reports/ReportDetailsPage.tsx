@@ -50,9 +50,9 @@ interface Report {
   reportType: string;
   status: keyof typeof STATUS_CONFIG;
   priority: string;
-  bitId: {
-    bitName: string;
-    bitCode: string;
+  beatId: {
+    beatName: string;
+    beatCode: string;
   };
   locationId: {
     locationName: string;
@@ -296,9 +296,9 @@ export default function ReportDetailsPage() {
             <div className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-gray-400" />
               <div>
-                <p className="text-xs text-gray-500">BIT</p>
-                <p className="font-semibold text-gray-900">{report.bitId.bitName}</p>
-                <p className="text-xs text-gray-600">{report.bitId.bitCode}</p>
+                <p className="text-xs text-gray-500">BEAT</p>
+                <p className="font-semibold text-gray-900">{report.beatId.beatName}</p>
+                <p className="text-xs text-gray-600">{report.beatId.beatCode}</p>
               </div>
             </div>
 

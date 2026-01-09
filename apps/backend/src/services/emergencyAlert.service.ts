@@ -7,7 +7,7 @@ interface CreateEmergencyAlertData {
   content: string;
   alertType: EmergencyAlertType;
   triggeredById: string;
-  bitId?: string;
+  beatId?: string;
   locationId?: string;
   targetRoles?: string[];
   targetUserIds?: string[];
@@ -32,7 +32,7 @@ export async function createEmergencyAlert(data: CreateEmergencyAlertData, userR
       content: data.content,
       alertType: data.alertType,
       triggeredById: data.triggeredById,
-      bitId: data.bitId,
+      beatId: data.beatId,
       locationId: data.locationId,
       targetRoles: data.targetRoles || ['DIRECTOR', 'MANAGER', 'GENERAL_SUPERVISOR', 'SUPERVISOR'],
       targetUserIds: data.targetUserIds || [],
@@ -70,7 +70,7 @@ export async function getEmergencyAlerts(
   userRole: string,
   filters?: {
     status?: EmergencyAlertStatus;
-    bitId?: string;
+    beatId?: string;
     page?: number;
     limit?: number;
   }
@@ -85,8 +85,8 @@ export async function getEmergencyAlerts(
       where.status = filters.status;
     }
 
-    if (filters?.bitId) {
-      where.bitId = filters.bitId;
+    if (filters?.beatId) {
+      where.beatId = filters.beatId;
     }
 
     // Role-based filtering
@@ -107,7 +107,7 @@ export async function getEmergencyAlerts(
         .populate('triggeredById', 'firstName lastName email role')
         .populate('approvedById', 'firstName lastName email role')
         .populate('rejectedById', 'firstName lastName email role')
-        .populate('bitId', 'name code')
+        .populate('beatId', 'name code')
         .populate('locationId', 'name address')
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
@@ -139,7 +139,7 @@ export async function getEmergencyAlertById(alertId: string) {
       .populate('triggeredById', 'firstName lastName email role profilePhoto')
       .populate('approvedById', 'firstName lastName email role')
       .populate('rejectedById', 'firstName lastName email role')
-      .populate('bitId', 'name code location')
+      .populate('beatId', 'name code location')
       .populate('locationId', 'name address city province')
       .populate('acknowledgments.userId', 'firstName lastName email role');
 
@@ -274,7 +274,7 @@ async function sendEmergencyAlertNotifications(alertId: string) {
   try {
     const alert = await EmergencyAlert.findById(alertId)
       .populate('triggeredById', 'firstName lastName')
-      .populate('bitId', 'name code');
+      .populate('beatId', 'name code');
 
     if (!alert) {
       throw new Error('Alert not found');
@@ -305,8 +305,8 @@ async function sendEmergencyAlertNotifications(alertId: string) {
       relatedModel: 'EmergencyAlert',
       metadata: {
         alertType: alert.alertType,
-        bitId: alert.bitId?._id,
-        bitName: alert.bitId?.name,
+        beatId: alert.beatId?._id,
+        beatName: alert.beatId?.name,
         triggeredBy: alert.triggeredById,
       },
     }));

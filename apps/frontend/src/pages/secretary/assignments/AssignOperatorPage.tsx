@@ -30,10 +30,10 @@ interface Location {
   isActive: boolean;
 }
 
-interface Bit {
+interface Beat {
   _id: string;
-  bitCode: string;
-  bitName: string;
+  beatCode: string;
+  beatName: string;
   description?: string;
   locationId: string | { _id: string };
   isActive: boolean;
@@ -53,7 +53,7 @@ interface Supervisor {
 
 interface CurrentAssignment {
   _id: string;
-  bitId: { _id: string; bitName: string };
+  beatId: { _id: string; beatName: string };
   locationId: { _id: string; locationName: string };
   status: string;
 }
@@ -62,9 +62,9 @@ export default function AssignOperatorPage() {
   const navigate = useNavigate();
   const [operators, setOperators] = useState<Operator[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
-  const [bits, setBits] = useState<Bit[]>([]);
+  const [beats, setBits] = useState<Beat[]>([]);
   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
-  const [filteredBits, setFilteredBits] = useState<Bit[]>([]);
+  const [filteredBits, setFilteredBits] = useState<Beat[]>([]);
   const [filteredSupervisors, setFilteredSupervisors] = useState<Supervisor[]>([]);
   const [currentAssignment, setCurrentAssignment] = useState<CurrentAssignment | null>(null);
   const [isReassignment, setIsReassignment] = useState(false);
@@ -75,7 +75,7 @@ export default function AssignOperatorPage() {
   const [formData, setFormData] = useState({
     operatorId: '',
     locationId: '',
-    bitId: '',
+    beatId: '',
     supervisorId: '',
     shiftType: 'DAY',
     assignmentType: 'PERMANENT',
@@ -97,16 +97,16 @@ export default function AssignOperatorPage() {
 
   useEffect(() => {
     if (formData.locationId) {
-      // Filter bits by location
-      const filtered = bits.filter(bit => {
+      // Filter beats by location
+      const filtered = beats.filter(bit => {
         const bitLocationId = typeof bit.locationId === 'string' 
           ? bit.locationId 
           : bit.locationId?._id;
         return bitLocationId === formData.locationId;
       });
       setFilteredBits(filtered);
-      if (formData.bitId && !filtered.find(b => b._id === formData.bitId)) {
-        setFormData(prev => ({ ...prev, bitId: '' }));
+      if (formData.beatId && !filtered.find(b => b._id === formData.beatId)) {
+        setFormData(prev => ({ ...prev, beatId: '' }));
       }
 
       // Filter supervisors by location
@@ -127,9 +127,9 @@ export default function AssignOperatorPage() {
     } else {
       setFilteredBits([]);
       setFilteredSupervisors(supervisors); // Show all when no location selected
-      setFormData(prev => ({ ...prev, bitId: '', supervisorId: '' }));
+      setFormData(prev => ({ ...prev, beatId: '', supervisorId: '' }));
     }
-  }, [formData.locationId, bits, supervisors]);
+  }, [formData.locationId, beats, supervisors]);
 
   const checkOperatorAssignment = async (operatorId: string) => {
     try {
@@ -144,7 +144,7 @@ export default function AssignOperatorPage() {
         setFormData(prev => ({
           ...prev,
           locationId: active.locationId?._id || '',
-          bitId: active.bitId?._id || '',
+          beatId: active.beatId?._id || '',
         }));
       } else {
         setCurrentAssignment(null);
@@ -172,8 +172,8 @@ export default function AssignOperatorPage() {
           console.error('❌ Locations fetch failed:', err.response?.data || err.message);
           throw err;
         }),
-        api.get('/bits').catch(err => {
-          console.error('❌ Bits fetch failed:', err.response?.data || err.message);
+        api.get('/beats').catch(err => {
+          console.error('❌ Beats fetch failed:', err.response?.data || err.message);
           throw err;
         }),
         api.get('/secretaries/supervisors?approvalStatus=APPROVED&limit=500').catch(err => {
@@ -185,20 +185,20 @@ export default function AssignOperatorPage() {
       console.log('📦 SECRETARY: Raw API responses:');
       console.log('  - Operators:', operatorsRes.data);
       console.log('  - Locations:', locationsRes.data);
-      console.log('  - Bits:', bitsRes.data);
+      console.log('  - Beats:', bitsRes.data);
       console.log('  - Supervisors RAW:', supervisorsRes);
       console.log('  - Supervisors DATA:', supervisorsRes.data);
       console.log('✅ Supervisors response:', supervisorsRes.data);
 
       const operatorsData = operatorsRes.data.operators || operatorsRes.data.data || operatorsRes.data || [];
       const locationsData = locationsRes.data.locations || locationsRes.data.data || locationsRes.data || [];
-      const bitsData = bitsRes.data.bits || bitsRes.data.data || bitsRes.data || [];
+      const bitsData = bitsRes.data.beats || bitsRes.data.data || bitsRes.data || [];
       const supervisorsData = supervisorsRes.data.supervisors || supervisorsRes.data.data || supervisorsRes.data || [];
 
       console.log('📊 SECRETARY: Parsed data:');
       console.log('  - Operators:', operatorsData.length);
       console.log('  - Locations:', locationsData.length);
-      console.log('  - Bits:', bitsData.length);
+      console.log('  - Beats:', bitsData.length);
       console.log('  - Supervisors:', supervisorsData.length);
       console.log('  - Supervisors array:', supervisorsData);
       console.log('  - First supervisor:', supervisorsData[0]);
@@ -223,7 +223,7 @@ export default function AssignOperatorPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.operatorId || !formData.locationId || !formData.bitId || !formData.supervisorId) {
+    if (!formData.operatorId || !formData.locationId || !formData.beatId || !formData.supervisorId) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -234,7 +234,7 @@ export default function AssignOperatorPage() {
       const payload = {
         operatorId: formData.operatorId,
         locationId: formData.locationId,
-        bitId: formData.bitId,
+        beatId: formData.beatId,
         supervisorId: formData.supervisorId,
         shiftType: formData.shiftType,
         assignmentType: formData.assignmentType,
@@ -262,7 +262,7 @@ export default function AssignOperatorPage() {
       setFormData({
         operatorId: '',
         locationId: '',
-        bitId: '',
+        beatId: '',
         supervisorId: '',
         shiftType: 'DAY',
         assignmentType: 'PERMANENT',
@@ -323,7 +323,7 @@ export default function AssignOperatorPage() {
                 <div className="flex-1">
                   <h3 className="text-sm font-semibold text-amber-900 mb-1">Current Assignment</h3>
                   <p className="text-sm text-amber-800">
-                    This operator is currently assigned to <strong>{currentAssignment.bitId?.bitName}</strong> at <strong>{currentAssignment.locationId?.locationName}</strong>.
+                    This operator is currently assigned to <strong>{currentAssignment.beatId?.beatName}</strong> at <strong>{currentAssignment.locationId?.locationName}</strong>.
                     <br />
                     Saving will end the current assignment and create a new one.
                   </p>
@@ -412,7 +412,7 @@ export default function AssignOperatorPage() {
                 onChange={(e) => setFormData({ 
                   ...formData, 
                   locationId: e.target.value,
-                  bitId: '',
+                  beatId: '',
                   supervisorId: ''
                 })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -434,12 +434,12 @@ export default function AssignOperatorPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <div className="flex items-center gap-2">
                   <Grid3x3 className="h-4 w-4" />
-                  Select Bit <span className="text-red-500">*</span>
+                  Select Beat <span className="text-red-500">*</span>
                 </div>
               </label>
               <select
-                value={formData.bitId}
-                onChange={(e) => setFormData({ ...formData, bitId: e.target.value })}
+                value={formData.beatId}
+                onChange={(e) => setFormData({ ...formData, beatId: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 disabled={!formData.locationId}
                 required
@@ -447,7 +447,7 @@ export default function AssignOperatorPage() {
                 <option value="">Choose a bit...</option>
                 {filteredBits.map((bit) => (
                   <option key={bit._id} value={bit._id}>
-                    {bit.bitName} ({bit.bitCode}){bit.numberOfOperators ? ` - Needs ${bit.numberOfOperators} guards` : ''}
+                    {bit.beatName} ({bit.beatCode}){bit.numberOfOperators ? ` - Needs ${bit.numberOfOperators} guards` : ''}
                   </option>
                 ))}
               </select>
@@ -455,7 +455,7 @@ export default function AssignOperatorPage() {
                 <p className="text-sm text-gray-500 mt-1">Please select a location first</p>
               )}
               {formData.locationId && filteredBits.length === 0 && (
-                <p className="text-sm text-amber-600 mt-1">No bits available for this location</p>
+                <p className="text-sm text-amber-600 mt-1">No beats available for this location</p>
               )}
             </div>
 
@@ -540,7 +540,7 @@ export default function AssignOperatorPage() {
               </button>
               <button
                 type="submit"
-                disabled={submitting || !formData.operatorId || !formData.locationId || !formData.bitId || !formData.supervisorId}
+                disabled={submitting || !formData.operatorId || !formData.locationId || !formData.beatId || !formData.supervisorId}
                 className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
               >
                 {submitting ? (

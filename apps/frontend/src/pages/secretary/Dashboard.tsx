@@ -18,7 +18,7 @@ import toast from 'react-hot-toast';
 
 interface DashboardStats {
   locations: { total: number; active: number };
-  bits: { total: number; active: number };
+  beats: { total: number; active: number };
   documents: { total: number; pending: number };
   revenue: {
     thisMonth: number;
@@ -47,7 +47,7 @@ export default function SecretaryDashboard() {
     try {
       const [locationsRes, bitsRes, invoicesRes, expensesRes] = await Promise.all([
         api.get('/locations?page=1&limit=1'),
-        api.get('/bits?page=1&limit=1'),
+        api.get('/beats?page=1&limit=1'),
         api.get('/invoices/stats'),
         api.get('/expenses/stats'),
       ]);
@@ -77,7 +77,7 @@ export default function SecretaryDashboard() {
           total: locationsRes.data.pagination?.total || 0,
           active: locationsRes.data.pagination?.total || 0,
         },
-        bits: {
+        beats: {
           total: bitsRes.data.pagination?.total || 0,
           active: bitsRes.data.pagination?.total || 0,
         },
@@ -111,11 +111,11 @@ export default function SecretaryDashboard() {
       path: '/secretary/locations/create',
     },
     {
-      title: 'Create Bit/Post',
+      title: 'Create Beat/Post',
       description: 'Add a security post',
       icon: Shield,
       color: 'bg-purple-500',
-      path: '/secretary/bits/create',
+      path: '/secretary/beats/create',
     },
     {
       title: 'Upload Document',
@@ -202,11 +202,11 @@ export default function SecretaryDashboard() {
             subtext={`${stats?.locations.active || 0} active`}
           />
           <StatCard
-            label="Total Bits/Posts"
-            value={stats?.bits.total || 0}
+            label="Total Beats/Posts"
+            value={stats?.beats.total || 0}
             icon={Shield}
             color="bg-purple-500"
-            subtext={`${stats?.bits.active || 0} active`}
+            subtext={`${stats?.beats.active || 0} active`}
           />
           <StatCard
             label="Pending Revenue"
@@ -249,7 +249,7 @@ export default function SecretaryDashboard() {
           <div className="flex items-start gap-3 p-4 bg-purple-50 rounded-lg">
             <Shield className="w-5 h-5 text-purple-600 mt-0.5" />
             <div>
-              <h3 className="font-semibold text-gray-900">Bit/Post Creation</h3>
+              <h3 className="font-semibold text-gray-900">Beat/Post Creation</h3>
               <p className="text-sm text-gray-600">Create and assign security posts</p>
             </div>
           </div>

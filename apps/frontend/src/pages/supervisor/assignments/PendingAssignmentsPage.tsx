@@ -22,10 +22,10 @@ interface Assignment {
     city: string;
     state: string;
   };
-  bitId: {
+  beatId: {
     _id: string;
-    bitName: string;
-    bitCode: string;
+    beatName: string;
+    beatCode: string;
   };
   supervisorId: {
     _id: string;
@@ -297,18 +297,18 @@ export default function PendingAssignmentsPage() {
                         </div>
                       </div>
 
-                      {/* Bit Info */}
+                      {/* Beat Info */}
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-2">
                           <Grid3x3 className="h-4 w-4" />
-                          Bit Assignment
+                          Beat Assignment
                         </div>
                         <div>
                           <p className="font-semibold text-gray-900">
-                            {assignment.bitId?.bitName}
+                            {assignment.beatId?.beatName}
                           </p>
                           <p className="text-sm text-gray-600">
-                            Code: {assignment.bitId?.bitCode}
+                            Code: {assignment.beatId?.beatCode}
                           </p>
                         </div>
                       </div>

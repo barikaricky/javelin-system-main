@@ -125,7 +125,7 @@ export const ManagerLocationsListPage = () => {
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Total Bits</p>
+                  <p className="text-sm text-gray-600">Total Beats</p>
                   <p className="text-2xl font-bold text-blue-600 mt-1">{stats.totalBits}</p>
                 </div>
                 <MapPin className="h-10 w-10 text-blue-600" />
@@ -229,7 +229,7 @@ export const ManagerLocationsListPage = () => {
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm mt-2 mb-3">
-                    <span className="text-gray-600">Bits:</span>
+                    <span className="text-gray-600">Beats:</span>
                     <span className="font-medium text-purple-600">{location.totalBits}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">

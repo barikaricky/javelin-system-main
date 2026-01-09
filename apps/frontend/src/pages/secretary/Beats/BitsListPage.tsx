@@ -6,10 +6,10 @@ import { getApiBaseURL } from '../../../lib/api';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../../stores/authStore';
 
-interface Bit {
+interface Beat {
   _id: string;
-  bitName: string;
-  bitCode: string;
+  beatName: string;
+  beatCode: string;
   locationId: {
     _id: string;
     locationName: string;
@@ -32,7 +32,7 @@ interface BitStats {
 export const BitsListPage = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const [bits, setBits] = useState<Bit[]>([]);
+  const [beats, setBits] = useState<Beat[]>([]);
   const [stats, setStats] = useState<BitStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,12 +55,12 @@ export const BitsListPage = () => {
       
       const API_URL = getApiBaseURL();
       const response = await axios.get(
-        `${API_URL}/api/bits?${params.toString()}`,
+        `${API_URL}/api/beats?${params.toString()}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setBits(response.data.bits || []);
+      setBits(response.data.beats || []);
     } catch (error) {
-      console.error('Error fetching bits:', error);
+      console.error('Error fetching beats:', error);
     } finally {
       setLoading(false);
     }
@@ -70,7 +70,7 @@ export const BitsListPage = () => {
     try {
       const token = localStorage.getItem('token');
       const API_URL = getApiBaseURL();
-      const response = await axios.get(`${API_URL}/api/bits/stats`, {
+      const response = await axios.get(`${API_URL}/api/beats/stats`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setStats(response.data);
@@ -89,31 +89,31 @@ export const BitsListPage = () => {
     return labels[shift] || shift;
   };
 
-  const handleDeleteBit = async (bitId: string, bitName: string) => {
+  const handleDeleteBit = async (beatId: string, beatName: string) => {
     if (!isDirector) {
-      toast.error('Only Directors can delete BITs');
+      toast.error('Only Directors can delete BEATs');
       return;
     }
 
-    const confirmMessage = `Are you sure you want to delete "${bitName}"? This action cannot be undone.`;
+    const confirmMessage = `Are you sure you want to delete "${beatName}"? This action cannot be undone.`;
     if (!window.confirm(confirmMessage)) {
       return;
     }
 
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`${API_URL}/api/bits/${bitId}`, {
+      await axios.delete(`${API_URL}/api/beats/${beatId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      toast.success('BIT deleted successfully');
+      toast.success('BEAT deleted successfully');
       // Remove from local state
-      setBits(bits.filter(bit => bit._id !== bitId));
+      setBits(beats.filter(bit => bit._id !== beatId));
       // Refresh stats
       fetchStats();
     } catch (error: any) {
       console.error('Error deleting bit:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to delete BIT';
+      const errorMessage = error.response?.data?.message || 'Failed to delete BEAT';
       toast.error(errorMessage);
     }
   };
@@ -127,16 +127,16 @@ export const BitsListPage = () => {
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2">
                 <Shield className="h-7 w-7 sm:h-8 sm:w-8 text-purple-600" />
-                Security Bits
+                Security Beats
               </h1>
               <p className="text-sm sm:text-base text-gray-600 mt-1">Manage all security posts</p>
             </div>
             <button
-              onClick={() => navigate('/secretary/bits/create')}
+              onClick={() => navigate('/secretary/beats/create')}
               className="flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-purple-600 text-white rounded-xl text-sm sm:text-base font-medium hover:bg-purple-700 hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
-              Add Bit
+              Add Beat
             </button>
           </div>
         </div>
@@ -147,7 +147,7 @@ export const BitsListPage = () => {
             <div className="bg-gradient-to-br from-white to-purple-50 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-purple-100">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm text-gray-600 font-medium">Total Bits</p>
+                  <p className="text-xs sm:text-sm text-gray-600 font-medium">Total Beats</p>
                   <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1">{stats.total}</p>
                 </div>
                 <div className="p-2 sm:p-3 bg-purple-100 rounded-xl">
@@ -203,7 +203,7 @@ export const BitsListPage = () => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search bits..."
+                placeholder="Search beats..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 sm:pl-10 pr-4 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
@@ -222,34 +222,34 @@ export const BitsListPage = () => {
           </div>
         </div>
 
-        {/* Bits List */}
+        {/* Beats List */}
         {loading ? (
           <div className="flex flex-col justify-center items-center py-20">
             <div className="relative">
               <div className="animate-spin h-16 w-16 border-4 border-purple-200 border-t-purple-600 rounded-full"></div>
               <Shield className="absolute inset-0 m-auto h-8 w-8 text-purple-600 animate-pulse" />
             </div>
-            <p className="mt-4 text-gray-600 animate-pulse">Loading security bits...</p>
+            <p className="mt-4 text-gray-600 animate-pulse">Loading security beats...</p>
           </div>
-        ) : bits.length === 0 ? (
+        ) : beats.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-8 sm:p-12 text-center transform transition-all duration-300 hover:scale-105">
             <div className="relative inline-block mb-4">
               <Shield className="h-16 w-16 sm:h-20 sm:w-20 text-gray-400 animate-pulse" />
               <div className="absolute inset-0 bg-purple-400 opacity-20 rounded-full blur-xl animate-pulse"></div>
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No bits found</h3>
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No beats found</h3>
             <p className="text-sm sm:text-base text-gray-600 mb-6">Get started by creating your first security bit</p>
             <button
-              onClick={() => navigate('/secretary/bits/create')}
+              onClick={() => navigate('/secretary/beats/create')}
               className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-purple-600 text-white rounded-lg text-sm sm:text-base font-medium hover:bg-purple-700 hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
-              Add Bit
+              Add Beat
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {bits.map((bit, index) => (
+            {beats.map((bit, index) => (
               <div
                 key={bit._id}
                 className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 p-4 sm:p-6 transform hover:-translate-y-1 border border-gray-100 hover:border-purple-200"
@@ -264,9 +264,9 @@ export const BitsListPage = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">
-                        {bit.bitName}
+                        {bit.beatName}
                       </h3>
-                      <span className="text-xs text-gray-500 font-mono">{bit.bitCode}</span>
+                      <span className="text-xs text-gray-500 font-mono">{bit.beatCode}</span>
                     </div>
                   </div>
                   <span className={`inline-flex items-center px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 ml-2 shadow-sm ${
@@ -322,7 +322,7 @@ export const BitsListPage = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/secretary/bits/${bit._id}/edit`);
+                        navigate(`/secretary/beats/${bit._id}/edit`);
                       }}
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
                     >
@@ -333,10 +333,10 @@ export const BitsListPage = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDeleteBit(bit._id, bit.bitName);
+                          handleDeleteBit(bit._id, bit.beatName);
                         }}
                         className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
-                        title="Delete BIT (Director only)"
+                        title="Delete BEAT (Director only)"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>

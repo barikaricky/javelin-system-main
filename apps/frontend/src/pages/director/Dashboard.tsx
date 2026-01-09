@@ -132,10 +132,10 @@ interface OnDutyPerson {
       lastName: string;
     };
   };
-  bitId?: {
+  beatId?: {
     _id: string;
-    bitName: string;
-    bitCode: string;
+    beatName: string;
+    beatCode: string;
   };
   locationId?: {
     _id: string;
@@ -472,7 +472,7 @@ export default function DirectorDashboard() {
             <QuickAction icon={Megaphone} label="Broadcast" color="red" onClick={() => navigate('/director/communications/broadcast')} />
             <QuickAction icon={Building2} label="Location" color="purple" onClick={() => navigate('/director/locations')} />
             <QuickAction icon={CreditCard} label="Expenses" color="indigo" onClick={() => navigate('/director/transactions/expenses')} />
-            <QuickAction icon={DollarSign} label="BIT Expenses" color="cyan" onClick={() => navigate('/director/bit-expenses')} />
+            <QuickAction icon={DollarSign} label="BEAT Expenses" color="cyan" onClick={() => navigate('/director/bit-expenses')} />
             <QuickAction icon={Fingerprint} label="ID Cards" color="teal" onClick={() => navigate('/director/id-cards')} />
             <QuickAction icon={Settings} label="Settings" color="gray" onClick={() => navigate('/director/settings')} />
           </div>
@@ -661,9 +661,9 @@ export default function DirectorDashboard() {
                                 {assignment.shiftType}
                               </span>
                             )}
-                            {assignment.bitId && (
+                            {assignment.beatId && (
                               <span className="text-[10px] text-gray-600 truncate">
-                                @ {assignment.bitId.bitName}
+                                @ {assignment.beatId.beatName}
                               </span>
                             )}
                           </div>

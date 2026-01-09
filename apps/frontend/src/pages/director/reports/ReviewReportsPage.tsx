@@ -61,10 +61,10 @@ interface Report {
   reportType: string;
   status: string;
   priority: keyof typeof PRIORITY_CONFIG;
-  bitId: {
+  beatId: {
     _id: string;
-    bitName: string;
-    bitCode: string;
+    beatName: string;
+    beatCode: string;
   };
   locationId: {
     _id: string;
@@ -241,7 +241,7 @@ export default function ReviewReportsPage() {
       filtered = filtered.filter(r =>
         r.title.toLowerCase().includes(search) ||
         r.description.toLowerCase().includes(search) ||
-        r.bitId?.bitName.toLowerCase().includes(search) ||
+        r.beatId?.beatName.toLowerCase().includes(search) ||
         r.locationId?.locationName.toLowerCase().includes(search)
       );
     }
@@ -555,7 +555,7 @@ export default function ReviewReportsPage() {
 
                           <div className="flex items-center gap-2 text-gray-600">
                             <Shield className="w-4 h-4" />
-                            <span>{report.bitId?.bitName} ({report.bitId?.bitCode})</span>
+                            <span>{report.beatId?.beatName} ({report.beatId?.beatCode})</span>
                           </div>
 
                           <div className="flex items-center gap-2 text-gray-600">

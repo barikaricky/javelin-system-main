@@ -39,11 +39,11 @@ const navigation = [
     ],
   },
   {
-    name: 'Locations / Bits',
+    name: 'Locations / Beats',
     icon: MapPin,
     children: [
-      { name: 'My Bits', href: '/supervisor/bits', icon: MapPin },
-      { name: 'Bit Visit Logs', href: '/supervisor/bits/visits', icon: Activity },
+      { name: 'My Beats', href: '/supervisor/beats', icon: MapPin },
+      { name: 'Beat Visit Logs', href: '/supervisor/beats/visits', icon: Activity },
     ],
   },
   { name: 'Attendance', href: '/supervisor/attendance', icon: ClipboardCheck },

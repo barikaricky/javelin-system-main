@@ -29,10 +29,10 @@ interface Assignment {
       profilePhoto?: string;
     };
   };
-  bitId: {
+  beatId: {
     _id: string;
-    bitCode: string;
-    bitName: string;
+    beatCode: string;
+    beatName: string;
     client?: {
       clientName: string;
     };
@@ -109,8 +109,8 @@ export default function AssignmentsListPage() {
     const matchesSearch =
       assignment.operatorId.userId.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       assignment.operatorId.userId.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      assignment.bitId.bitName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      assignment.bitId.bitCode.toLowerCase().includes(searchTerm.toLowerCase());
+      assignment.beatId.beatName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      assignment.beatId.beatCode.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === 'ALL' || assignment.status === statusFilter;
 
@@ -146,7 +146,7 @@ export default function AssignmentsListPage() {
           <h1 className="text-2xl md:text-3xl font-bold text-gray-800 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
             Guard Assignments
           </h1>
-          <p className="text-gray-600 mt-1 text-sm md:text-base">Manage security personnel deployments to BITs</p>
+          <p className="text-gray-600 mt-1 text-sm md:text-base">Manage security personnel deployments to BEATs</p>
         </div>
         <button
           onClick={() => navigate('/manager/assignments/assign')}
@@ -199,7 +199,7 @@ export default function AssignmentsListPage() {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by guard name, BIT name, or BIT code..."
+                placeholder="Search by guard name, BEAT name, or BEAT code..."
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
               />
             </div>
@@ -242,7 +242,7 @@ export default function AssignmentsListPage() {
           <p className="text-gray-600 mb-6">
             {searchTerm || statusFilter !== 'ALL'
               ? 'Try adjusting your filters'
-              : 'Start by assigning guards to BITs'}
+              : 'Start by assigning guards to BEATs'}
           </p>
           {!searchTerm && statusFilter === 'ALL' && (
             <button
@@ -289,8 +289,8 @@ export default function AssignmentsListPage() {
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center text-gray-700">
                     <MapPin className="w-4 h-4 mr-2 text-blue-600" />
-                    <span className="font-medium">{assignment.bitId.bitName}</span>
-                    <span className="text-gray-500 ml-1">({assignment.bitId.bitCode})</span>
+                    <span className="font-medium">{assignment.beatId.beatName}</span>
+                    <span className="text-gray-500 ml-1">({assignment.beatId.beatCode})</span>
                   </div>
                   <div className="flex items-center text-gray-700">
                     <MapPin className="w-4 h-4 mr-2 text-green-600" />
@@ -324,7 +324,7 @@ export default function AssignmentsListPage() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                   <tr>
-                    {['Guard', 'BIT', 'Location', 'Shift', 'Start Date', 'Status', 'Actions'].map((header) => (
+                    {['Guard', 'BEAT', 'Location', 'Shift', 'Start Date', 'Status', 'Actions'].map((header) => (
                       <th
                         key={header}
                         className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
@@ -363,8 +363,8 @@ export default function AssignmentsListPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <p className="text-sm font-medium text-gray-900">{assignment.bitId.bitName}</p>
-                        <p className="text-xs text-gray-500">{assignment.bitId.bitCode}</p>
+                        <p className="text-sm font-medium text-gray-900">{assignment.beatId.beatName}</p>
+                        <p className="text-xs text-gray-500">{assignment.beatId.beatCode}</p>
                       </td>
                       <td className="px-6 py-4">
                         <p className="text-sm text-gray-900">{assignment.locationId.name}</p>

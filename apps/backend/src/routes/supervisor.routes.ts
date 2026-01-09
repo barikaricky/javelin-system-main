@@ -210,14 +210,14 @@ router.get('/locations', authorize('MANAGER', 'DIRECTOR', 'DEVELOPER', 'SUPERVIS
   res.json(locations);
 }));
 
-// Get all BITs for reports
-router.get('/bits', authorize('SUPERVISOR', 'GENERAL_SUPERVISOR'), asyncHandler(async (req, res) => {
-  const { Bit } = require('../models');
-  const bits = await Bit.find({ isActive: true })
-    .select('bitName bitCode isActive')
-    .sort({ bitName: 1 })
+// Get all BEATs for reports
+router.get('/beats', authorize('SUPERVISOR', 'GENERAL_SUPERVISOR'), asyncHandler(async (req, res) => {
+  const { Beat } = require('../models');
+  const beats = await Beat.find({ isActive: true })
+    .select('beatName beatCode isActive')
+    .sort({ beatName: 1 })
     .lean();
-  res.json({ bits });
+  res.json({ beats });
 }));
 
 // Get all supervisors with optional filters
@@ -432,7 +432,7 @@ router.get('/dashboard', authorize('SUPERVISOR', 'GENERAL_SUPERVISOR'), asyncHan
       });
     }
 
-    const { Operator, Bit, Location, Attendance, IncidentReport } = require('../models');
+    const { Operator, Beat, Location, Attendance, IncidentReport } = require('../models');
 
     // Get all operators under this supervisor
     const operators = await Operator.find({ supervisorId: supervisor._id })
@@ -451,8 +451,8 @@ router.get('/dashboard', authorize('SUPERVISOR', 'GENERAL_SUPERVISOR'), asyncHan
 
     const presentOperatorIds = new Set(attendanceRecords.map(att => att.operatorId.toString()));
 
-    // Get bits/locations assigned
-    const bits = await Bit.find({ 
+    // Get beats/locations assigned
+    const beats = await Beat.find({ 
       $or: [
         { supervisorId: supervisor._id },
         { locationId: supervisor.locationId }
@@ -481,7 +481,7 @@ router.get('/dashboard', authorize('SUPERVISOR', 'GENERAL_SUPERVISOR'), asyncHan
     const myOperators = operators.length;
     const presentToday = presentOperatorIds.size;
     const attendanceRate = myOperators > 0 ? Math.round((presentToday / myOperators) * 100) : 0;
-    const myBits = bits.length;
+    const myBits = beats.length;
     const openIncidentsCount = await IncidentReport.countDocuments({
       supervisorId: supervisor._id,
       status: { $in: ['REPORTED', 'UNDER_REVIEW'] },
@@ -504,7 +504,7 @@ router.get('/dashboard', authorize('SUPERVISOR', 'GENERAL_SUPERVISOR'), asyncHan
 
     // Format locations data
     const locationsWithStats = await Promise.all(
-      bits.map(async (bit: any) => {
+      beats.map(async (bit: any) => {
         const bitOperators = await Operator.countDocuments({
           locationId: bit.locationId?._id,
         });
@@ -521,7 +521,7 @@ router.get('/dashboard', authorize('SUPERVISOR', 'GENERAL_SUPERVISOR'), asyncHan
 
         return {
           id: bit._id,
-          name: bit.locationId?.locationName || bit.bitName || 'N/A',
+          name: bit.locationId?.locationName || bit.beatName || 'N/A',
           operatorsAssigned: bitOperators,
           operatorsPresent: bitPresent,
           status,

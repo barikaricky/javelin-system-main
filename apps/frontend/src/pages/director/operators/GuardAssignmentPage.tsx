@@ -28,10 +28,10 @@ interface Operator {
 interface GuardAssignment {
   _id: string;
   operatorId: string;
-  bitId: {
+  beatId: {
     _id: string;
-    bitName: string;
-    bitCode: string;
+    beatName: string;
+    beatCode: string;
   };
   locationId: {
     _id: string;
@@ -55,10 +55,10 @@ interface Location {
   locationCode: string;
 }
 
-interface Bit {
+interface Beat {
   _id: string;
-  bitName: string;
-  bitCode: string;
+  beatName: string;
+  beatCode: string;
   locationId: string | { _id: string; locationName: string };
   numberOfOperators: number;
 }
@@ -80,7 +80,7 @@ const GuardAssignmentPage: React.FC = () => {
   const navigate = useNavigate();
   const [operators, setOperators] = useState<Operator[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
-  const [bits, setBits] = useState<Bit[]>([]);
+  const [beats, setBits] = useState<Beat[]>([]);
   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -91,7 +91,7 @@ const GuardAssignmentPage: React.FC = () => {
   const [assignmentForm, setAssignmentForm] = useState({
     operatorId: '',
     locationId: '',
-    bitId: '',
+    beatId: '',
     supervisorId: '',
     shiftType: 'DAY',
     assignmentType: 'PERMANENT',
@@ -117,7 +117,7 @@ const GuardAssignmentPage: React.FC = () => {
       const [operatorsRes, locationsRes, bitsRes, supervisorsRes] = await Promise.all([
         api.get('/director/operators?includeAssignments=true'),
         api.get('/locations?isActive=true&limit=500'),
-        api.get('/bits?isActive=all&limit=500'),
+        api.get('/beats?isActive=all&limit=500'),
         api.get('/director/supervisors?approvalStatus=APPROVED&limit=500')
       ]);
 
@@ -127,7 +127,7 @@ const GuardAssignmentPage: React.FC = () => {
       console.log('  - Operators count:', operatorsRes.data.operators?.length);
       console.log('  - First operator full object:', JSON.stringify(operatorsRes.data.operators[0], null, 2));
       console.log('  - Locations:', locationsRes.data);
-      console.log('  - Bits:', bitsRes.data);
+      console.log('  - Beats:', bitsRes.data);
       console.log('  - Supervisors RAW:', supervisorsRes);
       console.log('  - Supervisors DATA:', supervisorsRes.data);
       
@@ -145,7 +145,7 @@ const GuardAssignmentPage: React.FC = () => {
       setOperators(validOperators);
       
       setLocations(locationsRes.data.locations || []);
-      setBits(bitsRes.data.bits || []);
+      setBits(bitsRes.data.beats || []);
       
       const supervisorsData = supervisorsRes.data.supervisors || supervisorsRes.data || [];
       console.log('👮 DIRECTOR: Supervisor processing:');
@@ -160,7 +160,7 @@ const GuardAssignmentPage: React.FC = () => {
       console.log('✅ Data fetched:', {
         operators: operatorsRes.data.operators?.length || 0,
         locations: locationsRes.data.locations?.length || 0,
-        bits: bitsRes.data.bits?.length || 0,
+        beats: bitsRes.data.beats?.length || 0,
         supervisors: supervisorsData.length,
       });
     } catch (error: any) {
@@ -180,7 +180,7 @@ const GuardAssignmentPage: React.FC = () => {
         setAssignmentForm({
           operatorId: operator._id,
           locationId: operator.currentAssignment.locationId?._id || '',
-          bitId: operator.currentAssignment.bitId?._id || '',
+          beatId: operator.currentAssignment.beatId?._id || '',
           supervisorId: operator.currentAssignment.supervisorId?._id || '',
           shiftType: operator.currentAssignment.shiftType,
           assignmentType: operator.currentAssignment.assignmentType,
@@ -190,7 +190,7 @@ const GuardAssignmentPage: React.FC = () => {
         setAssignmentForm({
           operatorId: operator._id,
           locationId: operator.locationId?._id || '',
-          bitId: '',
+          beatId: '',
           supervisorId: '',
           shiftType: 'DAY',
           assignmentType: 'PERMANENT',
@@ -200,7 +200,7 @@ const GuardAssignmentPage: React.FC = () => {
         setAssignmentForm({
           operatorId: operator._id,
           locationId: '',
-          bitId: '',
+          beatId: '',
           supervisorId: '',
           shiftType: 'DAY',
           assignmentType: 'PERMANENT',
@@ -213,7 +213,7 @@ const GuardAssignmentPage: React.FC = () => {
       setAssignmentForm({
         operatorId: '',
         locationId: '',
-        bitId: '',
+        beatId: '',
         supervisorId: '',
         shiftType: 'DAY',
         assignmentType: 'PERMANENT',
@@ -230,7 +230,7 @@ const GuardAssignmentPage: React.FC = () => {
     setAssignmentForm({
       operatorId: '',
       locationId: '',
-      bitId: '',
+      beatId: '',
       supervisorId: '',
       shiftType: 'DAY',
       assignmentType: 'PERMANENT',
@@ -242,7 +242,7 @@ const GuardAssignmentPage: React.FC = () => {
     e.preventDefault();
     
     // Validation
-    if (!assignmentForm.operatorId || !assignmentForm.locationId || !assignmentForm.bitId || !assignmentForm.supervisorId) {
+    if (!assignmentForm.operatorId || !assignmentForm.locationId || !assignmentForm.beatId || !assignmentForm.supervisorId) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -252,7 +252,7 @@ const GuardAssignmentPage: React.FC = () => {
 
       const payload = {
         operatorId: assignmentForm.operatorId,
-        bitId: assignmentForm.bitId,
+        beatId: assignmentForm.beatId,
         supervisorId: assignmentForm.supervisorId,
         shiftType: assignmentForm.shiftType,
         assignmentType: assignmentForm.assignmentType,
@@ -266,7 +266,7 @@ const GuardAssignmentPage: React.FC = () => {
         await api.put(`/assignments/${operator.currentAssignment._id}`, payload);
         toast.success('Assignment updated successfully');
       } else {
-        // Create new assignment (locationId comes from BIT automatically)
+        // Create new assignment (locationId comes from BEAT automatically)
         await api.post('/assignments/assign', payload);
         toast.success('Guard assigned successfully');
       }
@@ -294,14 +294,14 @@ const GuardAssignmentPage: React.FC = () => {
     }
   };
 
-  // Filter bits based on selected location
+  // Filter beats based on selected location
   const filteredBits = assignmentForm.locationId
-    ? bits.filter(bit => {
+    ? beats.filter(bit => {
         if (!bit.locationId) return false;
         const bitLocationId = typeof bit.locationId === 'string' ? bit.locationId : bit.locationId._id;
         return bitLocationId === assignmentForm.locationId;
       })
-    : bits;
+    : beats;
 
   // Filter supervisors based on selected location
   const filteredSupervisors = assignmentForm.locationId
@@ -315,7 +315,7 @@ const GuardAssignmentPage: React.FC = () => {
   // Debug logging
   console.log('🔍 Filter Debug:', {
     selectedLocation: assignmentForm.locationId,
-    totalBits: bits.length,
+    totalBits: beats.length,
     filteredBits: filteredBits.length,
     totalSupervisors: supervisors.length,
     filteredSupervisors: filteredSupervisors.length,
@@ -372,8 +372,8 @@ const GuardAssignmentPage: React.FC = () => {
   }
   
   // Safety check: Ensure all arrays are defined before rendering
-  if (!operators || !locations || !bits || !supervisors) {
-    console.error('⚠️ Missing data arrays:', { operators: !!operators, locations: !!locations, bits: !!bits, supervisors: !!supervisors });
+  if (!operators || !locations || !beats || !supervisors) {
+    console.error('⚠️ Missing data arrays:', { operators: !!operators, locations: !!locations, beats: !!beats, supervisors: !!supervisors });
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -393,7 +393,7 @@ const GuardAssignmentPage: React.FC = () => {
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Guard Assignment Management</h1>
-        <p className="text-gray-600 mt-1">Assign guards to BITs and manage their assignments</p>
+        <p className="text-gray-600 mt-1">Assign guards to BEATs and manage their assignments</p>
       </div>
 
       {/* Filters */}
@@ -525,7 +525,7 @@ const GuardAssignmentPage: React.FC = () => {
                     {operator.currentAssignment ? (
                       <div className="text-sm">
                         <div className="font-medium text-gray-900">
-                          {operator.currentAssignment?.bitId?.bitName || 'Unknown Bit'}
+                          {operator.currentAssignment?.beatId?.beatName || 'Unknown Beat'}
                         </div>
                         <div className="text-gray-500">
                           {operator.currentAssignment?.locationId?.locationName || 'Unknown Location'}
@@ -610,7 +610,7 @@ const GuardAssignmentPage: React.FC = () => {
                           setAssignmentForm({
                             operatorId,
                             locationId: operator.currentAssignment.locationId._id,
-                            bitId: operator.currentAssignment.bitId._id,
+                            beatId: operator.currentAssignment.beatId._id,
                             supervisorId: operator.currentAssignment.supervisorId._id,
                             shiftType: operator.currentAssignment.shiftType || 'DAY',
                             assignmentType: operator.currentAssignment.assignmentType || 'PERMANENT',
@@ -621,7 +621,7 @@ const GuardAssignmentPage: React.FC = () => {
                             ...prev,
                             operatorId,
                             locationId: operator?.locationId?._id || '',
-                            bitId: '',
+                            beatId: '',
                             supervisorId: '',
                           }));
                         }
@@ -682,7 +682,7 @@ const GuardAssignmentPage: React.FC = () => {
                         setAssignmentForm({
                           ...assignmentForm,
                           locationId: e.target.value,
-                          bitId: '',
+                          beatId: '',
                           supervisorId: ''
                         });
                       }}
@@ -698,22 +698,22 @@ const GuardAssignmentPage: React.FC = () => {
                     </select>
                   </div>
 
-                  {/* BIT */}
+                  {/* BEAT */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      BIT (Security Post) <span className="text-red-500">*</span>
+                      BEAT (Security Post) <span className="text-red-500">*</span>
                     </label>
                     <select
-                      value={assignmentForm.bitId}
-                      onChange={(e) => setAssignmentForm({ ...assignmentForm, bitId: e.target.value })}
+                      value={assignmentForm.beatId}
+                      onChange={(e) => setAssignmentForm({ ...assignmentForm, beatId: e.target.value })}
                       required
                       disabled={!assignmentForm.locationId}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                     >
-                      <option value="">Select BIT</option>
+                      <option value="">Select BEAT</option>
                       {filteredBits.map(bit => (
                         <option key={bit._id} value={bit._id}>
-                          {bit.bitName} ({bit.bitCode}) - Needs {bit.numberOfOperators} guards
+                          {bit.beatName} ({bit.beatCode}) - Needs {bit.numberOfOperators} guards
                         </option>
                       ))}
                     </select>

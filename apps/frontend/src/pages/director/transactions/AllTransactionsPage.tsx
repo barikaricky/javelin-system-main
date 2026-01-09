@@ -155,7 +155,7 @@ const AllTransactionsPage: React.FC = () => {
   const typeChartData = summary ? [
     { name: 'Money In', value: summary.byType.moneyIn, color: '#10b981' },
     { name: 'Money Out', value: summary.byType.moneyOut, color: '#ef4444' },
-    { name: 'BIT Expenses', value: summary.byType.bitExpenses, color: '#f59e0b' },
+    { name: 'BEAT Expenses', value: summary.byType.bitExpenses, color: '#f59e0b' },
     { name: 'Salaries', value: summary.byType.salaries, color: '#3b82f6' }
   ].filter(item => item.value > 0) : [];
 
@@ -210,7 +210,7 @@ const AllTransactionsPage: React.FC = () => {
       '',
       'EXPENSES',
       `  Money Out: ${formatCurrency(summary.byType.moneyOut)}`,
-      `  BIT Expenses: ${formatCurrency(summary.byType.bitExpenses)}`,
+      `  BEAT Expenses: ${formatCurrency(summary.byType.bitExpenses)}`,
       `  Salaries: ${formatCurrency(summary.byType.salaries)}`,
       `  Total Expenses: ${formatCurrency(summary.totalExpenses)}`,
       '',
@@ -403,7 +403,7 @@ const AllTransactionsPage: React.FC = () => {
                   <span className="font-medium">{formatCurrency(summary.byType.moneyOut)}</span>
                 </div>
                 <div className="flex justify-between text-gray-700">
-                  <span>BIT Expenses</span>
+                  <span>BEAT Expenses</span>
                   <span className="font-medium">{formatCurrency(summary.byType.bitExpenses)}</span>
                 </div>
                 <div className="flex justify-between text-gray-700">
@@ -659,7 +659,7 @@ const AllTransactionsPage: React.FC = () => {
               <option value="all">All Types</option>
               <option value="money_in">Money In</option>
               <option value="money_out">Money Out</option>
-              <option value="bit_expense">BIT Expenses</option>
+              <option value="bit_expense">BEAT Expenses</option>
               <option value="salary">Salaries</option>
             </select>
           </div>

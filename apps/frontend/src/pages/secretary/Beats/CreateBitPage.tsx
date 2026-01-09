@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Shield, Building2, Users, Clock, Calendar, FileText, Save, ArrowLeft, User } from 'lucide-react';
-import axios from 'axios';
-import { getApiBaseURL } from '../../../lib/api';
+import { api } from '../../../lib/api';
+import toast from 'react-hot-toast';
 
 interface BitFormData {
-  bitName: string;
+  beatName: string;
   locationId: string;
   description: string;
   clientId: string;
@@ -16,7 +16,6 @@ interface BitFormData {
   endDate: string;
   supervisorId: string;
   specialInstructions: string;
-  isActive: boolean;
 }
 
 interface Location {
@@ -47,17 +46,15 @@ const SECURITY_TYPES = [
   'Executive Protection',
 ];
 
-export const DirectorEditBitPage = () => {
+export const CreateBitPage = () => {
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [locations, setLocations] = useState<Location[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<BitFormData>({
-    bitName: '',
+    beatName: '',
     locationId: '',
     description: '',
     clientId: '',
@@ -68,50 +65,26 @@ export const DirectorEditBitPage = () => {
     endDate: '',
     supervisorId: '',
     specialInstructions: '',
-    isActive: true,
   });
 
   useEffect(() => {
     fetchData();
-  }, [id]);
+  }, []);
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const headers = { Authorization: `Bearer ${token}` };
-      const API_URL = getApiBaseURL();
-
-      const [bitRes, locationsRes, clientsRes, supervisorsRes] = await Promise.all([
-        axios.get(`${API_URL}/api/bits/${id}`, { headers }),
-        axios.get(`${API_URL}/api/locations?isActive=true`, { headers }),
-        axios.get(`${API_URL}/api/clients`, { headers }),
-        axios.get(`${API_URL}/api/supervisors`, { headers }),
+      const [locationsRes, clientsRes, supervisorsRes] = await Promise.all([
+        api.get('/locations?isActive=true'),
+        api.get('/clients'),
+        api.get('/supervisors?approvalStatus=APPROVED'),
       ]);
 
-      const bit = bitRes.data.bit;
-      setFormData({
-        bitName: bit.bitName || '',
-        locationId: bit.locationId?._id || bit.locationId || '',
-        description: bit.description || '',
-        clientId: bit.clientId?._id || bit.clientId || '',
-        securityType: bit.securityType || [],
-        numberOfOperators: bit.numberOfOperators || 1,
-        shiftType: bit.shiftType || 'DAY',
-        startDate: bit.startDate ? new Date(bit.startDate).toISOString().split('T')[0] : '',
-        endDate: bit.endDate ? new Date(bit.endDate).toISOString().split('T')[0] : '',
-        supervisorId: bit.supervisorId?._id || bit.supervisorId || '',
-        specialInstructions: bit.specialInstructions || '',
-        isActive: bit.isActive !== undefined ? bit.isActive : true,
-      });
-
-      setLocations(locationsRes.data.locations || []);
-      setClients(clientsRes.data.clients || []);
-      setSupervisors(supervisorsRes.data.supervisors || []);
-    } catch (error) {
+      setLocations(locationsRes.data.locations || locationsRes.data.data || []);
+      setClients(clientsRes.data.clients || clientsRes.data.data || []);
+      setSupervisors(supervisorsRes.data.supervisors || supervisorsRes.data.data || []);
+    } catch (error: any) {
       console.error('Error fetching data:', error);
-      setErrors({ submit: 'Failed to load bit data' });
-    } finally {
-      setLoading(false);
+      toast.error('Failed to load form data');
     }
   };
 
@@ -120,8 +93,6 @@ export const DirectorEditBitPage = () => {
     
     if (type === 'number') {
       setFormData(prev => ({ ...prev, [name]: parseInt(value) || 0 }));
-    } else if (type === 'checkbox') {
-      setFormData(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -141,7 +112,7 @@ export const DirectorEditBitPage = () => {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.bitName.trim()) newErrors.bitName = 'Bit name is required';
+    if (!formData.beatName.trim()) newErrors.beatName = 'Beat name is required';
     if (!formData.locationId) newErrors.locationId = 'Location is required';
     if (formData.securityType.length === 0) newErrors.securityType = 'Select at least one security type';
     if (formData.numberOfOperators < 1) newErrors.numberOfOperators = 'At least 1 operator required';
@@ -156,13 +127,13 @@ export const DirectorEditBitPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      toast.error('Please fix the errors in the form');
+      return;
+    }
 
-    setSaving(true);
+    setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const API_URL = getApiBaseURL();
-      
       const payload = {
         ...formData,
         clientId: formData.clientId || undefined,
@@ -172,44 +143,35 @@ export const DirectorEditBitPage = () => {
         specialInstructions: formData.specialInstructions || undefined,
       };
 
-      await axios.put(`${API_URL}/api/bits/${id}`, payload, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.post('/beats', payload);
       
-      navigate('/director/bits');
+      toast.success('Beat created successfully!');
+      navigate('/secretary/beats');
     } catch (error: any) {
-      console.error('Error updating bit:', error);
+      console.error('Error creating bit:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to create bit';
+      toast.error(errorMessage);
       if (error.response?.data?.message) {
         setErrors({ submit: error.response.data.message });
-      } else {
-        setErrors({ submit: 'Failed to update bit' });
       }
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin h-12 w-12 border-4 border-purple-600 border-t-transparent rounded-full"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
           <button
-            onClick={() => navigate('/director/bits')}
+            onClick={() => navigate('/secretary/beats')}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
           >
             <ArrowLeft className="h-5 w-5" />
-            Back to Bits
+            Back to Beats
           </button>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Edit Bit</h1>
-          <p className="text-gray-600 mt-2">Update security post information</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Create New Beat</h1>
+          <p className="text-gray-600 mt-2">Add a new security post assignment</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-6 space-y-6">
@@ -219,25 +181,25 @@ export const DirectorEditBitPage = () => {
             </div>
           )}
 
-          {/* Bit Name */}
+          {/* Beat Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Bit Name *
+              Beat Name *
             </label>
             <div className="relative">
               <Shield className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
-                name="bitName"
-                value={formData.bitName}
+                name="beatName"
+                value={formData.beatName}
                 onChange={handleChange}
                 placeholder="e.g., Main Gate Security Post"
                 className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                  errors.bitName ? 'border-red-500' : 'border-gray-300'
+                  errors.beatName ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
             </div>
-            {errors.bitName && <p className="mt-1 text-sm text-red-600">{errors.bitName}</p>}
+            {errors.beatName && <p className="mt-1 text-sm text-red-600">{errors.beatName}</p>}
           </div>
 
           {/* Location */}
@@ -447,44 +409,29 @@ export const DirectorEditBitPage = () => {
             </div>
           </div>
 
-          {/* Active Status */}
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              name="isActive"
-              id="isActive"
-              checked={formData.isActive}
-              onChange={handleChange}
-              className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-            />
-            <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
-              Active
-            </label>
-          </div>
-
-          {/* Submit Button */}
+          {/* Submit Buttons */}
           <div className="flex gap-4 pt-4">
             <button
               type="button"
-              onClick={() => navigate('/director/bits')}
+              onClick={() => navigate('/secretary/beats')}
               className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={saving}
+              disabled={loading}
               className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {saving ? (
+              {loading ? (
                 <>
                   <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
-                  Updating...
+                  Creating...
                 </>
               ) : (
                 <>
                   <Save className="h-5 w-5" />
-                  Update Bit
+                  Create Beat
                 </>
               )}
             </button>
@@ -494,4 +441,3 @@ export const DirectorEditBitPage = () => {
     </div>
   );
 };
-

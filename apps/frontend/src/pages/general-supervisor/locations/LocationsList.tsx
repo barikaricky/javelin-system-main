@@ -35,10 +35,10 @@ interface Location {
   }>;
 }
 
-interface Bit {
+interface Beat {
   _id: string;
-  bitName: string;
-  bitCode: string;
+  beatName: string;
+  beatCode: string;
   locationId: {
     _id: string;
     locationName: string;
@@ -55,12 +55,12 @@ interface Bit {
 
 export default function LocationsList() {
   const [locations, setLocations] = useState<Location[]>([]);
-  const [bits, setBits] = useState<Bit[]>([]);
+  const [beats, setBits] = useState<Beat[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [stateFilter, setStateFilter] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'locations' | 'bits'>('locations');
+  const [viewMode, setViewMode] = useState<'locations' | 'beats'>('locations');
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
 
   useEffect(() => {
@@ -72,18 +72,18 @@ export default function LocationsList() {
       setLoading(true);
       const [locationsResponse, bitsResponse] = await Promise.all([
         api.get('/general-supervisor/locations'),
-        api.get('/bits').catch(() => ({ data: { bits: [] } })) // Fallback if bits endpoint fails
+        api.get('/beats').catch(() => ({ data: { beats: [] } })) // Fallback if beats endpoint fails
       ]);
       
       console.log('📍 Locations Response:', locationsResponse.data);
-      console.log('🛡️ Bits Response:', bitsResponse.data);
+      console.log('🛡️ Beats Response:', bitsResponse.data);
       
       setLocations(locationsResponse.data.locations || []);
-      setBits(bitsResponse.data?.bits || []);
+      setBits(bitsResponse.data?.beats || []);
       toast.success('Data loaded successfully');
     } catch (error: any) {
       console.error('Error fetching data:', error);
-      toast.error('Failed to load locations and bits');
+      toast.error('Failed to load locations and beats');
       setLocations([]);
       setBits([]);
     } finally {
@@ -110,10 +110,10 @@ export default function LocationsList() {
     return matchesSearch && matchesStatus && matchesState;
   });
 
-  const filteredBits = bits.filter(bit => {
+  const filteredBits = beats.filter(bit => {
     const matchesSearch = 
-      bit.bitName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      bit.bitCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      bit.beatName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      bit.beatCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       bit.locationId?.locationName?.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesStatus = 
@@ -154,8 +154,8 @@ export default function LocationsList() {
   const stats = {
     totalLocations: locations.length,
     activeLocations: locations.filter(l => l.isActive).length,
-    totalBits: bits.length,
-    activeBits: bits.filter(b => b.isActive).length,
+    totalBits: beats.length,
+    activeBits: beats.filter(b => b.isActive).length,
     totalOperators: locations.reduce((sum, l) => sum + (l.operatorCount || 0), 0),
     totalSupervisors: locations.reduce((sum, l) => sum + (l.supervisorCount || 0), 0)
   };
@@ -181,7 +181,7 @@ export default function LocationsList() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Locations & Security Bits</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Locations & Security Beats</h1>
           <p className="text-gray-600">View and monitor all security locations and posts</p>
         </div>
         <div className="flex items-center gap-3">
@@ -199,15 +199,15 @@ export default function LocationsList() {
               Locations
             </button>
             <button
-              onClick={() => setViewMode('bits')}
+              onClick={() => setViewMode('beats')}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                viewMode === 'bits'
+                viewMode === 'beats'
                   ? 'bg-white text-blue-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               <Shield size={16} className="inline mr-2" />
-              Security Bits
+              Security Beats
             </button>
           </div>
           
@@ -251,7 +251,7 @@ export default function LocationsList() {
               <Shield size={20} className="text-purple-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Security Bits</p>
+              <p className="text-sm text-gray-600">Security Beats</p>
               <p className="text-2xl font-bold text-gray-900">{stats.totalBits}</p>
             </div>
           </div>
@@ -277,7 +277,7 @@ export default function LocationsList() {
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder={`Search ${viewMode === 'locations' ? 'locations' : 'bits'} by name or address...`}
+              placeholder={`Search ${viewMode === 'locations' ? 'locations' : 'beats'} by name or address...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -398,7 +398,7 @@ export default function LocationsList() {
       )}
 
       {/* BITS VIEW */}
-      {viewMode === 'bits' && (
+      {viewMode === 'beats' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredBits.map((bit) => (
             <div 
@@ -413,8 +413,8 @@ export default function LocationsList() {
                       <Shield size={20} className="text-purple-600" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">{bit.bitName}</h3>
-                      <p className="text-xs text-gray-600 mt-1">Code: {bit.bitCode}</p>
+                      <h3 className="font-semibold text-gray-900">{bit.beatName}</h3>
+                      <p className="text-xs text-gray-600 mt-1">Code: {bit.beatCode}</p>
                     </div>
                   </div>
                   {getStatusBadge(bit.isActive)}
@@ -432,7 +432,7 @@ export default function LocationsList() {
                 </div>
               </div>
 
-              {/* Bit Details */}
+              {/* Beat Details */}
               <div className="px-4 py-3 border-b border-gray-100">
                 {bit.description && (
                   <p className="text-sm text-gray-600 mb-2">{bit.description}</p>
@@ -465,7 +465,7 @@ export default function LocationsList() {
 
       {/* Empty State */}
       {((viewMode === 'locations' && filteredLocations.length === 0) || 
-        (viewMode === 'bits' && filteredBits.length === 0)) && (
+        (viewMode === 'beats' && filteredBits.length === 0)) && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
           {viewMode === 'locations' ? (
             <Building size={48} className="mx-auto text-gray-300 mb-4" />
@@ -473,12 +473,12 @@ export default function LocationsList() {
             <Shield size={48} className="mx-auto text-gray-300 mb-4" />
           )}
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            No {viewMode === 'locations' ? 'locations' : 'security bits'} found
+            No {viewMode === 'locations' ? 'locations' : 'security beats'} found
           </h3>
           <p className="text-gray-500 mb-4">
             {searchQuery || statusFilter !== 'all'
               ? 'Try adjusting your search or filters'
-              : `No ${viewMode === 'locations' ? 'locations' : 'security bits'} have been assigned yet`}
+              : `No ${viewMode === 'locations' ? 'locations' : 'security beats'} have been assigned yet`}
           </p>
           {(searchQuery || statusFilter !== 'all') && (
             <button

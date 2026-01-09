@@ -286,7 +286,7 @@ export default function AssignLocationPage() {
             <div>
               <p className="text-sm font-semibold text-blue-900">Location Assignment</p>
               <p className="text-sm text-blue-800 mt-1">
-                Assign supervisors to specific locations. Each supervisor can manage one location and its security bits.
+                Assign supervisors to specific locations. Each supervisor can manage one location and its security beats.
               </p>
             </div>
           </div>

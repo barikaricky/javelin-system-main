@@ -33,10 +33,10 @@ interface Assignment {
       state?: string;
     };
   };
-  bitId: {
+  beatId: {
     _id: string;
-    bitCode: string;
-    bitName: string;
+    beatCode: string;
+    beatName: string;
     numberOfOperators?: number;
   };
   locationId: {
@@ -248,8 +248,8 @@ export default function AssignmentRequestsPage() {
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2 text-gray-700">
                         <Building2 className="h-4 w-4 text-gray-400" />
-                        <span className="font-medium">{assignment.bitId.bitName}</span>
-                        <span className="text-gray-500">({assignment.bitId.bitCode})</span>
+                        <span className="font-medium">{assignment.beatId.beatName}</span>
+                        <span className="text-gray-500">({assignment.beatId.beatCode})</span>
                       </div>
                       <div className="flex items-center gap-2 text-gray-700">
                         <MapPin className="h-4 w-4 text-gray-400" />
@@ -375,12 +375,12 @@ export default function AssignmentRequestsPage() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 mb-1">BIT</p>
-                        <p className="font-medium text-gray-900">{selectedAssignment.bitId.bitName}</p>
-                        <p className="text-sm text-gray-600">Code: {selectedAssignment.bitId.bitCode}</p>
-                        {selectedAssignment.bitId.numberOfOperators && (
+                        <p className="text-xs text-gray-500 mb-1">BEAT</p>
+                        <p className="font-medium text-gray-900">{selectedAssignment.beatId.beatName}</p>
+                        <p className="text-sm text-gray-600">Code: {selectedAssignment.beatId.beatCode}</p>
+                        {selectedAssignment.beatId.numberOfOperators && (
                           <p className="text-sm text-gray-600">
-                            Required Guards: {selectedAssignment.bitId.numberOfOperators}
+                            Required Guards: {selectedAssignment.beatId.numberOfOperators}
                           </p>
                         )}
                       </div>

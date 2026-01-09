@@ -37,15 +37,15 @@ interface Operator {
   assignedDate?: string;
 }
 
-interface BitWithOperators extends Bit {
+interface BitWithOperators extends Beat {
   operators: Operator[];
   expanded?: boolean;
 }
 
-interface Bit {
+interface Beat {
   _id: string;
-  bitCode: string;
-  bitName: string;
+  beatCode: string;
+  beatName: string;
   description?: string;
   numberOfOperators?: number;
   isActive: boolean;
@@ -53,7 +53,7 @@ interface Bit {
 
 interface AssignedLocation {
   location: Location;
-  bits: BitWithOperators[];
+  beats: BitWithOperators[];
   assignedOperatorsCount: number;
 }
 
@@ -102,12 +102,12 @@ export default function MyBitsPage() {
 
       console.log('📍 Location details:', location);
 
-      // Fetch bits for this location
-      const bitsRes = await api.get('/bits', {
+      // Fetch beats for this location
+      const bitsRes = await api.get('/beats', {
         params: { locationId }
       });
 
-      const allBits = bitsRes.data.bits || bitsRes.data.data || [];
+      const allBits = bitsRes.data.beats || bitsRes.data.data || [];
       const locationBits = allBits.filter((bit: any) => {
         const bitLocationId = typeof bit.locationId === 'string'
           ? bit.locationId
@@ -115,14 +115,14 @@ export default function MyBitsPage() {
         return bitLocationId === locationId;
       });
 
-      console.log('🎯 Bits for location:', locationBits);
+      console.log('🎯 Beats for location:', locationBits);
 
       // Fetch assignments and operators for each bit
       const assignmentsRes = await api.get('/assignments', {
         params: { 
           locationId, 
           status: 'ACTIVE',
-          populate: 'operatorId,bitId'
+          populate: 'operatorId,beatId'
         }
       });
 
@@ -136,12 +136,12 @@ export default function MyBitsPage() {
         console.log('📸 userId data:', assignments[0].operatorId.userId);
       }
 
-      // Enhance bits with operator details
+      // Enhance beats with operator details
       const bitsWithOperators = await Promise.all(
-        locationBits.map(async (bit: Bit) => {
+        locationBits.map(async (bit: Beat) => {
           // Get assignments for this bit
           const bitAssignments = assignments.filter((a: any) => {
-            const assignmentBitId = typeof a.bitId === 'string' ? a.bitId : a.bitId?._id;
+            const assignmentBitId = typeof a.beatId === 'string' ? a.beatId : a.beatId?._id;
             return assignmentBitId === bit._id;
           });
 
@@ -157,7 +157,7 @@ export default function MyBitsPage() {
             };
           }).filter((op: any) => op);
 
-          console.log(`🎯 Bit ${bit.bitName}: ${operators.length} operators`, operators);
+          console.log(`🎯 Beat ${bit.beatName}: ${operators.length} operators`, operators);
 
           return {
             ...bit,
@@ -171,7 +171,7 @@ export default function MyBitsPage() {
 
       setAssignedLocations([{
         location,
-        bits: bitsWithOperators,
+        beats: bitsWithOperators,
         assignedOperatorsCount: totalOperators
       }]);
 
@@ -179,7 +179,7 @@ export default function MyBitsPage() {
         toast.success('Data refreshed successfully');
       }
     } catch (error: any) {
-      console.error('❌ Failed to fetch bits:', error);
+      console.error('❌ Failed to fetch beats:', error);
       toast.error(error.response?.data?.message || 'Failed to fetch assigned locations');
     } finally {
       setLoading(false);
@@ -198,9 +198,9 @@ export default function MyBitsPage() {
         if (locIdx === locationIndex) {
           return {
             ...loc,
-            bits: loc.bits.map((bit, bIdx) => {
+            beats: loc.beats.map((bit, bIdx) => {
               if (bIdx === bitIndex) {
-                console.log('✅ Toggling bit:', bit.bitName, 'from', bit.expanded, 'to', !bit.expanded);
+                console.log('✅ Toggling bit:', bit.beatName, 'from', bit.expanded, 'to', !bit.expanded);
                 return { ...bit, expanded: !bit.expanded };
               }
               return bit;
@@ -266,10 +266,10 @@ export default function MyBitsPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
               <MapPin className="h-8 w-8 text-blue-600" />
-              My Locations & Bits
+              My Locations & Beats
             </h1>
             <p className="text-gray-600 mt-2">
-              View and manage your assigned locations and security bits
+              View and manage your assigned locations and security beats
             </p>
           </div>
           <button
@@ -293,7 +293,7 @@ export default function MyBitsPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {assignedLocations.map(({ location, bits, assignedOperatorsCount }, locIndex) => (
+            {assignedLocations.map(({ location, beats, assignedOperatorsCount }, locIndex) => (
               <div key={location._id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 {/* Location Header */}
                 <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
@@ -368,7 +368,7 @@ export default function MyBitsPage() {
                     <div className="flex items-center gap-2">
                       <Grid3x3 className="h-5 w-5 text-blue-600" />
                       <span className="text-sm text-gray-600">
-                        <span className="font-bold text-gray-900 text-lg">{bits.length}</span> Bit{bits.length !== 1 ? 's' : ''}
+                        <span className="font-bold text-gray-900 text-lg">{beats.length}</span> Beat{beats.length !== 1 ? 's' : ''}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -380,26 +380,26 @@ export default function MyBitsPage() {
                   </div>
                 </div>
 
-                {/* Bits List */}
+                {/* Beats List */}
                 <div className="p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <Grid3x3 className="h-5 w-5 text-blue-600" />
-                    Security Bits & Assigned Operators
+                    Security Beats & Assigned Operators
                   </h3>
                   
-                  {bits.length === 0 ? (
+                  {beats.length === 0 ? (
                     <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
                       <Grid3x3 className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-600">No bits assigned to this location yet</p>
+                      <p className="text-gray-600">No beats assigned to this location yet</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {bits.map((bit, bitIndex) => (
+                      {beats.map((bit, bitIndex) => (
                         <div
                           key={bit._id}
                           className="border border-gray-200 rounded-lg bg-white overflow-hidden hover:shadow-md transition-shadow"
                         >
-                          {/* Bit Header */}
+                          {/* Beat Header */}
                           <div className="p-4 bg-gray-50 border-b border-gray-200">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3 flex-1">
@@ -407,8 +407,8 @@ export default function MyBitsPage() {
                                   <Grid3x3 className="h-5 w-5 text-blue-600" />
                                 </div>
                                 <div className="flex-1">
-                                  <h4 className="font-semibold text-gray-900">{bit.bitName}</h4>
-                                  <p className="text-xs text-gray-500">Code: {bit.bitCode}</p>
+                                  <h4 className="font-semibold text-gray-900">{bit.beatName}</h4>
+                                  <p className="text-xs text-gray-500">Code: {bit.beatCode}</p>
                                 </div>
                                 <div className="flex items-center gap-3">
                                   <span
@@ -587,8 +587,8 @@ export default function MyBitsPage() {
               <div className="text-sm text-blue-800">
                 <p className="font-semibold mb-1">About Your Assignment</p>
                 <p>
-                  You are responsible for supervising security operations at this location and its associated bits. 
-                  Make sure all bits are properly staffed and operators are performing their duties effectively.
+                  You are responsible for supervising security operations at this location and its associated beats. 
+                  Make sure all beats are properly staffed and operators are performing their duties effectively.
                   Click on any bit to expand and view assigned operators.
                 </p>
               </div>

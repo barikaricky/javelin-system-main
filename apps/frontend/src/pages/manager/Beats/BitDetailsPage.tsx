@@ -8,10 +8,10 @@ import {
 import axios from 'axios';
 import { getApiBaseURL } from '../../../lib/api';
 
-interface Bit {
+interface Beat {
   _id: string;
-  bitName: string;
-  bitCode: string;
+  beatName: string;
+  beatCode: string;
   locationId: {
     _id: string;
     locationName: string;
@@ -54,7 +54,7 @@ interface Assignment {
 export const ManagerBitDetailsPage = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const [bit, setBit] = useState<Bit | null>(null);
+  const [bit, setBit] = useState<Beat | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -67,7 +67,7 @@ export const ManagerBitDetailsPage = () => {
     try {
       const token = localStorage.getItem('token');
       const API_URL = getApiBaseURL();
-      const response = await axios.get(`${API_URL}/api/bits/${id}`, {
+      const response = await axios.get(`${API_URL}/api/beats/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setBit(response.data.bit);
@@ -82,7 +82,7 @@ export const ManagerBitDetailsPage = () => {
     try {
       const token = localStorage.getItem('token');
       const API_URL = getApiBaseURL();
-      const response = await axios.get(`${API_URL}/api/assignments/bits/${id}/assignments`, {
+      const response = await axios.get(`${API_URL}/api/assignments/beats/${id}/assignments`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAssignments(response.data.assignments || []);
@@ -124,12 +124,12 @@ export const ManagerBitDetailsPage = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Shield className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Bit not found</h3>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Beat not found</h3>
           <button
-            onClick={() => navigate('/manager/bits')}
+            onClick={() => navigate('/manager/beats')}
             className="text-purple-600 hover:text-purple-700"
           >
-            Back to Bits
+            Back to Beats
           </button>
         </div>
       </div>
@@ -142,11 +142,11 @@ export const ManagerBitDetailsPage = () => {
         {/* Header with Animation */}
         <div className="mb-6 animate-fadeIn">
           <button
-            onClick={() => navigate('/manager/bits')}
+            onClick={() => navigate('/manager/beats')}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
-            Back to Bits
+            Back to Beats
           </button>
           
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -156,18 +156,18 @@ export const ManagerBitDetailsPage = () => {
                   <Shield className="h-8 w-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">{bit.bitName}</h1>
-                  <span className="text-sm text-gray-500 font-mono">{bit.bitCode}</span>
+                  <h1 className="text-3xl font-bold text-gray-900">{bit.beatName}</h1>
+                  <span className="text-sm text-gray-500 font-mono">{bit.beatCode}</span>
                 </div>
               </div>
             </div>
             
             <button
-              onClick={() => navigate(`/manager/bits/${bit._id}/edit`)}
+              onClick={() => navigate(`/manager/beats/${bit._id}/edit`)}
               className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
             >
               <Edit className="h-5 w-5" />
-              Edit Bit
+              Edit Beat
             </button>
           </div>
         </div>
@@ -180,7 +180,7 @@ export const ManagerBitDetailsPage = () => {
               : 'bg-gradient-to-r from-gray-400 to-gray-500 text-white'
           }`}>
             {bit.isActive ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-            {bit.isActive ? 'Active Bit' : 'Inactive Bit'}
+            {bit.isActive ? 'Active Beat' : 'Inactive Beat'}
           </span>
         </div>
 
@@ -237,7 +237,7 @@ export const ManagerBitDetailsPage = () => {
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Bit Information - 2 columns */}
+          {/* Beat Information - 2 columns */}
           <div className="lg:col-span-2 space-y-6">
             {/* Basic Information */}
             <div className="bg-white rounded-xl shadow-md p-6 animate-slideInLeft" style={{ animationDelay: '0.2s' }}>

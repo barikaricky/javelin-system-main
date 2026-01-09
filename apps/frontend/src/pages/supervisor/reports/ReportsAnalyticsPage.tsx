@@ -377,11 +377,11 @@ export default function ReportsAnalyticsPage() {
             </div>
           </div>
 
-          {/* Top BITs */}
+          {/* Top BEATs */}
           <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
             <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
               <Shield className="w-5 h-5 text-green-600" />
-              Top BITs
+              Top BEATs
             </h3>
             <div className="space-y-2">
               {analytics.byBIT.slice(0, 5).map((bit, index) => (

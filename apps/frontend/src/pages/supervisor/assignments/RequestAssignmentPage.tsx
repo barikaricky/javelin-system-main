@@ -31,10 +31,10 @@ interface Location {
   isActive: boolean;
 }
 
-interface Bit {
+interface Beat {
   _id: string;
-  bitCode: string;
-  bitName: string;
+  beatCode: string;
+  beatName: string;
   description?: string;
   locationId: string | { _id: string };
   isActive: boolean;
@@ -43,7 +43,7 @@ interface Bit {
 
 interface CurrentAssignment {
   _id: string;
-  bitId: { _id: string; bitName: string };
+  beatId: { _id: string; beatName: string };
   locationId: { _id: string; locationName: string };
   status: string;
 }
@@ -52,8 +52,8 @@ export default function RequestAssignmentPage() {
   const navigate = useNavigate();
   const [operators, setOperators] = useState<Operator[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
-  const [bits, setBits] = useState<Bit[]>([]);
-  const [filteredBits, setFilteredBits] = useState<Bit[]>([]);
+  const [beats, setBits] = useState<Beat[]>([]);
+  const [filteredBits, setFilteredBits] = useState<Beat[]>([]);
   const [currentAssignment, setCurrentAssignment] = useState<CurrentAssignment | null>(null);
   const [isReassignment, setIsReassignment] = useState(false);
   const [supervisorId, setSupervisorId] = useState<string>('');
@@ -64,7 +64,7 @@ export default function RequestAssignmentPage() {
   const [formData, setFormData] = useState({
     operatorId: '',
     locationId: '',
-    bitId: '',
+    beatId: '',
     shiftType: 'DAY',
     assignmentType: 'PERMANENT',
     startDate: new Date().toISOString().split('T')[0],
@@ -85,22 +85,22 @@ export default function RequestAssignmentPage() {
 
   useEffect(() => {
     if (formData.locationId) {
-      // Filter bits by location
-      const filtered = bits.filter(bit => {
+      // Filter beats by location
+      const filtered = beats.filter(bit => {
         const bitLocationId = typeof bit.locationId === 'string' 
           ? bit.locationId 
           : bit.locationId?._id;
         return bitLocationId === formData.locationId;
       });
       setFilteredBits(filtered);
-      if (formData.bitId && !filtered.find(b => b._id === formData.bitId)) {
-        setFormData(prev => ({ ...prev, bitId: '' }));
+      if (formData.beatId && !filtered.find(b => b._id === formData.beatId)) {
+        setFormData(prev => ({ ...prev, beatId: '' }));
       }
     } else {
       setFilteredBits([]);
-      setFormData(prev => ({ ...prev, bitId: '' }));
+      setFormData(prev => ({ ...prev, beatId: '' }));
     }
-  }, [formData.locationId, bits]);
+  }, [formData.locationId, beats]);
 
   const checkOperatorAssignment = async (operatorId: string) => {
     try {
@@ -115,7 +115,7 @@ export default function RequestAssignmentPage() {
         setFormData(prev => ({
           ...prev,
           locationId: active.locationId?._id || '',
-          bitId: active.bitId?._id || '',
+          beatId: active.beatId?._id || '',
         }));
       } else {
         setCurrentAssignment(null);
@@ -143,9 +143,9 @@ export default function RequestAssignmentPage() {
           console.error('❌ Locations fetch failed:', err.response?.data || err.message);
           return { data: { locations: [] } };
         }),
-        api.get('/bits').catch(err => {
-          console.error('❌ Bits fetch failed:', err.response?.data || err.message);
-          return { data: { bits: [] } };
+        api.get('/beats').catch(err => {
+          console.error('❌ Beats fetch failed:', err.response?.data || err.message);
+          return { data: { beats: [] } };
         }),
         api.get('/supervisors/my-profile').catch(err => {
           console.error('❌ Profile fetch failed:', {
@@ -161,19 +161,19 @@ export default function RequestAssignmentPage() {
       console.log('📦 SUPERVISOR: Raw API responses:');
       console.log('  - Operators:', operatorsRes.data);
       console.log('  - Locations:', locationsRes.data);
-      console.log('  - Bits:', bitsRes.data);
+      console.log('  - Beats:', bitsRes.data);
       console.log('  - Profile FULL:', profileRes);
       console.log('  - Profile data:', profileRes.data);
       console.log('  - Profile data keys:', profileRes.data ? Object.keys(profileRes.data) : 'N/A');
 
       const operatorsData = operatorsRes.data.operators || operatorsRes.data.data || operatorsRes.data || [];
       const locationsData = locationsRes.data.locations || locationsRes.data.data || locationsRes.data || [];
-      const bitsData = bitsRes.data.bits || bitsRes.data.data || bitsRes.data || [];
+      const bitsData = bitsRes.data.beats || bitsRes.data.data || bitsRes.data || [];
 
       console.log('📊 SUPERVISOR: Parsed data:');
       console.log('  - Operators count:', Array.isArray(operatorsData) ? operatorsData.length : 0);
       console.log('  - Locations count:', Array.isArray(locationsData) ? locationsData.length : 0);
-      console.log('  - Bits count:', Array.isArray(bitsData) ? bitsData.length : 0);
+      console.log('  - Beats count:', Array.isArray(bitsData) ? bitsData.length : 0);
 
       // Show all operators (don't filter by ACTIVE status for now)
       const allOperators = Array.isArray(operatorsData) ? operatorsData : [];
@@ -225,14 +225,14 @@ export default function RequestAssignmentPage() {
     console.log('🔍 SUBMIT: Form validation check');
     console.log('  - operatorId:', formData.operatorId);
     console.log('  - locationId:', formData.locationId);
-    console.log('  - bitId:', formData.bitId);
+    console.log('  - beatId:', formData.beatId);
     console.log('  - supervisorId:', supervisorId);
 
-    if (!formData.operatorId || !formData.locationId || !formData.bitId || !supervisorId) {
+    if (!formData.operatorId || !formData.locationId || !formData.beatId || !supervisorId) {
       const missing = [];
       if (!formData.operatorId) missing.push('operator');
       if (!formData.locationId) missing.push('location');
-      if (!formData.bitId) missing.push('bit');
+      if (!formData.beatId) missing.push('bit');
       if (!supervisorId) missing.push('supervisor ID');
       
       console.error('❌ SUBMIT: Missing fields:', missing.join(', '));
@@ -246,7 +246,7 @@ export default function RequestAssignmentPage() {
       const payload = {
         operatorId: formData.operatorId,
         locationId: formData.locationId,
-        bitId: formData.bitId,
+        beatId: formData.beatId,
         supervisorId: supervisorId,
         shiftType: formData.shiftType,
         assignmentType: formData.assignmentType,
@@ -329,7 +329,7 @@ export default function RequestAssignmentPage() {
                 <div className="flex-1">
                   <h3 className="text-sm font-semibold text-amber-900 mb-1">Current Assignment</h3>
                   <p className="text-sm text-amber-800">
-                    This operator is currently assigned to <strong>{currentAssignment.bitId?.bitName}</strong> at <strong>{currentAssignment.locationId?.locationName}</strong>.
+                    This operator is currently assigned to <strong>{currentAssignment.beatId?.beatName}</strong> at <strong>{currentAssignment.locationId?.locationName}</strong>.
                     <br />
                     Upon approval, the current assignment will end and a new one will be created.
                   </p>
@@ -418,7 +418,7 @@ export default function RequestAssignmentPage() {
                 onChange={(e) => setFormData({ 
                   ...formData, 
                   locationId: e.target.value,
-                  bitId: ''
+                  beatId: ''
                 })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
@@ -439,12 +439,12 @@ export default function RequestAssignmentPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <div className="flex items-center gap-2">
                   <Grid3x3 className="h-4 w-4" />
-                  Select Bit <span className="text-red-500">*</span>
+                  Select Beat <span className="text-red-500">*</span>
                 </div>
               </label>
               <select
-                value={formData.bitId}
-                onChange={(e) => setFormData({ ...formData, bitId: e.target.value })}
+                value={formData.beatId}
+                onChange={(e) => setFormData({ ...formData, beatId: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 disabled={!formData.locationId}
                 required
@@ -452,7 +452,7 @@ export default function RequestAssignmentPage() {
                 <option value="">Choose a bit...</option>
                 {filteredBits.map((bit) => (
                   <option key={bit._id} value={bit._id}>
-                    {bit.bitName} ({bit.bitCode}){bit.numberOfOperators ? ` - Needs ${bit.numberOfOperators} guards` : ''}
+                    {bit.beatName} ({bit.beatCode}){bit.numberOfOperators ? ` - Needs ${bit.numberOfOperators} guards` : ''}
                   </option>
                 ))}
               </select>
@@ -460,7 +460,7 @@ export default function RequestAssignmentPage() {
                 <p className="text-sm text-gray-500 mt-1">Please select a location first</p>
               )}
               {formData.locationId && filteredBits.length === 0 && (
-                <p className="text-sm text-amber-600 mt-1">No bits available for this location</p>
+                <p className="text-sm text-amber-600 mt-1">No beats available for this location</p>
               )}
             </div>
 
@@ -519,7 +519,7 @@ export default function RequestAssignmentPage() {
               </button>
               <button
                 type="submit"
-                disabled={submitting || !formData.operatorId || !formData.locationId || !formData.bitId}
+                disabled={submitting || !formData.operatorId || !formData.locationId || !formData.beatId}
                 className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
               >
                 {submitting ? (

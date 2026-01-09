@@ -34,10 +34,10 @@ interface Operator {
   createdAt: string;
 }
 
-interface Bit {
+interface Beat {
   _id: string;
-  bitCode: string;
-  bitName: string;
+  beatCode: string;
+  beatName: string;
   client: {
     _id: string;
     clientName: string;
@@ -74,7 +74,7 @@ interface Supervisor {
 export default function AssignGuardPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [bits, setBits] = useState<Bit[]>([]);
+  const [beats, setBits] = useState<Beat[]>([]);
   const [operators, setOperators] = useState<Operator[]>([]);
   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
   const [activeAssignments, setActiveAssignments] = useState<any[]>([]);
@@ -87,9 +87,9 @@ export default function AssignGuardPage() {
   const [assignmentType, setAssignmentType] = useState<'PERMANENT' | 'TEMPORARY' | 'RELIEF'>('PERMANENT');
   const [specialInstructions, setSpecialInstructions] = useState('');
 
-  const selectedBit = bits.find((b) => b._id === selectedBitId);
+  const selectedBit = beats.find((b) => b._id === selectedBitId);
   const selectedOperator = operators.find((o) => o._id === selectedOperatorId);
-  const bitCapacity = selectedBit ? activeAssignments.filter((a) => a.bitId === selectedBitId).length : 0;
+  const bitCapacity = selectedBit ? activeAssignments.filter((a) => a.beatId === selectedBitId).length : 0;
 
   useEffect(() => {
     fetchData();
@@ -105,18 +105,18 @@ export default function AssignGuardPage() {
     try {
       setLoading(true);
       const [bitsRes, operatorsRes, supervisorsRes] = await Promise.all([
-        api.get('/bits'),
+        api.get('/beats'),
         api.get('/managers/operators?status=ACTIVE'),
         api.get('/managers/supervisors'),
       ]);
 
       console.log('📊 Fetched data:', {
-        bits: bitsRes.data.bits?.length || 0,
+        beats: bitsRes.data.beats?.length || 0,
         operators: operatorsRes.data.operators?.length || 0,
         supervisors: supervisorsRes.data.supervisors?.length || 0,
       });
 
-      setBits(bitsRes.data.bits || []);
+      setBits(bitsRes.data.beats || []);
       setOperators(operatorsRes.data.operators || []);
       setSupervisors(supervisorsRes.data.supervisors || []);
     } catch (error: any) {
@@ -127,12 +127,12 @@ export default function AssignGuardPage() {
     }
   };
 
-  const fetchBitAssignments = async (bitId: string) => {
+  const fetchBitAssignments = async (beatId: string) => {
     try {
-      const response = await api.get(`/assignments/bits/${bitId}/assignments?status=ACTIVE`);
+      const response = await api.get(`/assignments/beats/${beatId}/assignments?status=ACTIVE`);
       setActiveAssignments(response.data.assignments || []);
     } catch (error) {
-      console.error('Error fetching BIT assignments:', error);
+      console.error('Error fetching BEAT assignments:', error);
     }
   };
 
@@ -140,14 +140,14 @@ export default function AssignGuardPage() {
     e.preventDefault();
 
     if (!selectedBitId || !selectedOperatorId || !selectedSupervisorId) {
-      toast.error('Please select BIT, Operator, and Supervisor');
+      toast.error('Please select BEAT, Operator, and Supervisor');
       return;
     }
 
-    // Check if BIT is over capacity
+    // Check if BEAT is over capacity
     if (selectedBit && bitCapacity >= selectedBit.numberOfOperators) {
       const confirmed = window.confirm(
-        `This BIT is at capacity (${bitCapacity}/${selectedBit.numberOfOperators}). Do you want to proceed?`
+        `This BEAT is at capacity (${bitCapacity}/${selectedBit.numberOfOperators}). Do you want to proceed?`
       );
       if (!confirmed) return;
     }
@@ -157,7 +157,7 @@ export default function AssignGuardPage() {
     try {
       const response = await api.post('/assignments', {
         operatorId: selectedOperatorId,
-        bitId: selectedBitId,
+        beatId: selectedBitId,
         supervisorId: selectedSupervisorId,
         shiftType,
         startDate,
@@ -201,8 +201,8 @@ export default function AssignGuardPage() {
             <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Assign Guard to BIT</h1>
-            <p className="text-xs sm:text-sm text-gray-600 mt-1">Deploy security personnel to a BIT location</p>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Assign Guard to BEAT</h1>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">Deploy security personnel to a BEAT location</p>
           </div>
         </div>
       </div>
@@ -220,7 +220,7 @@ export default function AssignGuardPage() {
         </div>
       </div>
 
-      {loading && !bits.length ? (
+      {loading && !beats.length ? (
         <div className="flex items-center justify-center py-20">
           <div className="text-center">
             <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
@@ -229,21 +229,21 @@ export default function AssignGuardPage() {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 md:space-y-8">
-          {/* BIT Selection Section */}
+          {/* BEAT Selection Section */}
           <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 shadow-sm p-4 sm:p-6">
             <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
               <div className="p-1.5 sm:p-2 bg-purple-100 rounded-lg">
                 <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
               </div>
               <div>
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Select BIT Location</h2>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Select BEAT Location</h2>
                 <p className="text-xs sm:text-sm text-gray-600">Choose where the guard will be deployed</p>
               </div>
             </div>
 
             <div>
               <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">
-                BIT Location <span className="text-red-500">*</span>
+                BEAT Location <span className="text-red-500">*</span>
               </label>
               <select
                 value={selectedBitId}
@@ -251,12 +251,12 @@ export default function AssignGuardPage() {
                 className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 font-medium"
                 required
               >
-                <option value="">-- Select a BIT --</option>
-                {bits
+                <option value="">-- Select a BEAT --</option>
+                {beats
                   .filter((bit) => bit.isActive)
                   .map((bit) => (
                     <option key={bit._id} value={bit._id}>
-                      {bit.bitCode} - {bit.bitName} • {bit.client?.clientName || 'N/A'}
+                      {bit.beatCode} - {bit.beatName} • {bit.client?.clientName || 'N/A'}
                     </option>
                   ))}
               </select>
@@ -266,7 +266,7 @@ export default function AssignGuardPage() {
                   {/* Capacity Bar */}
                   <div className="mb-3 sm:mb-4">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs sm:text-sm font-semibold text-gray-700">BIT Capacity Status</p>
+                      <p className="text-xs sm:text-sm font-semibold text-gray-700">BEAT Capacity Status</p>
                       <p className={`text-xs sm:text-sm font-bold ${getCapacityColor()}`}>
                         {bitCapacity} / {selectedBit.numberOfOperators}
                       </p>
@@ -289,7 +289,7 @@ export default function AssignGuardPage() {
                       <div className="mt-2 sm:mt-3 flex items-start bg-orange-50 border border-orange-200 rounded-lg p-2 sm:p-3">
                         <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600 mr-2 mt-0.5 flex-shrink-0" />
                         <p className="text-orange-800 text-xs sm:text-sm font-medium">
-                          BIT is at full capacity. Assigning more guards may require client approval.
+                          BEAT is at full capacity. Assigning more guards may require client approval.
                         </p>
                       </div>
                     )}
@@ -531,7 +531,7 @@ export default function AssignGuardPage() {
               ) : (
                 <>
                   <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-                  Assign Guard to BIT
+                  Assign Guard to BEAT
                 </>
               )}
             </button>

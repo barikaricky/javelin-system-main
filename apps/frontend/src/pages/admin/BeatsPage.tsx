@@ -60,9 +60,9 @@ interface Location {
   numberOfGuardsRequired?: number;
 }
 
-interface Bit {
+interface Beat {
   _id: string;
-  bitId: string;
+  beatId: string;
   name: string;
   description?: string;
   locationId: Location;
@@ -77,7 +77,7 @@ interface Bit {
 }
 
 export default function AdminBitsPage() {
-  const [bits, setBits] = useState<Bit[]>([]);
+  const [beats, setBits] = useState<Beat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
@@ -90,26 +90,26 @@ export default function AdminBitsPage() {
   const fetchBits = async () => {
     setIsLoading(true);
     try {
-      const response = await api.get('/bits/all', {
+      const response = await api.get('/beats/all', {
         params: {
           includeOperators: true,
           includeSupervisor: true,
           includeLocation: true,
         }
       });
-      setBits(response.data.bits || response.data || []);
+      setBits(response.data.beats || response.data || []);
     } catch (error: any) {
-      console.error('Failed to fetch bits:', error);
-      toast.error('Failed to load BITs data');
+      console.error('Failed to fetch beats:', error);
+      toast.error('Failed to load BEATs data');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const filteredBits = bits.filter(bit => {
+  const filteredBits = beats.filter(bit => {
     const matchesSearch = searchQuery === '' || 
       bit.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      bit.bitId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      bit.beatId.toLowerCase().includes(searchQuery.toLowerCase()) ||
       bit.locationId?.name?.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesStatus = statusFilter === 'ALL' || 
@@ -119,8 +119,8 @@ export default function AdminBitsPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const toggleExpand = (bitId: string) => {
-    setExpandedBitId(expandedBitId === bitId ? null : bitId);
+  const toggleExpand = (beatId: string) => {
+    setExpandedBitId(expandedBitId === beatId ? null : beatId);
   };
 
   const getOperatorPhoto = (operator: Operator) => {
@@ -139,7 +139,7 @@ export default function AdminBitsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">BITs & Locations</h1>
+        <h1 className="text-2xl font-bold text-gray-900">BEATs & Locations</h1>
         <p className="text-gray-600">View all Business Intelligence Teams and their locations</p>
       </div>
 
@@ -152,7 +152,7 @@ export default function AdminBitsPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by BIT name, ID, or location..."
+                placeholder="Search by BEAT name, ID, or location..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -178,33 +178,33 @@ export default function AdminBitsPage() {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200">
           <div className="text-center">
-            <p className="text-2xl font-bold text-gray-900">{bits.length}</p>
-            <p className="text-sm text-gray-600">Total BITs</p>
+            <p className="text-2xl font-bold text-gray-900">{beats.length}</p>
+            <p className="text-sm text-gray-600">Total BEATs</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-green-600">{bits.filter(b => b.isActive).length}</p>
+            <p className="text-2xl font-bold text-green-600">{beats.filter(b => b.isActive).length}</p>
             <p className="text-sm text-gray-600">Active</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-red-600">{bits.filter(b => !b.isActive).length}</p>
+            <p className="text-2xl font-bold text-red-600">{beats.filter(b => !b.isActive).length}</p>
             <p className="text-sm text-gray-600">Inactive</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold text-blue-600">
-              {bits.reduce((sum, bit) => sum + (bit.operators?.length || 0), 0)}
+              {beats.reduce((sum, bit) => sum + (bit.operators?.length || 0), 0)}
             </p>
             <p className="text-sm text-gray-600">Total Operators</p>
           </div>
         </div>
       </div>
 
-      {/* BITs List */}
+      {/* BEATs List */}
       {filteredBits.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
           <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No BITs Found</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No BEATs Found</h3>
           <p className="text-gray-600">
-            {searchQuery ? 'Try adjusting your search criteria' : 'No BITs have been created yet'}
+            {searchQuery ? 'Try adjusting your search criteria' : 'No BEATs have been created yet'}
           </p>
         </div>
       ) : (
@@ -214,10 +214,10 @@ export default function AdminBitsPage() {
               key={bit._id}
               className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
             >
-              {/* BIT Header */}
+              {/* BEAT Header */}
               <div className="p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                  {/* BIT Info */}
+                  {/* BEAT Info */}
                   <div className="flex-1">
                     <div className="flex items-start gap-3">
                       <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
@@ -228,7 +228,7 @@ export default function AdminBitsPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="text-lg font-bold text-gray-900">{bit.name}</h3>
-                          <span className="text-sm text-gray-500">({bit.bitId})</span>
+                          <span className="text-sm text-gray-500">({bit.beatId})</span>
                           {bit.isActive ? (
                             <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
                               <CheckCircle className="w-3 h-3" />
@@ -372,7 +372,7 @@ export default function AdminBitsPage() {
                       )}
                     </div>
 
-                    {/* BIT Dates */}
+                    {/* BEAT Dates */}
                     <div className="bg-white rounded-lg p-4 border border-gray-200">
                       <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                         <Calendar className="w-5 h-5 text-green-600" />

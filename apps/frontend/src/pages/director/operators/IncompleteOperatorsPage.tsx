@@ -40,9 +40,9 @@ interface IncompleteOperator {
     locationName: string;
   };
   currentAssignment?: {
-    bitId: {
+    beatId: {
       _id: string;
-      bitName: string;
+      beatName: string;
     };
     locationId: {
       _id: string;
@@ -122,7 +122,7 @@ export default function IncompleteOperatorsPage() {
           <div>
             <h3 className="text-amber-800 font-semibold mb-1">Incomplete Registration Warning</h3>
             <p className="text-amber-700 text-sm">
-              These operators were registered with missing information. While they can be assigned to BITs and locations,
+              These operators were registered with missing information. While they can be assigned to BEATs and locations,
               their profiles should be completed as soon as possible for full system functionality.
             </p>
           </div>
@@ -299,7 +299,7 @@ export default function IncompleteOperatorsPage() {
                         <div className="flex items-center gap-2 text-sm bg-green-50 text-green-700 px-3 py-2 rounded-lg mb-3">
                           <MapPin className="w-4 h-4" />
                           <span>
-                            Assigned to <strong>{operator.currentAssignment.bitId.bitName}</strong> at{' '}
+                            Assigned to <strong>{operator.currentAssignment.beatId.beatName}</strong> at{' '}
                             <strong>{operator.currentAssignment.locationId.locationName}</strong>
                           </span>
                         </div>

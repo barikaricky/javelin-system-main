@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IGuardAssignment extends Document {
   // Core Assignment
   operatorId: mongoose.Types.ObjectId;
-  bitId: mongoose.Types.ObjectId;
+  beatId: mongoose.Types.ObjectId;
   locationId: mongoose.Types.ObjectId;
   supervisorId: mongoose.Types.ObjectId;
   
@@ -54,10 +54,10 @@ const GuardAssignmentSchema = new Schema<IGuardAssignment>(
       required: [true, 'Operator is required'],
       index: true,
     },
-    bitId: {
+    beatId: {
       type: Schema.Types.ObjectId,
-      ref: 'Bit',
-      required: [true, 'BIT is required - every guard must be assigned to a BIT'],
+      ref: 'Beat',
+      required: [true, 'BEAT is required - every guard must be assigned to a BEAT'],
       index: true,
     },
     locationId: {
@@ -182,7 +182,7 @@ const GuardAssignmentSchema = new Schema<IGuardAssignment>(
 
 // Indexes for performance
 GuardAssignmentSchema.index({ operatorId: 1, status: 1 });
-GuardAssignmentSchema.index({ bitId: 1, status: 1 });
+GuardAssignmentSchema.index({ beatId: 1, status: 1 });
 GuardAssignmentSchema.index({ supervisorId: 1, status: 1 });
 GuardAssignmentSchema.index({ startDate: 1, endDate: 1 });
 GuardAssignmentSchema.index({ 'assignedBy.userId': 1 });
@@ -223,10 +223,10 @@ GuardAssignmentSchema.virtual('operator', {
   justOne: true,
 });
 
-// Virtual for populated BIT details
+// Virtual for populated BEAT details
 GuardAssignmentSchema.virtual('bit', {
-  ref: 'Bit',
-  localField: 'bitId',
+  ref: 'Beat',
+  localField: 'beatId',
   foreignField: '_id',
   justOne: true,
 });
@@ -255,17 +255,17 @@ GuardAssignmentSchema.statics.findActiveAssignment = function(operatorId: mongoo
     $or: [{ endDate: { $exists: false } }, { endDate: null }, { endDate: { $gte: new Date() } }],
   })
     .populate('operatorId')
-    .populate('bitId')
+    .populate('beatId')
     .populate('locationId')
     .populate('supervisorId');
 };
 
-// Static method: Find assignments for a BIT
+// Static method: Find assignments for a BEAT
 GuardAssignmentSchema.statics.findBitAssignments = function(
-  bitId: mongoose.Types.ObjectId,
+  beatId: mongoose.Types.ObjectId,
   status?: string
 ) {
-  const query: any = { bitId };
+  const query: any = { beatId };
   if (status) {
     query.status = status;
   }
@@ -285,7 +285,7 @@ GuardAssignmentSchema.statics.findBitAssignments = function(
 // Static method: Find operator assignment history
 GuardAssignmentSchema.statics.findOperatorHistory = function(operatorId: mongoose.Types.ObjectId) {
   return this.find({ operatorId })
-    .populate('bitId')
+    .populate('beatId')
     .populate('locationId')
     .populate('supervisorId')
     .sort({ startDate: -1 });

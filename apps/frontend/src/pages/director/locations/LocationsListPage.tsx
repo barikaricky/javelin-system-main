@@ -125,7 +125,7 @@ export const DirectorLocationsListPage = () => {
             <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm text-gray-600">Total Bits</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Total Beats</p>
                   <p className="text-xl sm:text-2xl font-bold text-blue-600 mt-1">{stats.totalBits}</p>
                 </div>
                 <MapPin className="h-8 w-8 sm:h-10 sm:w-10 text-blue-600" />
@@ -229,7 +229,7 @@ export const DirectorLocationsListPage = () => {
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs sm:text-sm mb-3">
-                    <span className="text-gray-600">Bits:</span>
+                    <span className="text-gray-600">Beats:</span>
                     <span className="font-medium text-purple-600">{location.totalBits}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">

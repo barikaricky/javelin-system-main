@@ -317,12 +317,12 @@ export default function SupervisorDashboard() {
           />
           <div className="col-span-2 lg:col-span-1">
             <StatsCard
-              title="My Bits"
+              title="My Beats"
               value={stats.myBits}
               subtitle="Locations assigned"
               icon={MapPin}
               color="purple"
-              linkTo="/supervisor/bits"
+              linkTo="/supervisor/beats"
             />
           </div>
         </div>
@@ -369,11 +369,11 @@ export default function SupervisorDashboard() {
               <span className="text-sm font-medium text-center">Mark Attendance</span>
             </Link>
             <Link
-              to="/supervisor/bits"
+              to="/supervisor/beats"
               className="flex flex-col items-center gap-2 p-4 rounded-xl bg-purple-500 hover:bg-purple-600 text-white transition-all duration-300 hover:shadow-lg"
             >
               <MapPin className="w-6 h-6" />
-              <span className="text-sm font-medium text-center">Visit Bits</span>
+              <span className="text-sm font-medium text-center">Visit Beats</span>
             </Link>
             <Link
               to="/supervisor/incidents"
@@ -421,7 +421,7 @@ export default function SupervisorDashboard() {
             </div>
           </div>
 
-          {/* My Bits/Locations */}
+          {/* My Beats/Locations */}
           <div className="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -429,7 +429,7 @@ export default function SupervisorDashboard() {
                 My Locations
               </h2>
               <Link 
-                to="/supervisor/bits"
+                to="/supervisor/beats"
                 className="text-green-600 text-sm font-medium hover:text-green-700 flex items-center gap-1"
               >
                 View All <ChevronRight className="w-4 h-4" />
@@ -514,7 +514,7 @@ export default function SupervisorDashboard() {
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-xl">
               <p className="text-2xl font-bold text-blue-600">{stats.myBits}</p>
-              <p className="text-sm text-slate-600">Bits to Visit</p>
+              <p className="text-sm text-slate-600">Beats to Visit</p>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-xl">
               <p className="text-2xl font-bold text-purple-600">0</p>

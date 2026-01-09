@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IShift extends Document {
   operatorId: mongoose.Types.ObjectId;
   locationId: mongoose.Types.ObjectId;
-  bitId?: mongoose.Types.ObjectId;
+  beatId?: mongoose.Types.ObjectId;
   assignmentId?: mongoose.Types.ObjectId;
   startTime: Date;
   endTime: Date;
@@ -25,9 +25,9 @@ const ShiftSchema = new Schema<IShift>(
       ref: 'Location',
       required: true,
     },
-    bitId: {
+    beatId: {
       type: Schema.Types.ObjectId,
-      ref: 'Bit',
+      ref: 'Beat',
     },
     assignmentId: {
       type: Schema.Types.ObjectId,
@@ -54,7 +54,7 @@ const ShiftSchema = new Schema<IShift>(
 
 ShiftSchema.index({ operatorId: 1 });
 ShiftSchema.index({ locationId: 1 });
-ShiftSchema.index({ bitId: 1 });
+ShiftSchema.index({ beatId: 1 });
 ShiftSchema.index({ assignmentId: 1 });
 ShiftSchema.index({ startTime: 1 });
 

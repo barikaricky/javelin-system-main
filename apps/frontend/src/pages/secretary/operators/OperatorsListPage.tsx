@@ -35,9 +35,9 @@ interface Operator {
     _id: string;
     locationName: string;
   };
-  bitId?: {
+  beatId?: {
     _id: string;
-    bitName: string;
+    beatName: string;
   };
   status: string;
   createdAt: string;
@@ -325,7 +325,7 @@ export default function OperatorsListPage() {
                           <MapPin className="w-4 h-4 text-gray-400" />
                           <span className="truncate">
                             {operator.locationId.locationName}
-                            {operator.bitId && ` - ${operator.bitId.bitName}`}
+                            {operator.beatId && ` - ${operator.beatId.beatName}`}
                           </span>
                         </div>
                       )}

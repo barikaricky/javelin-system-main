@@ -7,7 +7,7 @@ export interface IReport extends Document {
   
   // Required Links
   supervisorId?: mongoose.Types.ObjectId; // Optional for Directors
-  bitId: mongoose.Types.ObjectId;
+  beatId: mongoose.Types.ObjectId;
   locationId: mongoose.Types.ObjectId;
   
   // Date & Time
@@ -100,10 +100,10 @@ const ReportSchema: Schema = new Schema(
       required: false, // Optional - Directors can create reports without assigning to a supervisor
     },
     
-    bitId: {
+    beatId: {
       type: Schema.Types.ObjectId,
-      ref: 'Bit',
-      required: [true, 'BIT is required'],
+      ref: 'Beat',
+      required: [true, 'BEAT is required'],
     },
     
     locationId: {
@@ -214,7 +214,7 @@ const ReportSchema: Schema = new Schema(
 
 // Indexes
 ReportSchema.index({ reportType: 1, status: 1 });
-ReportSchema.index({ bitId: 1, occurrenceDate: -1 });
+ReportSchema.index({ beatId: 1, occurrenceDate: -1 });
 ReportSchema.index({ locationId: 1, occurrenceDate: -1 });
 ReportSchema.index({ supervisorId: 1, createdAt: -1 });
 ReportSchema.index({ status: 1, createdAt: -1 });

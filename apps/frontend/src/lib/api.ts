@@ -48,7 +48,7 @@ export const getImageUrl = (path: string | null | undefined): string | undefined
 export { serverBaseURL };
 
 // Get API base URL for direct axios calls (without /api prefix)
-// This is used for bits and locations endpoints which may use a different port
+// This is used for beats and locations endpoints which may use a different port
 export const getApiBaseURL = (): string => {
   const isCodespaces = window.location.hostname.includes('github.dev');
   

@@ -85,9 +85,9 @@ export default function AdminSidebar() {
       id: 'operations',
       items: [
         {
-          name: 'BITs & Locations',
+          name: 'BEATs & Locations',
           icon: Building2,
-          path: '/admin/bits',
+          path: '/admin/beats',
           description: 'View only',
         },
         {

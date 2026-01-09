@@ -12,7 +12,7 @@ export interface IBroadcastMessage extends Document {
   targetUserIds: string[];
   targetRegions: string[];
   targetGroup?: 'ALL_GS' | 'ALL_SUPERVISORS' | 'BIT_SUPERVISORS' | 'CUSTOM';
-  bitId?: mongoose.Types.ObjectId;
+  beatId?: mongoose.Types.ObjectId;
   isEmergency: boolean;
   isActive: boolean;
   expiresAt?: Date;
@@ -60,9 +60,9 @@ const BroadcastMessageSchema = new Schema<IBroadcastMessage>(
       type: String,
       enum: ['ALL_GS', 'ALL_SUPERVISORS', 'BIT_SUPERVISORS', 'CUSTOM'],
     },
-    bitId: {
+    beatId: {
       type: Schema.Types.ObjectId,
-      ref: 'Bit',
+      ref: 'Beat',
     },
     isEmergency: {
       type: Boolean,

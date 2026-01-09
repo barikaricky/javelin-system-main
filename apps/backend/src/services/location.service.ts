@@ -1,4 +1,4 @@
-import { Location, Bit } from '../models';
+import { Location, Beat } from '../models';
 import { AppError } from '../middlewares/error.middleware';
 import { logger } from '../utils/logger';
 
@@ -263,14 +263,14 @@ export async function getLocationById(locationId: string) {
     throw new AppError('Location not found', 404);
   }
 
-  // Get bits for this location
-  const bits = await Bit.find({ locationId })
+  // Get beats for this location
+  const beats = await Beat.find({ locationId })
     .populate('supervisorId')
     .lean();
 
   return {
     ...location,
-    bits,
+    beats,
   };
 }
 
@@ -292,11 +292,11 @@ export async function updateLocation(locationId: string, updates: Partial<Create
 
 // Delete location
 export async function deleteLocation(locationId: string) {
-  // Check if location has active bits
-  const activeBits = await Bit.countDocuments({ locationId, isActive: true });
+  // Check if location has active beats
+  const activeBits = await Beat.countDocuments({ locationId, isActive: true });
   
   if (activeBits > 0) {
-    throw new AppError('Cannot delete location with active bits', 400);
+    throw new AppError('Cannot delete location with active beats', 400);
   }
 
   await Location.findByIdAndDelete(locationId);
@@ -315,7 +315,7 @@ export async function getLocationStats() {
   ] = await Promise.all([
     Location.countDocuments(),
     Location.countDocuments({ isActive: true }),
-    Bit.countDocuments({ isActive: true }),
+    Beat.countDocuments({ isActive: true }),
     Location.aggregate([
       { $group: { _id: '$state', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
