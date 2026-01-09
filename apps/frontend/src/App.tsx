@@ -66,11 +66,11 @@ import ManagerPendingApprovalsPage from './pages/manager/PendingApprovalsPage';
 import OperatorApprovalsPage from './pages/manager/OperatorApprovalsPage';
 import RegisterSecretaryPage from './pages/manager/secretary/RegisterSecretaryPage';
 import RegisterAdminPage from './pages/director/RegisterAdminPage';
-import { ManagerBitsListPage } from './pages/manager/beats/BitsListPage';
+import { ManagerBitsListPage } from './pages/manager/Beats/BitsListPage';
 import { ManagerLocationsListPage } from './pages/manager/locations/LocationsListPage';
-import { ManagerEditBitPage } from './pages/manager/beats/EditBitPage';
-import { ManagerEditLocationPage } from './pages/manager/locations/EditLocationPage';
-import { ManagerBitDetailsPage } from './pages/manager/beats/BitDetailsPage';
+import { ManagerEditBitPage } from './pages/manager/Beats/EditBitPage';
+import { ManagerLocationDetailsPage } from './pages/manager/locations/LocationDetailsPage';
+import { ManagerBitDetailsPage } from './pages/manager/Beats/BitDetailsPage';
 import { ManagerLocationDetailsPage } from './pages/manager/locations/LocationDetailsPage';
 import ManagerMoneyInView from './pages/manager/MoneyInView';
 import ManagerBitExpensesPage from './pages/manager/BitExpensesPage';
@@ -146,9 +146,9 @@ import SecretaryDashboard from './pages/secretary/Dashboard';
 import { LocationsListPage } from './pages/secretary/locations/LocationsListPage';
 import { CreateLocationPage } from './pages/secretary/locations/CreateLocationPage';
 import { EditLocationPage } from './pages/secretary/locations/EditLocationPage';
-import { BitsListPage } from './pages/secretary/beats/BitsListPage';
-import { CreateBitPage } from './pages/secretary/beats/CreateBitPage';
-import { EditBitPage } from './pages/secretary/beats/EditBitPage';
+import { BitsListPage } from './pages/secretary/Beats/BitsListPage';
+import { CreateBitPage } from './pages/secretary/Beats/CreateBitPage';
+import { EditBitPage } from './pages/secretary/Beats/EditBitPage';
 import { DocumentsListPage } from './pages/secretary/documents/DocumentsListPage';
 import { UploadDocumentPage } from './pages/secretary/documents/UploadDocumentPage';
 import RecordMoneyIn from './pages/secretary/money-in/RecordMoneyIn';
@@ -212,7 +212,7 @@ import RequestAssignmentPage from './pages/supervisor/assignments/RequestAssignm
 import PendingAssignmentsPage from './pages/supervisor/assignments/PendingAssignmentsPage';
 
 // Beats imports
-import MyBitsPage from './pages/supervisor/beats/MyBitsPage';
+import MyBitsPage from './pages/supervisor/Beats/MyBitsPage';
 
 // Director Layout wrapper component
 function DirectorLayout({ children }: { children: React.ReactNode }) {
