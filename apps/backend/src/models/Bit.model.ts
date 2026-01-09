@@ -46,4 +46,4 @@ const BeatSchema = new Schema<IBeat>(
 BeatSchema.index({ locationId: 1 });
 BeatSchema.index({ isActive: 1 });
 
-export const Beat = mongoose.model<IBeat>('Beat', BeatSchema);
+export const Beat = mongoose.model<IBeat>('Beat', BeatSchema, 'bits');

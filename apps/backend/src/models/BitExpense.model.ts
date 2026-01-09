@@ -134,6 +134,6 @@ BeatExpenseSchema.index({ category: 1 });
 BeatExpenseSchema.index({ isUnallocated: 1 });
 BeatExpenseSchema.index({ addedBy: 1 });
 
-const BeatExpense = mongoose.model<IBeatExpense>('BeatExpense', BeatExpenseSchema);
+const BeatExpense = mongoose.model<IBeatExpense>('BeatExpense', BeatExpenseSchema, 'bitexpenses');
 
 export default BeatExpense;
