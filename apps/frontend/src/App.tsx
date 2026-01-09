@@ -34,7 +34,7 @@ import MeetingRoomPage from './pages/meeting/MeetingRoomPage';
 // Director Messaging Pages
 import MessagingPage from './pages/director/messaging/MessagingPage';
 import DirectorCommunicationPage from './pages/director/communication/CommunicationPage';
-import DirectorBeatExpensesPage from './pages/director/BeatExpensesPage';
+import DirectorBitExpensesPage from './pages/director/BitExpensesPage';
 import DirectorNotificationsPage from './pages/director/NotificationsPage';
 import { ReportsListPage, CreateReportPage, ReportDetailsPage, EditReportPage, ReportsAnalyticsPage, ReviewReportsPage as DirectorReviewReportsPage } from './pages/director/reports';
 import { 
@@ -73,7 +73,7 @@ import { ManagerEditLocationPage } from './pages/manager/locations/EditLocationP
 import { ManagerBitDetailsPage } from './pages/manager/beats/BitDetailsPage';
 import { ManagerLocationDetailsPage } from './pages/manager/locations/LocationDetailsPage';
 import ManagerMoneyInView from './pages/manager/MoneyInView';
-import ManagerBeatExpensesPage from './pages/manager/BeatExpensesPage';
+import ManagerBitExpensesPage from './pages/manager/BitExpensesPage';
 import { ManagerOnDutyPage } from './pages/manager/attendance';
 
 // Supervisor imports
@@ -165,7 +165,7 @@ import ClientsListPage from './pages/secretary/clients/ClientsListPage';
 import AddClientPage from './pages/secretary/clients/AddClientPage';
 import ClientDetailPage from './pages/secretary/clients/ClientDetailPage';
 import SecretaryMessagingPage from './pages/secretary/messaging/MessagingPage';
-import SecretaryBeatExpensesPage from './pages/secretary/BeatExpensesPage';
+import SecretaryBitExpensesPage from './pages/secretary/BitExpensesPage';
 import SecretaryRegisterOperatorPage from './pages/secretary/operators/RegisterOperatorPage';
 import SecretaryOperatorsListPage from './pages/secretary/operators/OperatorsListPage';
 import SecretarySupervisorsListPage from './pages/secretary/supervisors/SupervisorsListPage';
@@ -315,7 +315,7 @@ function App() {
         <Route path="id-cards" element={<SecretaryIDCardGenerator />} />
         <Route path="messages" element={<SecretaryMessagingPage />} />
         <Route path="settings" element={<SecretarySettingsPage />} />
-        <Route path="beat-expenses" element={<SecretaryBeatExpensesPage />} />
+        <Route path="beat-expenses" element={<SecretaryBitExpensesPage />} />
         
         {/* Secretary Reports Routes */}
         <Route path="reports" element={<SecretaryReportsListPage />} />
@@ -370,7 +370,7 @@ function App() {
         <Route path="assignments" element={<AssignmentsListPage />} />
         <Route path="assignments/assign" element={<AssignGuardPage />} />
         <Route path="assignments/:id" element={<AssignmentDetailsPage />} />
-        <Route path="beat-expenses" element={<ManagerBeatExpensesPage />} />
+        <Route path="beat-expenses" element={<ManagerBitExpensesPage />} />
         <Route path="reports" element={<ManagerReportsListPage />} />
         <Route path="reports/analytics" element={<ManagerReportsAnalyticsPage />} />
         <Route path="reports/create" element={<ManagerCreateReportPage />} />
@@ -479,7 +479,7 @@ function App() {
       <Route path="/director/beats/guards" element={<DirectorLayout><BitGuardsView /></DirectorLayout>} />
       <Route path="/director/id-cards" element={<DirectorLayout><IDCardGenerator /></DirectorLayout>} />
       <Route path="/director/settings" element={<DirectorLayout><SettingsPage /></DirectorLayout>} />
-      <Route path="/director/beat-expenses" element={<DirectorLayout><DirectorBeatExpensesPage /></DirectorLayout>} />
+      <Route path="/director/beat-expenses" element={<DirectorLayout><DirectorBitExpensesPage /></DirectorLayout>} />
       <Route path="/director/notifications" element={<DirectorLayout><DirectorNotificationsPage /></DirectorLayout>} />
       
       {/* Root redirects */}
