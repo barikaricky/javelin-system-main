@@ -76,8 +76,8 @@ interface Location {
 
 interface Beat {
   _id: string;
-  beatCode: string;
-  beatName: string;
+  bitCode: string;
+  bitName: string;
   locationId: string | { _id: string; locationName: string };
   numberOfOperators: number;
 }
@@ -1239,7 +1239,7 @@ export default function RegisterOperatorPage() {
                       <option value="">No specific BEAT (Location only)</option>
                       {filteredBits.map((bit) => (
                         <option key={bit._id} value={bit._id}>
-                          {bit.beatName} ({bit.beatCode}) - {bit.numberOfOperators} operator(s) required
+                          {bit.bitName} ({bit.bitCode}) - {bit.numberOfOperators} operator(s) required
                         </option>
                       ))}
                     </select>

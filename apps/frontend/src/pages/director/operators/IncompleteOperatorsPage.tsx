@@ -40,9 +40,9 @@ interface IncompleteOperator {
     locationName: string;
   };
   currentAssignment?: {
-    beatId: {
+    bitId: {
       _id: string;
-      beatName: string;
+      bitName: string;
     };
     locationId: {
       _id: string;
@@ -299,7 +299,7 @@ export default function IncompleteOperatorsPage() {
                         <div className="flex items-center gap-2 text-sm bg-green-50 text-green-700 px-3 py-2 rounded-lg mb-3">
                           <MapPin className="w-4 h-4" />
                           <span>
-                            Assigned to <strong>{operator.currentAssignment.beatId.beatName}</strong> at{' '}
+                            Assigned to <strong>{operator.currentAssignment.bitId.bitName}</strong> at{' '}
                             <strong>{operator.currentAssignment.locationId.locationName}</strong>
                           </span>
                         </div>
