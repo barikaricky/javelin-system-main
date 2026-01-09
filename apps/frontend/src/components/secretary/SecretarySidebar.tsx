@@ -84,7 +84,7 @@ const menuItems: MenuItem[] = [
       { name: 'Daily Logs', icon: Calendar, path: '/secretary/daily-logs' },
       { name: 'Monthly Logs', icon: CalendarDays, path: '/secretary/monthly-logs' },
       { name: 'Salary Panel', icon: Banknote, path: '/secretary/salary' },
-      { name: 'BEAT Expenses', icon: Receipt, path: '/secretary/bit-expenses' },
+      { name: 'BEAT Expenses', icon: Receipt, path: '/secretary/beat-expenses' },
     ]
   },
   { 

@@ -245,7 +245,7 @@ const menuItems: MenuItem[] = [
         id: 'bit-expenses',
         label: 'BEAT Expenses',
         icon: Receipt,
-        path: '/manager/bit-expenses',
+        path: '/manager/beat-expenses',
         badge: 'View',
       },
     ],

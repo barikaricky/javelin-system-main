@@ -128,7 +128,7 @@ const menuItems: MenuItem[] = [
       { name: 'Money In Reports', icon: TrendingUp, path: '/director/financial/money-in' },
       { name: 'Money Out Reports', icon: TrendingDown, path: '/director/financial/money-out' },
       { name: 'Salary Management', icon: Users, path: '/director/salary' },
-      { name: 'BEAT Expenses', icon: Receipt, path: '/director/bit-expenses' },
+      { name: 'BEAT Expenses', icon: Receipt, path: '/director/beat-expenses' },
     ]
   },
 ];

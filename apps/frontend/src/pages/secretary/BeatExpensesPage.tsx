@@ -69,7 +69,7 @@ const PAYMENT_METHODS = {
   OTHER: 'Other',
 };
 
-export default function BitExpensesPage() {
+export default function BeatExpensesPage() {
   const navigate = useNavigate();
   const [view, setView] = useState<'list' | 'summary'>('summary');
   const [period, setPeriod] = useState<'week' | 'month' | 'year'>('month');
@@ -143,7 +143,7 @@ export default function BitExpensesPage() {
   const loadBitSummaries = async () => {
     setIsLoading(true);
     try {
-      const response = await api.get('/bit-expenses/summary', { params: { period } });
+      const response = await api.get('/beat-expenses/summary', { params: { period } });
       setBitSummaries(response.data);
     } catch (error) {
       console.error('Error loading BEAT summaries:', error);
@@ -167,7 +167,7 @@ export default function BitExpensesPage() {
       if (dateRange.start) params.startDate = dateRange.start;
       if (dateRange.end) params.endDate = dateRange.end;
 
-      const response = await api.get('/bit-expenses', { params });
+      const response = await api.get('/beat-expenses', { params });
       setExpenses(response.data.expenses);
     } catch (error) {
       console.error('Error loading expenses:', error);
@@ -180,7 +180,7 @@ export default function BitExpensesPage() {
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post('/bit-expenses', {
+      await api.post('/beat-expenses', {
         ...formData,
         amount: parseFloat(formData.amount),
       });
@@ -231,7 +231,7 @@ export default function BitExpensesPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `bit-expenses-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `beat-expenses-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     toast.success('Expenses exported successfully');
   };

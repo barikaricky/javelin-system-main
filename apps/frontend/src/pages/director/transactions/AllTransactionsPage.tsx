@@ -45,7 +45,7 @@ interface Summary {
   byType: {
     moneyIn: number;
     moneyOut: number;
-    bitExpenses: number;
+    beatExpenses: number;
     salaries: number;
   };
   count: number;
@@ -155,7 +155,7 @@ const AllTransactionsPage: React.FC = () => {
   const typeChartData = summary ? [
     { name: 'Money In', value: summary.byType.moneyIn, color: '#10b981' },
     { name: 'Money Out', value: summary.byType.moneyOut, color: '#ef4444' },
-    { name: 'BEAT Expenses', value: summary.byType.bitExpenses, color: '#f59e0b' },
+    { name: 'BEAT Expenses', value: summary.byType.beatExpenses, color: '#f59e0b' },
     { name: 'Salaries', value: summary.byType.salaries, color: '#3b82f6' }
   ].filter(item => item.value > 0) : [];
 
@@ -210,7 +210,7 @@ const AllTransactionsPage: React.FC = () => {
       '',
       'EXPENSES',
       `  Money Out: ${formatCurrency(summary.byType.moneyOut)}`,
-      `  BEAT Expenses: ${formatCurrency(summary.byType.bitExpenses)}`,
+      `  BEAT Expenses: ${formatCurrency(summary.byType.beatExpenses)}`,
       `  Salaries: ${formatCurrency(summary.byType.salaries)}`,
       `  Total Expenses: ${formatCurrency(summary.totalExpenses)}`,
       '',
@@ -404,7 +404,7 @@ const AllTransactionsPage: React.FC = () => {
                 </div>
                 <div className="flex justify-between text-gray-700">
                   <span>BEAT Expenses</span>
-                  <span className="font-medium">{formatCurrency(summary.byType.bitExpenses)}</span>
+                  <span className="font-medium">{formatCurrency(summary.byType.beatExpenses)}</span>
                 </div>
                 <div className="flex justify-between text-gray-700">
                   <span>Salaries & Wages</span>
