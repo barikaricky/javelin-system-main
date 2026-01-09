@@ -13,7 +13,7 @@ import {
   Mail,
   FileWarning
 } from 'lucide-react';
-import api from '../../../lib/api';
+import api, { getImageUrl } from '../../../lib/api';
 import toast from 'react-hot-toast';
 
 interface IncompleteOperator {
@@ -245,7 +245,7 @@ export default function IncompleteOperatorsPage() {
                     <div className="flex-shrink-0">
                       {operator.userId.profilePhoto ? (
                         <img
-                          src={operator.userId.profilePhoto}
+                          src={getImageUrl(operator.userId.profilePhoto)}
                           alt={`${operator.userId.firstName} ${operator.userId.lastName}`}
                           className="w-16 h-16 rounded-full object-cover border-2 border-amber-200"
                         />
