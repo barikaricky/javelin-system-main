@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { GuardAssignment, IGuardAssignment } from '../models/GuardAssignment.model';
 import { Operator } from '../models/Operator.model';
-import { Beat } from "./Beat.model';
+import { Beat } from '../models/Bit.model';
 import { Supervisor } from '../models/Supervisor.model';
 import User from '../models/User.model';
 import * as activityService from './activity.service';

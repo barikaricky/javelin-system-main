@@ -1,5 +1,5 @@
-import BitExpense, { IBitExpense } from "./BeatExpense.model';
-import { Beat } from "./Beat.model';
+import BitExpense, { IBitExpense } from '../models/BitExpense.model';
+import { Beat } from '../models/Bit.model';
 import { User } from '../models/User.model';
 import { Location } from '../models/Location.model';
 import { logger } from '../utils/logger';

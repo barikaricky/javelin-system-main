@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { assignmentService } from '../services/assignment.service';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 import { User } from '../models/User.model';
-import { Beat } from "./Beat.model';
+import { Beat } from '../models/Bit.model';
 import { Secretary } from '../models/Secretary.model';
 import { Supervisor, SupervisorType, ApprovalStatus } from '../models/Supervisor.model';
 import { GuardAssignment } from '../models/GuardAssignment.model';

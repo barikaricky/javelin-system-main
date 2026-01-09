@@ -4,7 +4,7 @@ import { asyncHandler } from '../middlewares/error.middleware';
 import mongoose from 'mongoose';
 import { Transaction } from '../models/Transaction.model';
 import MoneyOut from '../models/MoneyOut.model';
-import BitExpense from "./BeatExpense.model';
+import BitExpense from '../models/BitExpense.model';
 import { Salary } from '../models/Salary.model';
 
 const router: Router = Router();
