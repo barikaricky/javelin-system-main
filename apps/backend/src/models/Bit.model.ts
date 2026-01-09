@@ -1,8 +1,8 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IBeat extends Document {
-  beatCode: string;
-  beatName: string;
+  bitCode: string;
+  bitName: string;
   locationId: mongoose.Types.ObjectId;
   description?: string;
   clientId?: mongoose.Types.ObjectId;
@@ -21,8 +21,8 @@ export interface IBeat extends Document {
 
 const BeatSchema = new Schema<IBeat>(
   {
-    beatCode: { type: String, required: true, unique: true },
-    beatName: { type: String, required: true },
+    bitCode: { type: String, required: true, unique: true },
+    bitName: { type: String, required: true },
     locationId: { type: Schema.Types.ObjectId, ref: 'Location', required: true },
     description: { type: String },
     clientId: { type: Schema.Types.ObjectId, ref: 'Client' },

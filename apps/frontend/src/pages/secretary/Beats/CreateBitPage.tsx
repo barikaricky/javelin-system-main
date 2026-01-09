@@ -5,7 +5,7 @@ import { api } from '../../../lib/api';
 import toast from 'react-hot-toast';
 
 interface BitFormData {
-  beatName: string;
+  bitName: string;
   locationId: string;
   description: string;
   clientId: string;
@@ -54,7 +54,7 @@ export const CreateBitPage = () => {
   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<BitFormData>({
-    beatName: '',
+    bitName: '',
     locationId: '',
     description: '',
     clientId: '',
@@ -112,7 +112,7 @@ export const CreateBitPage = () => {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.beatName.trim()) newErrors.beatName = 'Beat name is required';
+    if (!formData.bitName.trim()) newErrors.bitName = 'Bit name is required';
     if (!formData.locationId) newErrors.locationId = 'Location is required';
     if (formData.securityType.length === 0) newErrors.securityType = 'Select at least one security type';
     if (formData.numberOfOperators < 1) newErrors.numberOfOperators = 'At least 1 operator required';
@@ -184,22 +184,22 @@ export const CreateBitPage = () => {
           {/* Beat Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Beat Name *
+              Bit Name *
             </label>
             <div className="relative">
               <Shield className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
-                name="beatName"
-                value={formData.beatName}
+                name="bitName"
+                value={formData.bitName}
                 onChange={handleChange}
                 placeholder="e.g., Main Gate Security Post"
                 className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                  errors.beatName ? 'border-red-500' : 'border-gray-300'
+                  errors.bitName ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
             </div>
-            {errors.beatName && <p className="mt-1 text-sm text-red-600">{errors.beatName}</p>}
+            {errors.bitName && <p className="mt-1 text-sm text-red-600">{errors.bitName}</p>}
           </div>
 
           {/* Location */}

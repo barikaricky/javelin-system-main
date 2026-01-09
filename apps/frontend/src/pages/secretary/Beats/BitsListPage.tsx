@@ -8,8 +8,8 @@ import { useAuthStore } from '../../../stores/authStore';
 
 interface Beat {
   _id: string;
-  beatName: string;
-  beatCode: string;
+  bitName: string;
+  bitCode: string;
   locationId: {
     _id: string;
     locationName: string;
@@ -89,13 +89,13 @@ export const BitsListPage = () => {
     return labels[shift] || shift;
   };
 
-  const handleDeleteBit = async (beatId: string, beatName: string) => {
+  const handleDeleteBit = async (beatId: string, bitName: string) => {
     if (!isDirector) {
       toast.error('Only Directors can delete BEATs');
       return;
     }
 
-    const confirmMessage = `Are you sure you want to delete "${beatName}"? This action cannot be undone.`;
+    const confirmMessage = `Are you sure you want to delete "${bitName}"? This action cannot be undone.`;
     if (!window.confirm(confirmMessage)) {
       return;
     }
@@ -264,9 +264,9 @@ export const BitsListPage = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">
-                        {bit.beatName}
+                        {bit.bitName}
                       </h3>
-                      <span className="text-xs text-gray-500 font-mono">{bit.beatCode}</span>
+                      <span className="text-xs text-gray-500 font-mono">{bit.bitCode}</span>
                     </div>
                   </div>
                   <span className={`inline-flex items-center px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 ml-2 shadow-sm ${
@@ -333,7 +333,7 @@ export const BitsListPage = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDeleteBit(bit._id, bit.beatName);
+                          handleDeleteBit(bit._id, bit.bitName);
                         }}
                         className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
                         title="Delete BEAT (Director only)"
