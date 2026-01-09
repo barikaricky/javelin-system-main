@@ -189,13 +189,13 @@ import SalaryManagement from './pages/director/salary/SalaryManagement';
 import SalaryView from './pages/manager/SalaryView';
 
 // Director Beats and Locations imports
-import { DirectorBitsListPage } from './pages/director/beats/BitsListPage';
+import { DirectorBitsListPage } from './pages/director/Beats/BitsListPage';
 import { DirectorLocationsListPage } from './pages/director/locations/LocationsListPage';
-import { DirectorEditBitPage } from './pages/director/beats/EditBitPage';
+import { DirectorEditBitPage } from './pages/director/Beats/EditBitPage';
 import { DirectorEditLocationPage } from './pages/director/locations/EditLocationPage';
-import { BitDetailsPage } from './pages/director/beats/BitDetailsPage';
+import { BitDetailsPage } from './pages/director/Beats/BitDetailsPage';
 import { LocationDetailsPage } from './pages/director/locations/LocationDetailsPage';
-import BitGuardsView from './pages/director/beats/BitGuardsView';
+import BitGuardsView from './pages/director/Beats/BitGuardsView';
 import IDCardGenerator from './pages/director/IDCardGenerator';
 import ManagerIDCardGenerator from './pages/manager/IDCardGenerator';
 import SecretaryIDCardGenerator from './pages/secretary/IDCardGenerator';
